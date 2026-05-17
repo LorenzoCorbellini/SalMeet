@@ -152,6 +152,59 @@ li.navbar a:hover:not(.active) {
     color: rgba(245, 240, 230, 0.6);
 }
 
+/* --- NAVIGAZIONE PAGINE --- */
+.pagination-container {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    gap: 8px;               
+    margin-top: 10px;
+    margin-left: 10px;
+}
+
+/* Numeri per navigare tra le pagine */
+.page-item {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    text-decoration: none;
+    color: var(--text-dark);
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    font-family: sans-serif;
+    font-size: 14px;
+}
+
+/* Stile per la pagina attiva corrente*/
+.page-item.active {
+    background-color: var(--primary);
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Effetto hover per i bottoni cliccabili */
+a.page-item:hover {
+    background-color: #f0f0f0;
+    border-color: #999;
+}
+
+/* CSS specifico per le frecce SVG per rimuovere spazi fantasma */
+.page-item.arrow svg {
+    display: block; 
+    color: inherit;
+}
+
+/* Stile per i puntini di sospensione (...) */
+.page-dots {
+    display: inline-block;
+    padding: 0 4px;
+    color: #4e4e4e;
+}
+
 /* --- CHECKBOX --- */
 #filtro input[type="checkbox"] {
     accent-color: var(--primary);

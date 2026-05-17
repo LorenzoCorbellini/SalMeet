@@ -45,11 +45,11 @@ require_once __DIR__ . '/functions.php';
 		/* PAGINAZIONE */
 				$limit = 50;
 				if (!empty($_GET["pagina"])) { 
-					$pn  = $_GET["pagina"];
+					$np  = $_GET["pagina"];
 				} else { 
-					$pn=1; 
+					$np=1; 
 				};
-				$start_from = ($pn - 1) * $limit;
+				$start_from = ($np - 1) * $limit;
 				
 				/* FILTRI */
 				$where  = [];
@@ -105,10 +105,15 @@ require_once __DIR__ . '/functions.php';
 
 				$numero_pagine = ceil($numero_records / $limit);
 
+				echo getPagesNav($np, $numero_pagine, 1, 'flex-end');
+
 				$tabella_html = get_media_table($righe, $numero_records, $limit);
 				echo $tabella_html;
-			?>
+
+				echo getPagesNav($np, $numero_pagine);
+				?>
 		</div>
+		
 	</div>
 
 	<?php include 'footer.html'; ?>
