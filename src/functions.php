@@ -66,7 +66,7 @@ function getPagesNav(int $np,
         return "";
     }
 
-    $html = "<div class='pagination-container', style='justify-self: $justify;'>";
+    $html = "<div class='pagination-container' style='justify-self: $justify;'>";
     
     // Valore a sx di $np
     $start = max(1, $np - $range);
