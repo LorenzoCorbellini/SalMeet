@@ -4,7 +4,7 @@
     --surface: #e3cbcb;
     --primary: #e97b6d;
     --primary-dark: #c85f52;
-    --accent: #8b4d46;
+    --accent: #e6685a;
     --accent-hover: #b5655c;
     --text-dark: #1f2937;
     --text-light: #fdfdfd;
@@ -14,10 +14,12 @@
     --nav-width: clamp(160px, 18vw, 300px);
 
     --fs-h1: clamp(2rem, 5vw, 4.5rem);
-    --fs-nav: clamp(0.875rem, 1.2vw, 1.125rem);
+    --fs-nav: clamp(1rem, 1.3vw, 1.25rem);
     --fs-body: clamp(0.9375rem, 1.1vw, 1.125rem);
+    --fs-h2: clamp(1.4rem, 2.3vw, 2.5rem);
+    --fs-h3: clamp(1.2rem, 1.8vw, 2rem);
     --fs-input: clamp(0.875rem, 1vw, 1rem);
-    --fs-footer: clamp(0.75rem, 0.9vw, 0.875rem);
+    --fs-footer: clamp(1rem, 1.5vw, 1.25rem);
 }
 
 /* --- BASE --- */
@@ -51,6 +53,10 @@ body {
     overflow-y: auto;
 }
 
+.info-risultati {
+    color: #6b7280;
+}
+
 /* --- HEADER --- */
 h1 {
     margin: 0;
@@ -75,7 +81,13 @@ ol {
     width: 100%;
 }
 
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
 li a {
+    font-size: var(--fs-nav);
     display: block;
     color: var(--text-light);
     text-align: left;
@@ -149,7 +161,7 @@ li.navbar a:hover:not(.active) {
 }
 
 #filtro input::placeholder {
-    color: rgba(245, 240, 230, 0.6);
+    color: var(--text-light);
 }
 
 /* --- NAVIGAZIONE PAGINE --- */
@@ -254,6 +266,14 @@ a.page-item:hover {
     overflow-y: auto;
 }
 
+h2{
+    font-size: var(--fs-h2);
+}
+
+h3{
+    font-size: var(--fs-h3);
+}
+
 /* --- FOOTER --- */
 footer {
     margin-top: auto;
@@ -262,11 +282,81 @@ footer {
     background: var(--primary);
     color: rgba(255, 255, 255, 0.9);
     text-align: center;
-    padding: clamp(4px, 0.6vh, 8px) 0;
+    padding: clamp(16px, 2vh, 16px) 0;
     box-sizing: border-box;
 }
 
 /* --- TABELLE --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background-color: var(--text-light);
+    /* Sfondo base della tabella bianco */
+    border-radius: 12px;
+    overflow: hidden;
+    /* Taglia gli angoli delle righe interne per seguire l'arrotondamento */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    /* Ombra leggerissima per staccare dal box */
+}
+
+/* Titoli con sfondo scuro coordinato */
+th {
+    background-color: var(--accent);
+    color: var(--text-light);
+    font-size: 1.1rem;
+    font-weight: bold;
+    padding: 16px 20px;
+    text-align: center;
+}
+
+th img {
+    width: 16px;
+    height: auto;
+}
+
+/* Gestione dei link dentro i titoli per l'ordinamento */
+th a.filter__link {
+    color: var(--text-light) !important;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Sfondo alternato: righe PARI (even) */
+tr:nth-of-type(even) td {
+    background-color: rgba(227, 203, 203, 0.25);
+    /* Sfumatura leggerissima di var(--surface) */
+}
+
+/* Sfondo alternato: righe DISPARI (odd) */
+tr:nth-of-type(odd) td {
+    background-color: var(--text-light);
+}
+
+/* Celle del corpo tabella */
+td {
+    padding: 14px 20px;
+    color: var(--text-dark);
+    border-bottom: 1px solid rgba(179, 162, 159, 0.3);
+    /* Linea di divisione finissima */
+    transition: background-color 0.2s ease;
+}
+
+/* Rimuove la linea di divisione dall'ultima riga per non sporcare il bordo arrotondato */
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Effetto Hover sofisticato che si colora con il salmone della tua palette */
+tr:hover td {
+    background-color: rgba(233, 123, 109, 0.12) !important;
+    /* Opacità controllata di var(--primary) */
+}
+
+/* Allineamenti personalizzati */
 td.numero,
 td.data {
     text-align: right;
@@ -274,10 +364,6 @@ td.data {
 
 td.titolo {
     text-align: left;
-}
-
-td {
-    padding: clamp(8px, 0.8vh, 12px) clamp(12px, 1vw, 20px);
 }
 
 /* --- UTILITY --- */
@@ -291,11 +377,34 @@ td {
 }
 
 .icona {
-    width:16px;
-    height:16px;
+    width: 16px;
+    height: 16px;
 }
 
 .icona-filetype {
-    vertical-align:middle;
-    margin-right:10px;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+.btn-aggiungi {
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent);
+    transition: color 0.2s ease, transform 0.2s ease;
+    font-size: 1.4rem;
+}
+
+.btn-aggiungi:hover {
+    color: var(--accent-hover);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.btn-aggiungi img {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
 }

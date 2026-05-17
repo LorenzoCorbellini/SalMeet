@@ -142,5 +142,5 @@ if (isAjaxRequest()) {
 	</div>
 	<?php include 'footer.html'; ?>
 </body>
-<?php $pdo = null; // Chiude esplicitamente la connessione al db ?>
+
 </html>
