@@ -59,7 +59,7 @@ require_once __DIR__ . '/functions.php';
 					echo "<p><strong>Nome:</strong> " . htmlspecialchars($utente['nome']) . "</p>";
 					echo "<p><strong>Cognome:</strong> " . htmlspecialchars($utente['cognome']) . "</p>";
 					echo "<p><strong>Data di Nascita:</strong> " . formattaData($utente['dataNascita']) . "</p>";
-					echo "<p><a href='utenti.php'>&larr; Torna alla lista utenti</a></p>";
+					echo "<p><a href='javascript:history.back()' class='btn-back' style='text-decoration:none; font-weight:bold; color:var(--accent);'>&larr; Torna alla pagina precedente</a></p>";
 				} else {
 					echo "<p>Utente non trovato.</p>";
 				}
@@ -82,7 +82,7 @@ require_once __DIR__ . '/functions.php';
 					$where[] = "cognome LIKE :cognome";
 					$params[':cognome'] = '%' . $_GET['cognome'] . '%';
 				}
-				
+
 				// Filtro data modificato: tipo 'date' nativo (aaaa-mm-gg) come in bacheche.php
 				if (!empty($_GET['data'])) {
 					$where[] = "DATE(dataNascita) >= :data";

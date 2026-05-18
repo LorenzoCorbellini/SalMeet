@@ -97,7 +97,7 @@ require_once __DIR__ . '/functions.php';
 				$owner   = $_GET['owner'];
 				$bEnc    = htmlspecialchars(addslashes($bacheca), ENT_QUOTES);
 
-				echo "<p><a href='" . urlRitorno() . "'>&larr; Torna alle bacheche</a></p>";
+				echo "<p><a href='javascript:history.back()' class='btn-back' style='text-decoration:none; font-weight:bold; color:var(--accent);'>&larr; Torna alla pagina precedente</a></p>";
 				echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
 
 				if ($vista === 'dettaglio') {
