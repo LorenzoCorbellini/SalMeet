@@ -100,7 +100,6 @@ require_once __DIR__ . '/functions.php';
 				echo "<p><a href='" . urlRitorno() . "'>&larr; Torna alle bacheche</a></p>";
 				echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
 
-				// LA DATA DI CREAZIONE VIENE MOSTRATA SOLO NELLA VISTA DETTAGLIO
 				if ($vista === 'dettaglio') {
 					$stmtBacheca = $pdo->prepare("SELECT dataCreazione FROM Bacheca WHERE nome = :nome AND codiceUtente = :owner");
 					$stmtBacheca->execute([':nome' => $bacheca, ':owner' => $owner]);
@@ -116,7 +115,6 @@ require_once __DIR__ . '/functions.php';
 
 				// VISTA TABELLA UTENTI (Attiva in 'dettaglio' o in 'utenti')
 				if ($vista === 'dettaglio' || $vista === 'utenti') {
-					// Impostazioni di ordinamento consentite per gli utenti
 					$allowed_sorts_u = [
 						'nickname'     => 'u.nickname',
 						'nome'         => 'u.nome',
@@ -144,7 +142,6 @@ require_once __DIR__ . '/functions.php';
 
 				// VISTA TABELLA FILE (Attiva in 'dettaglio' o in 'file')
 				if ($vista === 'dettaglio' || $vista === 'file') {
-					// Impostazioni di ordinamento consentite per i file (AGGIUNTO PROPRIETARIO)
 					$allowed_sorts_f = [
 						'file'         => 'fm.titolo',
 						'dimensione'   => 'fm.dimensione',
@@ -159,7 +156,6 @@ require_once __DIR__ . '/functions.php';
                     <img src='images/add.png' alt='Aggiungi'> <strong>Aggiungi file alla bacheca</strong>
                 </a></p>";
 
-					// Generiamo gli headers cliccabili (AGGIUNTO PROPRIETARIO)
 					$customHeaders_f = generaIntestazioniOrdinabili([
 						'File'            => 'file',
 						'Dimensione (MB)' => 'dimensione',
@@ -191,7 +187,6 @@ require_once __DIR__ . '/functions.php';
 
 				list($pagina, $limit, $offset) = getParametriPaginazione(50);
 
-				// AGGIUNTE NUOVE COLONNE DI ORDINAMENTO (Proprietario, N. Utenti, N. File)
 				list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 					'nome'         => 'b.nome',
 					'data'         => 'b.dataCreazione',
@@ -268,8 +263,8 @@ require_once __DIR__ . '/functions.php';
                     </div>";
 
 						$datiBacheche[] = [
-							'Nome Bacheca' => $htmlNome,
 							'Proprietario' => $htmlProprietario,
+							'Nome Bacheca' => $htmlNome,
 							'Data Creazione' => $riga['Data Creazione'],
 							'Numero Utenti' => $htmlUtenti,
 							'Numero File' => $htmlFile,
@@ -277,18 +272,16 @@ require_once __DIR__ . '/functions.php';
 						];
 					}
 
-					// AGGIUNTI I TITOLI CLICCABILI (Proprietario, Numero Utenti, Numero File)
 					$customHeaders = generaIntestazioniOrdinabili([
-						'Nome Bacheca'   => 'nome',
 						'Proprietario'   => 'proprietario',
+						'Nome Bacheca'   => 'nome',
 						'Data Creazione' => 'data',
 						'Numero Utenti'  => 'utenti',
 						'Numero File'    => 'file_count'
 					], $sort_col, $sort_dir);
 
-					stampaTabella($datiBacheche, ['Nome Bacheca', 'Proprietario', 'Numero Utenti', 'Numero File', 'Azioni'], $customHeaders);
+					stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Numero Utenti', 'Numero File', 'Azioni'], $customHeaders);
 
-					// Stampa dinamica della Paginazione
 					stampaPaginazione($pagina, $totaleRisultati, $limit);
 				}
 			}
