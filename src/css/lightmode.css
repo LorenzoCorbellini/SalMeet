@@ -9,6 +9,7 @@
     --text-dark: #1f2937;
     --text-light: #fdfdfd;
     --border-soft: #b3a29f;
+    --text-muted: #766967;
     --shadow: rgba(0, 0, 0, 0.08);
 
     --nav-width: clamp(160px, 18vw, 300px);
@@ -54,7 +55,7 @@ body {
 }
 
 .info-risultati {
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 /* --- HEADER --- */
@@ -105,7 +106,7 @@ li.navbar a:hover:not(.active) {
 
 .active {
     background-color: var(--surface);
-    color: var(--accent) !important;
+    color: var(--text-light) !important;
     font-weight: bold;
     border-left: 4px solid var(--accent);
 }
@@ -170,8 +171,8 @@ li.navbar a:hover:not(.active) {
     justify-content: left;
     align-items: center;
     gap: 8px;               
-    margin-top: 10px;
-    margin-left: 10px;
+    /* margin-top: 10px; */
+    /* margin-left: 10px; */
 }
 
 /* Numeri per navigare tra le pagine */
@@ -407,4 +408,20 @@ td.titolo {
     width: 24px;
     height: 24px;
     vertical-align: middle;
+}
+
+/* PAGINA MEDIA */
+#results-and-page-nav {
+    display: flex;
+    align-items: center;
+}
+
+#results-number {
+    margin-right: auto;
+    color: var(--text-muted);
+}
+
+#file_size {
+    color: var(--text-muted);
+    text-align: right;
 }
