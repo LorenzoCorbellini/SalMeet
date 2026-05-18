@@ -23,9 +23,14 @@ $action = htmlspecialchars($filtro_config['action'] ?? $_SERVER['PHP_SELF']);
 // 1. Costruzione dinamica dell'URL per il tasto "Reimposta"
 // =========================================================
 $reset_params = [];
+
+// MODIFICA: Preserviamo il return_to nel tasto Reimposta
+if (!empty($_GET['return_to'])) {
+    $reset_params['return_to'] = $_GET['return_to'];
+}
+
 if (isset($filtro_config['campi'])) {
     foreach ($filtro_config['campi'] as $campo) {
-        // Salviamo SOLO i campi nascosti per non perdere la vista attuale
         if ($campo['tipo'] === 'hidden' && isset($campo['value'])) {
             $reset_params[$campo['name']] = $campo['value'];
         }
@@ -41,11 +46,15 @@ if (!empty($reset_params)) {
 <div id="filtro">
     <h3>Filtri</h3>
     <form method="GET" action="<?= $action ?>">
+
+        <?php if (!empty($_GET['return_to'])): ?>
+            <input type="hidden" name="return_to" value="<?= htmlspecialchars($_GET['return_to']) ?>">
+        <?php endif; ?>
+
         <?php foreach ($filtro_config['campi'] as $campo):
             $name  = htmlspecialchars($campo['name']);
             $label = htmlspecialchars($campo['label'] ?? '');
             
-            // Se è un campo hidden, diamo priorità al valore definito in config
             if ($campo['tipo'] === 'hidden') {
                 $value = htmlspecialchars($_GET[$campo['name']] ?? $campo['value'] ?? '');
             } else {
@@ -54,14 +63,11 @@ if (!empty($reset_params)) {
         ?>
 
             <?php if ($campo['tipo'] === 'hidden'): ?>
-                
                 <input type="hidden" name="<?= $name ?>" value="<?= $value ?>">
 
             <?php elseif ($campo['tipo'] === 'checkbox'): ?>
-
                 <label>
-                    <input type="checkbox"
-                           name="<?= $name ?>"
+                    <input type="checkbox" name="<?= $name ?>"
                            value="1"
                            <?= isset($_GET[$campo['name']]) ? 'checked' : '' ?>>
                     <?= $label ?>

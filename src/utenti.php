@@ -59,7 +59,9 @@ require_once __DIR__ . '/functions.php';
 					echo "<p><strong>Nome:</strong> " . htmlspecialchars($utente['nome']) . "</p>";
 					echo "<p><strong>Cognome:</strong> " . htmlspecialchars($utente['cognome']) . "</p>";
 					echo "<p><strong>Data di Nascita:</strong> " . formattaData($utente['dataNascita']) . "</p>";
-					echo "<p><a href='utenti.php'>&larr; Torna alla lista utenti</a></p>";
+
+					$back_url = !empty($_GET['return_to']) ? $_GET['return_to'] : 'utenti.php';
+					echo "<p><a href='" . htmlspecialchars($back_url) . "'>&larr; Torna alla pagina precedente</a></p>";
 				} else {
 					echo "<p>Utente non trovato.</p>";
 				}
@@ -82,7 +84,7 @@ require_once __DIR__ . '/functions.php';
 					$where[] = "cognome LIKE :cognome";
 					$params[':cognome'] = '%' . $_GET['cognome'] . '%';
 				}
-				
+
 				// Filtro data modificato: tipo 'date' nativo (aaaa-mm-gg) come in bacheche.php
 				if (!empty($_GET['data'])) {
 					$where[] = "DATE(dataNascita) >= :data";
@@ -111,13 +113,13 @@ require_once __DIR__ . '/functions.php';
 
 				// Query principale con filtri, ordinamento e limiti
 				$sql = "
-					SELECT codice as 'owner',
-					       nickname as 'Nickname',
-					       nome as 'Nome',
-					       cognome as 'Cognome',
-					       dataNascita as 'Data di Nascita'
-					FROM utente
-				";
+                    SELECT codice as 'owner',
+                           nickname as 'Nickname',
+                           nome as 'Nome',
+                           cognome as 'Cognome',
+                           dataNascita as 'Data di Nascita'
+                    FROM utente
+                ";
 				if ($where) {
 					$sql .= " WHERE " . implode(" AND ", $where);
 				}
@@ -132,13 +134,14 @@ require_once __DIR__ . '/functions.php';
 				$stmt->execute();
 				$righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-				echo "<p>Trovati <strong>$totaleRisultati</strong> utenti ($limit per pagina).</p>";
+				echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> utenti ($limit per pagina).</p>";
 
 				if (!empty($righe)) {
 					$datiUtenti = [];
+					$current_url = $_SERVER['REQUEST_URI'];
+
 					foreach ($righe as $riga) {
-						// Generiamo il link ipertestuale che punta alla vista dettaglio dello specifico utente
-						$linkDettaglio = "utenti.php?utente=" . urlencode($riga['owner']);
+						$linkDettaglio = "utenti.php?utente=" . urlencode($riga['owner']) . "&return_to=" . urlencode($current_url);
 						$htmlNickname = "<a href='{$linkDettaglio}'>" . htmlspecialchars($riga['Nickname']) . "</a>";
 
 						$datiUtenti[] = [

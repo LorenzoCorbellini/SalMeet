@@ -12,7 +12,7 @@ require_once __DIR__ . '/functions.php';
 
 <body>
 	<header>
-		<h1 id=\"hcod1\">Gruppi</h1>
+		<h1 id="hcod1">Gruppi</h1>
 	</header>
 
 	<div class="main-container">
@@ -20,7 +20,6 @@ require_once __DIR__ . '/functions.php';
 			<?php include 'nav.html'; ?>
 
 			<?php
-			// Mostriamo la barra laterale di filtro solo se siamo nella lista principale dei gruppi
 			if (empty($_GET['gruppo'])) {
 				$filtro_config = [
 					'campi' => [
@@ -42,42 +41,44 @@ require_once __DIR__ . '/functions.php';
 			if (!empty($_GET['gruppo'])) {
 				$idGruppo = (int)$_GET['gruppo'];
 
-				// 1. Recupero informazioni generali del gruppo specifico
+				// Cattura l'URL attuale per navigare indietro correttamente da Utenti
+				$current_url = $_SERVER['REQUEST_URI'];
+
 				$stmtGruppo = $pdo->prepare("
-					SELECT g.nome, g.dataCreazione, u.nickname, u.codice as owner_id
-					FROM gruppo g
-					JOIN utente u ON g.creatoDa = u.codice
-					WHERE g.codice = :id
-				");
+                    SELECT g.nome, g.dataCreazione, u.nickname, u.codice as owner_id
+                    FROM gruppo g
+                    JOIN utente u ON g.creatoDa = u.codice
+                    WHERE g.codice = :id
+                ");
 				$stmtGruppo->execute([':id' => $idGruppo]);
 				$infoGruppo = $stmtGruppo->fetch(PDO::FETCH_ASSOC);
 
 				if ($infoGruppo) {
 					echo "<h2>Gruppo: " . htmlspecialchars($infoGruppo['nome']) . "</h2>";
 					echo "<p><strong>Data Creazione:</strong> " . formattaData($infoGruppo['dataCreazione']) . "</p>";
-					
-					$linkOwner = "utenti.php?utente=" . urlencode($infoGruppo['owner_id']);
+
+					$linkOwner = "utenti.php?utente=" . urlencode($infoGruppo['owner_id']) . "&return_to=" . urlencode($current_url);
 					echo "<p><strong>Creato da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>";
 					echo "<hr>";
 
-					// 2. Estrazione e visualizzazione dei membri appartenenti al gruppo
 					echo "<h3>Membri del gruppo</h3>";
 					$stmtMembri = $pdo->prepare("
-						SELECT u.codice, u.nickname, u.nome, u.cognome
-						FROM utenteautorizzatogruppo uag
-						JOIN utente u ON uag.codUtente = u.codice
-						WHERE uag.codGruppo = :id
-						ORDER BY u.nickname ASC
-					");
+                        SELECT u.codice, u.nickname, u.nome, u.cognome
+                        FROM utenteautorizzatogruppo uag
+                        JOIN utente u ON uag.codUtente = u.codice
+                        WHERE uag.codGruppo = :id
+                        ORDER BY u.nickname ASC
+                    ");
 					$stmtMembri->execute([':id' => $idGruppo]);
 					$membriRaw = $stmtMembri->fetchAll(PDO::FETCH_ASSOC);
 
 					if (!empty($membriRaw)) {
 						$datiMembri = [];
 						foreach ($membriRaw as $membro) {
-							$linkMembro = "utenti.php?utente=" . urlencode($membro['codice']);
+							// MODIFICA QUI: Aggiunto return_to
+							$linkMembro = "utenti.php?utente=" . urlencode($membro['codice']) . "&return_to=" . urlencode($current_url);
 							$htmlMembroNickname = "<a href='{$linkMembro}'>" . htmlspecialchars($membro['nickname']) . "</a>";
-							
+
 							$datiMembri[] = [
 								'Nickname' => $htmlMembroNickname,
 								'Nome'     => $membro['nome'],
@@ -90,15 +91,14 @@ require_once __DIR__ . '/functions.php';
 					}
 					echo "<br><hr>";
 
-					// 3. Estrazione e visualizzazione dei file multimediali associati al gruppo
 					echo "<h3>File multimediali del gruppo</h3>";
 					$stmtFile = $pdo->prepare("
-						SELECT f.numero, f.titolo, f.tipo, f.dimensione, f.url
-						FROM fileassociatogruppo fag
-						JOIN FileMultimediale f ON fag.file = f.numero
-						WHERE fag.codGruppo = :codice
-						ORDER BY f.titolo ASC
-					");
+                        SELECT f.numero, f.titolo, f.tipo, f.dimensione, f.url
+                        FROM fileassociatogruppo fag
+                        JOIN FileMultimediale f ON fag.file = f.numero
+                        WHERE fag.codGruppo = :codice
+                        ORDER BY f.titolo ASC
+                    ");
 					$stmtFile->execute([':codice' => $idGruppo]);
 					$filesRaw = $stmtFile->fetchAll(PDO::FETCH_ASSOC);
 
@@ -106,7 +106,7 @@ require_once __DIR__ . '/functions.php';
 						$datiFile = [];
 						foreach ($filesRaw as $file) {
 							$htmlNomeFile = "<a href='" . htmlspecialchars($file['url']) . "' target='_blank'>" . htmlspecialchars($file['titolo']) . "</a>";
-							
+
 							$datiFile[] = [
 								'Codice File' => $file['numero'],
 								'Nome File'   => $htmlNomeFile,
@@ -119,16 +119,15 @@ require_once __DIR__ . '/functions.php';
 						echo "<p>Nessun file multimediale associato o caricato in questo gruppo.</p>";
 					}
 
-					echo "<br><p><a href='gruppi.php'>&larr; Torna alla lista dei gruppi</a></p>";
-
+					$back_url = !empty($_GET['return_to']) ? $_GET['return_to'] : 'gruppi.php';
+					echo "<br><p><a href='" . htmlspecialchars($back_url) . "'>&larr; Torna alla pagina precedente</a></p>";
 				} else {
 					echo "<p>Gruppo non trovato o non esistente.</p>";
-					echo "<p><a href='gruppi.php'>Torna alla lista dei gruppi</a></p>";
+					echo "<p><a href='gruppi.php'>Torna alla pagina precedente</a></p>";
 				}
-
 			} else {
 				// =========================================================
-				// VISTA PRINCIPALE: LISTA DEI GRUPPI (Con Filtri e Paginazione)
+				// VISTA PRINCIPALE: LISTA DEI GRUPPI
 				// =========================================================
 				$where = [];
 				$params = [];
@@ -146,7 +145,6 @@ require_once __DIR__ . '/functions.php';
 					$params[':data'] = $_GET['data'];
 				}
 
-				// Calcolo della paginazione (Usa la utility condivisa getParametriPaginazione se esistente, altrimenti fallback)
 				if (function_exists('getParametriPaginazione')) {
 					list($pagina, $limit, $offset) = getParametriPaginazione(50);
 				} else {
@@ -156,7 +154,6 @@ require_once __DIR__ . '/functions.php';
 					$offset = ($pagina - 1) * $limit;
 				}
 
-				// Calcolo dei parametri di ordinamento
 				if (function_exists('getParametriOrdinamento')) {
 					list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 						'nome' => 'gruppo.nome',
@@ -168,7 +165,6 @@ require_once __DIR__ . '/functions.php';
 					$sql_sort = 'gruppo.dataCreazione DESC';
 				}
 
-				// Query per contare i risultati totali filtrati
 				$sqlConto = "SELECT COUNT(*) FROM gruppo JOIN utente ON gruppo.creatoDa = utente.codice";
 				if (!empty($where)) {
 					$sqlConto .= " WHERE " . implode(" AND ", $where);
@@ -177,22 +173,21 @@ require_once __DIR__ . '/functions.php';
 				$stmtConto->execute($params);
 				$totaleRisultati = $stmtConto->fetchColumn();
 
-				// Costruzione ed esecuzione query principale
 				$sql = "
-					SELECT 
-						gruppo.codice as 'gruppo_id',
-						gruppo.nome as 'Nome Gruppo',
-						gruppo.dataCreazione as 'Data Creazione',
-						utente.nickname as 'Proprietario',
-						utente.codice as 'owner_id'
-					FROM gruppo
-					JOIN utente ON gruppo.creatoDa = utente.codice
-				";
+                    SELECT 
+                        gruppo.codice as 'gruppo_id',
+                        gruppo.nome as 'Nome Gruppo',
+                        gruppo.dataCreazione as 'Data Creazione',
+                        utente.nickname as 'Proprietario',
+                        utente.codice as 'owner_id'
+                    FROM gruppo
+                    JOIN utente ON gruppo.creatoDa = utente.codice
+                ";
 
 				if (!empty($where)) {
 					$sql .= " WHERE " . implode(" AND ", $where);
 				}
-				
+
 				$sql .= " ORDER BY " . $sql_sort . " LIMIT :limit OFFSET :offset";
 
 				$stmt = $pdo->prepare($sql);
@@ -204,15 +199,17 @@ require_once __DIR__ . '/functions.php';
 				$stmt->execute();
 				$righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-				echo "<p>Trovati <strong>$totaleRisultati</strong> gruppi ($limit per pagina).</p>";
+				echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> gruppi ($limit per pagina).</p>";
 
 				if (!empty($righe)) {
 					$datiGruppi = [];
+					$current_url = $_SERVER['REQUEST_URI'];
+
 					foreach ($righe as $riga) {
-						$linkGruppo = "gruppi.php?gruppo=" . urlencode($riga['gruppo_id']);
+						$linkGruppo = "gruppi.php?gruppo=" . urlencode($riga['gruppo_id']) . "&return_to=" . urlencode($current_url);
 						$htmlNomeGruppo = "<a href='{$linkGruppo}'>" . htmlspecialchars($riga['Nome Gruppo']) . "</a>";
 
-						$linkOwner = "utenti.php?utente=" . urlencode($riga['owner_id']);
+						$linkOwner = "utenti.php?utente=" . urlencode($riga['owner_id']) . "&return_to=" . urlencode($current_url);
 						$htmlProprietario = "<a href='{$linkOwner}'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
 
 						$datiGruppi[] = [
@@ -229,7 +226,6 @@ require_once __DIR__ . '/functions.php';
 
 					stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
 
-					// Stampa della paginazione a fondo pagina
 					if (function_exists('stampaPaginazione')) {
 						stampaPaginazione($pagina, $totaleRisultati, $limit);
 					} else {

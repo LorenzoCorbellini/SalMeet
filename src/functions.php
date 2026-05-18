@@ -56,7 +56,8 @@ function urlRitorno(): string
 // =========================================================
 // HELPER PER RECUPERARE UTENTI (Con filtro integrato)
 // =========================================================
-function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC')
+// MODIFICA: Aggiunto $current_url = ''
+function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $current_url = '')
 {
     // Costruzione dinamica della query
     $sql = "
@@ -103,6 +104,10 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
             : "<div style='text-align:center;'><small style='color:gray;'>Proprietario</small></div>";
 
         $user_link = "utenti.php?utente=" . urlencode($u['codice']);
+        if (!empty($current_url)) {
+            $user_link .= "&return_to=" . urlencode($current_url);
+        }
+
         $htmlNickname = "<a href='" . htmlspecialchars($user_link) .  "'>" . htmlspecialchars($u['nickname']) . "</a>";
 
         $datiUtenti[] = [
@@ -119,7 +124,8 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 // =========================================================
 // HELPER PER RECUPERARE FILE (Con filtro integrato)
 // =========================================================
-function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', $sort_dir = 'ASC')
+// MODIFICA: Aggiunto $current_url = ''
+function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', $sort_dir = 'ASC', $current_url = '')
 {
     // Costruzione dinamica della query
     $sql = "
@@ -166,6 +172,9 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $htmlFile .= "<a href='" . htmlspecialchars($f['URL']) . "' target='_blank'>" . htmlspecialchars($title) . "</a>";
 
         $owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
+        if (!empty($current_url)) {
+            $owner_link .= "&return_to=" . urlencode($current_url);
+        }
         $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
 
         $azioni   = "<div style='text-align:center;'><img src='images/trash.png' alt='Elimina' style='width:16px; cursor:pointer;' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']})\"></div>";

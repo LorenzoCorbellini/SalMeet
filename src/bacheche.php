@@ -29,26 +29,20 @@ require_once __DIR__ . '/functions.php';
 			$vista_corrente = $_GET['vista'] ?? '';
 
 			if ($vista_corrente === 'dettaglio') {
-				// Filtro combinato per la vista Dettaglio (cerca sia tra gli utenti che tra i file)
 				$filtro_config = [
 					'campi' => [
 						['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
 						['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $_GET['bacheca'] ?? '', 'label' => ''],
 						['tipo' => 'hidden', 'name' => 'owner',   'value' => $_GET['owner'] ?? '', 'label' => ''],
-
-						// Campi ricerca Utenti
 						['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname Utente'],
 						['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome Utente'],
 						['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome Utente'],
 						['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Data di Nascita (Da)'],
-
-						// Campi ricerca File
 						['tipo' => 'text',   'name' => 'file',    'label' => 'Nome File'],
 					]
 				];
 				include 'filter.php';
 			} elseif ($vista_corrente === 'utenti') {
-				// Filtro specifico per la vista Utenti Autorizzati
 				$filtro_config = [
 					'campi' => [
 						['tipo' => 'hidden', 'name' => 'vista',   'value' => 'utenti', 'label' => ''],
@@ -62,7 +56,6 @@ require_once __DIR__ . '/functions.php';
 				];
 				include 'filter.php';
 			} elseif ($vista_corrente === 'file') {
-				// Filtro specifico per la vista File Pubblicati
 				$filtro_config = [
 					'campi' => [
 						['tipo' => 'hidden', 'name' => 'vista',   'value' => 'file', 'label' => ''],
@@ -73,7 +66,6 @@ require_once __DIR__ . '/functions.php';
 				];
 				include 'filter.php';
 			} else {
-				// Filtro standard per l'elenco generale delle bacheche
 				$filtro_config = [
 					'campi' => [
 						['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome Bacheca'],
@@ -97,8 +89,12 @@ require_once __DIR__ . '/functions.php';
 				$owner   = $_GET['owner'];
 				$bEnc    = htmlspecialchars(addslashes($bacheca), ENT_QUOTES);
 
-				echo "<p><a href='" . urlRitorno() . "'>&larr; Torna alle bacheche</a></p>";
+				$link_indietro = !empty($_GET['return_to']) ? $_GET['return_to'] : urlRitorno();
+				echo "<p><a href='" . htmlspecialchars($link_indietro) . "'>&larr; Torna alla pagina precedente</a></p>";
+
 				echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
+
+				$current_url = $_SERVER['REQUEST_URI'];
 
 				if ($vista === 'dettaglio') {
 					$stmtBacheca = $pdo->prepare("SELECT dataCreazione FROM Bacheca WHERE nome = :nome AND codiceUtente = :owner");
@@ -113,7 +109,6 @@ require_once __DIR__ . '/functions.php';
 					echo "<div style='margin-bottom: 25px;'></div>";
 				}
 
-				// VISTA TABELLA UTENTI (Attiva in 'dettaglio' o in 'utenti')
 				if ($vista === 'dettaglio' || $vista === 'utenti') {
 					$allowed_sorts_u = [
 						'nickname'     => 'u.nickname',
@@ -123,7 +118,7 @@ require_once __DIR__ . '/functions.php';
 					];
 					list($sort_col_u, $sort_dir_u, $sql_sort_u) = getParametriOrdinamento($allowed_sorts_u, 'nickname', 'ASC');
 
-					list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_u, $sort_dir_u);
+					list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_u, $sort_dir_u, $current_url);
 
 					echo "<h3>Utenti autorizzati: <strong>{$countUtenti}</strong></h3>";
 					echo "<p><a onclick=\"aggiungiAutorizzato('{$bEnc}', {$owner})\" class='btn-aggiungi'>
@@ -140,7 +135,6 @@ require_once __DIR__ . '/functions.php';
 					stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
 				}
 
-				// VISTA TABELLA FILE (Attiva in 'dettaglio' o in 'file')
 				if ($vista === 'dettaglio' || $vista === 'file') {
 					$allowed_sorts_f = [
 						'file'         => 'fm.titolo',
@@ -149,7 +143,8 @@ require_once __DIR__ . '/functions.php';
 					];
 					list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'file', 'ASC');
 
-					list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f);
+					// MODIFICA QUI: Aggiunto $current_url
+					list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f, $current_url);
 
 					echo "<h3>File pubblicati: <strong>{$countFile}</strong></h3>";
 					echo "<p><a onclick=\"aggiungiFile('{$bEnc}', {$owner})\" class='btn-aggiungi'>
@@ -234,8 +229,11 @@ require_once __DIR__ . '/functions.php';
 
 				if (!empty($righe)) {
 					$datiBacheche = [];
+					$url_corrente = $_SERVER['REQUEST_URI'];
+
 					foreach ($righe as $riga) {
 						$p = $_GET;
+						$p['return_to'] = $url_corrente;
 
 						$p['vista']   = 'dettaglio';
 						$p['bacheca'] = $riga['Nome Bacheca'];
@@ -248,7 +246,7 @@ require_once __DIR__ . '/functions.php';
 						$p['vista']   = 'file';
 						$htmlFile = "<div style='text-align: right;'><a href='bacheche.php?" . http_build_query($p) . "'>" . htmlspecialchars($riga['Numero File']) . "</a></div>";
 
-						$proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']);
+						$proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']) . "&return_to=" . urlencode($url_corrente);
 						$htmlProprietario = "<a href='" . htmlspecialchars($proprietarioLink) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
 
 						$nomeEnc  = htmlspecialchars(addslashes($riga['Nome Bacheca']), ENT_QUOTES);
@@ -281,7 +279,6 @@ require_once __DIR__ . '/functions.php';
 					], $sort_col, $sort_dir);
 
 					stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Numero Utenti', 'Numero File', 'Azioni'], $customHeaders);
-
 					stampaPaginazione($pagina, $totaleRisultati, $limit);
 				}
 			}
@@ -290,7 +287,6 @@ require_once __DIR__ . '/functions.php';
 	</div>
 
 	<?php include 'footer.html'; ?>
-
 </body>
 
 </html>
