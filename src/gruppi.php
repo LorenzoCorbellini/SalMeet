@@ -55,7 +55,7 @@ require_once __DIR__ . '/functions.php';
 				if ($infoGruppo) {
 					echo "<h2>Gruppo: " . htmlspecialchars($infoGruppo['nome']) . "</h2>";
 					echo "<p><strong>Data Creazione:</strong> " . formattaData($infoGruppo['dataCreazione']) . "</p>";
-
+					
 					$linkOwner = "utenti.php?utente=" . urlencode($infoGruppo['owner_id']);
 					echo "<p><strong>Creato da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>";
 					echo "<hr>";
@@ -77,7 +77,7 @@ require_once __DIR__ . '/functions.php';
 						foreach ($membriRaw as $membro) {
 							$linkMembro = "utenti.php?utente=" . urlencode($membro['codice']);
 							$htmlMembroNickname = "<a href='{$linkMembro}'>" . htmlspecialchars($membro['nickname']) . "</a>";
-
+							
 							$datiMembri[] = [
 								'Nickname' => $htmlMembroNickname,
 								'Nome'     => $membro['nome'],
@@ -106,7 +106,7 @@ require_once __DIR__ . '/functions.php';
 						$datiFile = [];
 						foreach ($filesRaw as $file) {
 							$htmlNomeFile = "<a href='" . htmlspecialchars($file['url']) . "' target='_blank'>" . htmlspecialchars($file['titolo']) . "</a>";
-
+							
 							$datiFile[] = [
 								'Codice File' => $file['numero'],
 								'Nome File'   => $htmlNomeFile,
@@ -119,11 +119,13 @@ require_once __DIR__ . '/functions.php';
 						echo "<p>Nessun file multimediale associato o caricato in questo gruppo.</p>";
 					}
 
-					echo "<br><p><a href='gruppi.php'>&larr; Torna alla pagina precedente</a></p>";
+					echo "<br><p><a href='gruppi.php'>&larr; Torna alla lista dei gruppi</a></p>";
+
 				} else {
 					echo "<p>Gruppo non trovato o non esistente.</p>";
-					echo "<p><a href='javascript:history.back()' class='btn-back' style='text-decoration:none; font-weight:bold; color:var(--accent);'>&larr; Torna alla pagina precedente</a></p>";
+					echo "<p><a href='gruppi.php'>Torna alla lista dei gruppi</a></p>";
 				}
+
 			} else {
 				// =========================================================
 				// VISTA PRINCIPALE: LISTA DEI GRUPPI (Con Filtri e Paginazione)
@@ -190,7 +192,7 @@ require_once __DIR__ . '/functions.php';
 				if (!empty($where)) {
 					$sql .= " WHERE " . implode(" AND ", $where);
 				}
-
+				
 				$sql .= " ORDER BY " . $sql_sort . " LIMIT :limit OFFSET :offset";
 
 				$stmt = $pdo->prepare($sql);
