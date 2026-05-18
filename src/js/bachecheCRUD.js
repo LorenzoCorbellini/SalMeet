@@ -52,7 +52,7 @@ async function aggiungiBacheca() {
         title: 'Nuova Bacheca',
         html:
             '<input id="swal-nome" class="swal2-input" placeholder="Nome della Bacheca">' +
-            '<input id="swal-owner" type="number" class="swal2-input" placeholder="Codice Utente Proprietario (es. 5)">',
+            '<input id="swal-owner" type="number" class="swal2-input" placeholder="Codice Proprietario">',
         focusConfirm: false,
         showCancelButton: true,
         confirmButtonText: 'Crea Bacheca',
