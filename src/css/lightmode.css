@@ -251,6 +251,18 @@ a.page-item:hover {
     box-shadow: 0 5px 15px rgba(233, 123, 109, 0.25);
 }
 
+#filtro button.reset {
+    background-color: var(--border-soft);
+    color: var(--text-light);
+    border-color: #9c8b88;
+}
+
+#filtro button.reset:hover {
+    background-color: #9c8b88;
+    color: var(--text-light);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
 /* --- CONTENUTO --- */
 #content {
     flex: 1;
@@ -267,11 +279,11 @@ a.page-item:hover {
     overflow-y: auto;
 }
 
-h2{
+h2 {
     font-size: var(--fs-h2);
 }
 
-h3{
+h3 {
     font-size: var(--fs-h3);
 }
 
@@ -293,15 +305,11 @@ table {
     border-collapse: collapse;
     margin: 20px 0;
     background-color: var(--text-light);
-    /* Sfondo base della tabella bianco */
     border-radius: 12px;
     overflow: hidden;
-    /* Taglia gli angoli delle righe interne per seguire l'arrotondamento */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-    /* Ombra leggerissima per staccare dal box */
 }
 
-/* Titoli con sfondo scuro coordinato */
 th {
     background-color: var(--accent);
     color: var(--text-light);
@@ -316,7 +324,6 @@ th img {
     height: auto;
 }
 
-/* Gestione dei link dentro i titoli per l'ordinamento */
 th a.filter__link {
     color: var(--text-light) !important;
     text-decoration: none;
@@ -326,38 +333,29 @@ th a.filter__link {
     gap: 6px;
 }
 
-/* Sfondo alternato: righe PARI (even) */
 tr:nth-of-type(even) td {
     background-color: rgba(227, 203, 203, 0.25);
-    /* Sfumatura leggerissima di var(--surface) */
 }
 
-/* Sfondo alternato: righe DISPARI (odd) */
 tr:nth-of-type(odd) td {
     background-color: var(--text-light);
 }
 
-/* Celle del corpo tabella */
 td {
     padding: 14px 20px;
     color: var(--text-dark);
     border-bottom: 1px solid rgba(179, 162, 159, 0.3);
-    /* Linea di divisione finissima */
     transition: background-color 0.2s ease;
 }
 
-/* Rimuove la linea di divisione dall'ultima riga per non sporcare il bordo arrotondato */
 tr:last-child td {
     border-bottom: none;
 }
 
-/* Effetto Hover sofisticato che si colora con il salmone della tua palette */
 tr:hover td {
     background-color: rgba(233, 123, 109, 0.12) !important;
-    /* Opacità controllata di var(--primary) */
 }
 
-/* Allineamenti personalizzati */
 td.numero,
 td.data {
     text-align: right;
@@ -410,7 +408,120 @@ td.titolo {
     vertical-align: middle;
 }
 
-/* PAGINA MEDIA */
+/* -- PERSONALIZZAZIONE SWEETALERT2 -- */
+.swal2-popup {
+    font-family: inherit !important;
+    background-color: var(--text-light) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+    padding: 2rem !important;
+}
+
+.swal2-title {
+    color: var(--text-dark) !important;
+    font-size: var(--fs-h3) !important;
+    font-weight: 600 !important;
+}
+
+.swal2-html-container,
+.swal2-input-label {
+    color: var(--text-dark) !important;
+    font-size: var(--fs-body) !important;
+    opacity: 0.9;
+}
+
+/* --- PULSANTI PERSONALIZZATI --- */
+.swal2-styled {
+    font-family: inherit !important;
+}
+
+/* Pulsante di Conferma (Invia, Salva, Crea) */
+.swal2-styled.swal2-confirm {
+    background-color: var(--accent) !important;
+    color: var(--text-light) !important;
+    border-radius: 8px !important;
+    font-size: var(--fs-input) !important;
+    padding: 12px 28px !important;
+    font-weight: 600 !important;
+    transition: background-color 0.2s ease, transform 0.1s ease !important;
+}
+
+.swal2-styled.swal2-confirm:hover {
+    transform: translateY(-2px);
+    background-color: var(--accent-hover) !important;
+}
+
+/* Pulsante di Annullamento (Chiudi, Cancella) */
+.swal2-styled.swal2-cancel {
+    background-color: var(--border-soft) !important;
+    color: var(--text-light) !important;
+    border-radius: 8px !important;
+    font-size: var(--fs-input) !important;
+    padding: 12px 28px !important;
+    font-weight: 500 !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.swal2-styled.swal2-cancel:hover {
+    transform: translateY(-2px);
+    background-color: #9c8b88 !important;
+}
+
+/* --- CAMPI DI INPUT NEI POPUP --- */
+.swal2-input,
+.swal2-textarea {
+    font-family: inherit !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    color: var(--text-dark) !important;
+    font-size: var(--fs-input) !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.swal2-input {
+    height: 46px !important;
+}
+
+/* Stato di focus dell'input con bagliore coerente */
+.swal2-input:focus,
+.swal2-textarea:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(230, 104, 90, 0.25) !important;
+    outline: none !important;
+}
+
+/* Errore di validazione interno al popup */
+.swal2-validation-message {
+    background: rgba(230, 104, 90, 0.1) !important;
+    color: var(--accent-hover) !important;
+    border-radius: 6px !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+}
+
+/* --- ICONE DI STATO DI SWEETALERT2 --- */
+
+/* Icona di Successo */
+.swal2-icon.swal2-success {
+    border-color: var(--primary) !important;
+}
+
+.swal2-icon.swal2-success [class^=swal2-success-line] {
+    background-color: var(--primary) !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+    border: 4px solid rgba(233, 123, 109, 0.3) !important;
+}
+
+/* Icona di Avviso (Warning) per le eliminazioni */
+.swal2-icon.swal2-warning {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+
+/* --- PAGINA MEDIA --- */
 #results-and-page-nav {
     display: flex;
     align-items: center;

@@ -75,13 +75,15 @@ function formatFileSize(int $filesize): string {
  * per generare dinamicamente i link ipertestuali ai file e ai profili dei proprietari.
  * I due array in ingresso devono essere speculari (stesso ordine e stessa dimensione).
  *
- * @param array $visualRows Righe estratte in modalità 'visual' (contengono 'File' e 'Proprietario').
- * @param array $fullRows   Righe estratte in modalità 'full' (contengono i metadati come 'url' e 'owner').
+ * @param array $righe Righe estratte in modalità 'visual' (contengono 'File' e 'Proprietario').
+ * @param array $dati   Righe estratte in modalità 'full' (contengono i metadati come 'url' e 'owner').
  * * @throws \Exception Se l'array dei metadati ($fullRows) è vuoto.
  * @return array Array di righe formattate, dove ogni riga contiene le chiavi 'File' e 'Proprietario' convertite in HTML.
  */
 function prepareMediaTableRows(array $righe, array $dati): array {
-	if (empty($righe)) return 'Nessun dato disponibile.';
+	if (empty($righe)) {
+        throw new Exception("Errore: il set di dati dei media è vuoto o non valido.");
+    }
 	
 	$icon_types = [
 		'immagine' => 'images/image.png',

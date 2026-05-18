@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stAuth = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ?");
         $stAuth->execute([$nome, $owner, $creatoreFile]);
         if ($stAuth->fetchColumn() == 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Creatore non autorizzato per questa bacheca.']);
+            echo json_encode(['successo' => false, 'messaggio' => 'Utente non autorizzato per questa bacheca.']);
             exit;
         }
 

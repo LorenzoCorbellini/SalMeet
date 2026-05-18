@@ -60,17 +60,47 @@ function urlRitorno(): string
 }
 
 // =========================================================
-// HELPER PER RECUPERARE UTENTI
+// HELPER PER RECUPERARE UTENTI (Con filtro integrato)
 // =========================================================
-function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc)
+// MODIFICA: Aggiunto $current_url = ''
+function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $current_url = '')
 {
-    $stmt = $pdo->prepare("
+    // Costruzione dinamica della query
+    $sql = "
         SELECT u.codice, u.nickname, u.nome, u.cognome, u.dataNascita
         FROM UtenteAutorizzatoBacheca uab
         JOIN Utente u ON u.codice = uab.utenteAutorizzato
         WHERE uab.nomeBacheca = :bacheca AND uab.codUtente = :owner
-    ");
-    $stmt->execute([':bacheca' => $bacheca, ':owner' => $owner]);
+    ";
+
+    $params = [
+        ':bacheca' => $bacheca,
+        ':owner' => $owner
+    ];
+
+    // Se l'utente ha usato la barra di ricerca, aggiungiamo i filtri dinamicamente
+    if (!empty($_GET['utente'])) {
+        $sql .= " AND u.nickname LIKE :utente";
+        $params[':utente'] = '%' . $_GET['utente'] . '%';
+    }
+    if (!empty($_GET['nome'])) {
+        $sql .= " AND u.nome LIKE :nome";
+        $params[':nome'] = '%' . $_GET['nome'] . '%';
+    }
+    if (!empty($_GET['cognome'])) {
+        $sql .= " AND u.cognome LIKE :cognome";
+        $params[':cognome'] = '%' . $_GET['cognome'] . '%';
+    }
+    if (!empty($_GET['data_nascita'])) {
+        $sql .= " AND u.dataNascita >= :data_nascita";
+        $params[':data_nascita'] = $_GET['data_nascita'];
+    }
+
+    // Aggiunta ordinamento
+    $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     $utenti = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $datiUtenti = [];
@@ -80,6 +110,10 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc)
             : "<div style='text-align:center;'><small style='color:gray;'>Proprietario</small></div>";
 
         $user_link = "utenti.php?utente=" . urlencode($u['codice']);
+        if (!empty($current_url)) {
+            $user_link .= "&return_to=" . urlencode($current_url);
+        }
+
         $htmlNickname = "<a href='" . htmlspecialchars($user_link) .  "'>" . htmlspecialchars($u['nickname']) . "</a>";
 
         $datiUtenti[] = [
@@ -94,18 +128,36 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc)
 }
 
 // =========================================================
-// HELPER PER RECUPERARE FILE 
+// HELPER PER RECUPERARE FILE (Con filtro integrato)
 // =========================================================
-function getFileBacheca($pdo, $bacheca, $owner, $bEnc)
+// MODIFICA: Aggiunto $current_url = ''
+function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', $sort_dir = 'ASC', $current_url = '')
 {
-    $stmt = $pdo->prepare("
+    // Costruzione dinamica della query
+    $sql = "
         SELECT fm.numero, fm.titolo, u.codice as caricatoDa, u.nickname, fm.dimensione, fm.URL, fm.tipo
         FROM FilePubblicatoBacheca fb
         JOIN FileMultimediale fm ON fm.numero = fb.file
         JOIN Utente u ON u.codice = fm.caricatoDa
         WHERE fb.nomeBacheca = :bacheca AND fb.codUtente = :owner
-    ");
-    $stmt->execute([':bacheca' => $bacheca, ':owner' => $owner]);
+    ";
+
+    $params = [
+        ':bacheca' => $bacheca,
+        ':owner' => $owner
+    ];
+
+    // Se l'utente ha usato la barra di ricerca, aggiungiamo il filtro per il titolo del file
+    if (!empty($_GET['file'])) {
+        $sql .= " AND fm.titolo LIKE :file";
+        $params[':file'] = '%' . $_GET['file'] . '%';
+    }
+
+    // Aggiunta ordinamento
+    $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     $file = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $icon_types = [
@@ -126,6 +178,9 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc)
         $htmlFile .= "<a href='" . htmlspecialchars($f['URL']) . "' target='_blank'>" . htmlspecialchars($title) . "</a>";
 
         $owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
+        if (!empty($current_url)) {
+            $owner_link .= "&return_to=" . urlencode($current_url);
+        }
         $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
 
         $azioni   = "<div style='text-align:center;'><img src='images/trash.png' alt='Elimina' style='width:16px; cursor:pointer;' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']})\"></div>";

@@ -23,14 +23,58 @@ require_once __DIR__ . '/functions.php';
 			<?php include 'nav.html'; ?>
 
 			<?php
-			$filtro_config = [
-				'campi' => [
-					['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome Bacheca'],
-					['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname)'],
-					['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Da)'],
-				]
-			];
-			include 'filter.php';
+			// =========================================================
+			// GESTIONE DINAMICA DEL FILTRO NELLA SIDEBAR
+			// =========================================================
+			$vista_corrente = $_GET['vista'] ?? '';
+
+			if ($vista_corrente === 'dettaglio') {
+				$filtro_config = [
+					'campi' => [
+						['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $_GET['bacheca'] ?? '', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'owner',   'value' => $_GET['owner'] ?? '', 'label' => ''],
+						['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname Utente'],
+						['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome Utente'],
+						['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome Utente'],
+						['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Data di Nascita (Da)'],
+						['tipo' => 'text',   'name' => 'file',    'label' => 'Nome File'],
+					]
+				];
+				include 'filter.php';
+			} elseif ($vista_corrente === 'utenti') {
+				$filtro_config = [
+					'campi' => [
+						['tipo' => 'hidden', 'name' => 'vista',   'value' => 'utenti', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $_GET['bacheca'] ?? '', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'owner',   'value' => $_GET['owner'] ?? '', 'label' => ''],
+						['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname'],
+						['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome'],
+						['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome'],
+						['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Data di Nascita (Da)'],
+					]
+				];
+				include 'filter.php';
+			} elseif ($vista_corrente === 'file') {
+				$filtro_config = [
+					'campi' => [
+						['tipo' => 'hidden', 'name' => 'vista',   'value' => 'file', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $_GET['bacheca'] ?? '', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'owner',   'value' => $_GET['owner'] ?? '', 'label' => ''],
+						['tipo' => 'text',   'name' => 'file',    'label' => 'Nome File'],
+					]
+				];
+				include 'filter.php';
+			} else {
+				$filtro_config = [
+					'campi' => [
+						['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome Bacheca'],
+						['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname)'],
+						['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Da)'],
+					]
+				];
+				include 'filter.php';
+			}
 			?>
 		</aside>
 
@@ -45,26 +89,75 @@ require_once __DIR__ . '/functions.php';
 				$owner   = $_GET['owner'];
 				$bEnc    = htmlspecialchars(addslashes($bacheca), ENT_QUOTES);
 
-				echo "<p><a href='" . urlRitorno() . "'>&larr; Torna alle bacheche</a></p>";
+				$link_indietro = !empty($_GET['return_to']) ? $_GET['return_to'] : urlRitorno();
+				echo "<p><a href='" . htmlspecialchars($link_indietro) . "'>&larr; Torna alla pagina precedente</a></p>";
+
 				echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
 
+				$current_url = $_SERVER['REQUEST_URI'];
+
+				if ($vista === 'dettaglio') {
+					$stmtBacheca = $pdo->prepare("SELECT dataCreazione FROM Bacheca WHERE nome = :nome AND codiceUtente = :owner");
+					$stmtBacheca->execute([':nome' => $bacheca, ':owner' => $owner]);
+					$datiBachecaDb = $stmtBacheca->fetch(PDO::FETCH_ASSOC);
+
+					if ($datiBachecaDb && !empty($datiBachecaDb['dataCreazione'])) {
+						$dataFormattata = function_exists('formattaData') ? formattaData($datiBachecaDb['dataCreazione']) : date('d/m/Y', strtotime($datiBachecaDb['dataCreazione']));
+						echo "<p style='margin-bottom: 25px;'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
+					}
+				} else {
+					echo "<div style='margin-bottom: 25px;'></div>";
+				}
+
 				if ($vista === 'dettaglio' || $vista === 'utenti') {
-					list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc);
+					$allowed_sorts_u = [
+						'nickname'     => 'u.nickname',
+						'nome'         => 'u.nome',
+						'cognome'      => 'u.cognome',
+						'data_nascita' => 'u.dataNascita'
+					];
+					list($sort_col_u, $sort_dir_u, $sql_sort_u) = getParametriOrdinamento($allowed_sorts_u, 'nickname', 'ASC');
+
+					list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_u, $sort_dir_u, $current_url);
+
 					echo "<h3>Utenti autorizzati: <strong>{$countUtenti}</strong></h3>";
 					echo "<p><a onclick=\"aggiungiAutorizzato('{$bEnc}', {$owner})\" class='btn-aggiungi'>
                     <img src='images/add.png' alt='Aggiungi'> <strong>Aggiungi utente autorizzato</strong>
                 </a></p>";
-					stampaTabella($datiUtenti, ['Nickname', 'Azioni']);
+
+					$customHeaders_u = generaIntestazioniOrdinabili([
+						'Nickname'     => 'nickname',
+						'Nome'         => 'nome',
+						'Cognome'      => 'cognome',
+						'Data Nascita' => 'data_nascita'
+					], $sort_col_u, $sort_dir_u);
+
+					stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
 				}
 
 				if ($vista === 'dettaglio' || $vista === 'file') {
-					list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc);
+					$allowed_sorts_f = [
+						'file'         => 'fm.titolo',
+						'dimensione'   => 'fm.dimensione',
+						'proprietario' => 'u.nickname'
+					];
+					list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'file', 'ASC');
+
+					// MODIFICA QUI: Aggiunto $current_url
+					list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f, $current_url);
+
 					echo "<h3>File pubblicati: <strong>{$countFile}</strong></h3>";
 					echo "<p><a onclick=\"aggiungiFile('{$bEnc}', {$owner})\" class='btn-aggiungi'>
                     <img src='images/add.png' alt='Aggiungi'> <strong>Aggiungi file alla bacheca</strong>
                 </a></p>";
 
-					stampaTabella($datiFile, ['File', 'Proprietario', 'Azioni']);
+					$customHeaders_f = generaIntestazioniOrdinabili([
+						'File'            => 'file',
+						'Dimensione (MB)' => 'dimensione',
+						'Proprietario'    => 'proprietario'
+					], $sort_col_f, $sort_dir_f);
+
+					stampaTabella($datiFile, ['File', 'Proprietario', 'Azioni'], $customHeaders_f);
 				}
 			} else {
 				// =========================================================
@@ -90,8 +183,11 @@ require_once __DIR__ . '/functions.php';
 				list($pagina, $limit, $offset) = getParametriPaginazione(50);
 
 				list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
-					'nome' => 'b.nome',
-					'data' => 'b.dataCreazione'
+					'nome'         => 'b.nome',
+					'data'         => 'b.dataCreazione',
+					'proprietario' => 'u.nickname',
+					'utenti'       => '`Numero Utenti`',
+					'file_count'   => '`Numero File`'
 				], 'data', 'DESC');
 
 				$sqlCount = "SELECT COUNT(*) AS totale FROM Bacheca b LEFT JOIN Utente u ON u.codice = b.codiceUtente";
@@ -104,7 +200,7 @@ require_once __DIR__ . '/functions.php';
                 SELECT
                     b.codiceUtente AS 'owner',
                     b.nome AS 'Nome Bacheca',
-					u.nickname AS 'Proprietario',
+                    u.nickname AS 'Proprietario',
                     b.dataCreazione AS 'Data Creazione',
                     COUNT(DISTINCT uab.utenteAutorizzato) AS 'Numero Utenti',
                     COUNT(DISTINCT f.file) AS 'Numero File'
@@ -133,8 +229,11 @@ require_once __DIR__ . '/functions.php';
 
 				if (!empty($righe)) {
 					$datiBacheche = [];
+					$url_corrente = $_SERVER['REQUEST_URI'];
+
 					foreach ($righe as $riga) {
 						$p = $_GET;
+						$p['return_to'] = $url_corrente;
 
 						$p['vista']   = 'dettaglio';
 						$p['bacheca'] = $riga['Nome Bacheca'];
@@ -147,7 +246,7 @@ require_once __DIR__ . '/functions.php';
 						$p['vista']   = 'file';
 						$htmlFile = "<div style='text-align: right;'><a href='bacheche.php?" . http_build_query($p) . "'>" . htmlspecialchars($riga['Numero File']) . "</a></div>";
 
-						$proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']);
+						$proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']) . "&return_to=" . urlencode($url_corrente);
 						$htmlProprietario = "<a href='" . htmlspecialchars($proprietarioLink) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
 
 						$nomeEnc  = htmlspecialchars(addslashes($riga['Nome Bacheca']), ENT_QUOTES);
@@ -162,8 +261,8 @@ require_once __DIR__ . '/functions.php';
                     </div>";
 
 						$datiBacheche[] = [
-							'Nome Bacheca' => $htmlNome,
 							'Proprietario' => $htmlProprietario,
+							'Nome Bacheca' => $htmlNome,
 							'Data Creazione' => $riga['Data Creazione'],
 							'Numero Utenti' => $htmlUtenti,
 							'Numero File' => $htmlFile,
@@ -171,15 +270,15 @@ require_once __DIR__ . '/functions.php';
 						];
 					}
 
-					// Generazione dinamica delle intestazioni coi link di ordinamento
 					$customHeaders = generaIntestazioniOrdinabili([
+						'Proprietario'   => 'proprietario',
 						'Nome Bacheca'   => 'nome',
-						'Data Creazione' => 'data'
+						'Data Creazione' => 'data',
+						'Numero Utenti'  => 'utenti',
+						'Numero File'    => 'file_count'
 					], $sort_col, $sort_dir);
 
-					stampaTabella($datiBacheche, ['Nome Bacheca', 'Proprietario', 'Numero Utenti', 'Numero File', 'Azioni'], $customHeaders);
-
-					// Stampa dinamica della Paginazione
+					stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Numero Utenti', 'Numero File', 'Azioni'], $customHeaders);
 					stampaPaginazione($pagina, $totaleRisultati, $limit);
 				}
 			}
@@ -188,7 +287,6 @@ require_once __DIR__ . '/functions.php';
 	</div>
 
 	<?php include 'footer.html'; ?>
-
 </body>
 
 </html>
