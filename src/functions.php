@@ -222,3 +222,16 @@ function getPagesNav(int $np,
     $html .= "</div>";
     return $html;
 }
+
+function formatFileSize(int $filesize): string {
+    $units = array('MB', 'GB', 'TB');
+    $formattedSize = $filesize;
+	$index = 0;
+    for ($i = 0; $filesize >= 1000 && $i < count($units) - 1; $i++) {
+        $filesize /= 1000;
+        $formattedSize = round($filesize, 2);
+		$index++;
+    }
+
+    return $formattedSize . ' ' . $units[$index];
+}

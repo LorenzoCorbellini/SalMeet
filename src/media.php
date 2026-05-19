@@ -55,19 +55,6 @@ function fetchMediaRecords(PDO $pdo,
 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function formatFileSize(int $filesize): string {
-    $units = array('MB', 'GB', 'TB');
-    $formattedSize = $filesize;
-	$index = 0;
-    for ($i = 0; $filesize >= 1000 && $i < count($units) - 1; $i++) {
-        $filesize /= 1000;
-        $formattedSize = round($filesize, 2);
-		$index++;
-    }
-
-    return $formattedSize . ' ' . $units[$index];
-}
-
 /**
  * Trasforma i dati grezzi del database in righe strutturate e formattate in HTML per la tabella dei media.
  *
