@@ -97,7 +97,7 @@ require_once __DIR__ . '/functions.php';
 
 					echo "<h3>File multimediali del gruppo</h3>";
 					$stmtFile = $pdo->prepare("
-                        SELECT uProp.nickname, f.titolo, f.tipo, f.dimensione, f.URL
+                        SELECT uProp.nickname, uProp.codice as caricatoDa, f.titolo, f.tipo, f.dimensione, f.URL
                         FROM FileAssociatoGruppo fag
                         JOIN FileMultimediale f ON fag.file = f.numero
 						JOIN Utente uProp ON uProp.codice=f.caricatoDa
@@ -108,7 +108,7 @@ require_once __DIR__ . '/functions.php';
 					$filesRaw = $stmtFile->fetchAll(PDO::FETCH_ASSOC);
 
 					if (!empty($filesRaw)) {
-						$datiFile = [];
+						$datiFiles = [];
 
 						$icon_types = [
 							'immagine' => 'images/image.png',
@@ -123,22 +123,22 @@ require_once __DIR__ . '/functions.php';
 							$file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($file['tipo']) . "'>";
 							$file_name = htmlspecialchars($file['titolo']);
 							$file_link = htmlspecialchars($file['URL']);
-							$owner_link = "utenti.php?utente=" . urlencode($file['nickname']);
+							$owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']);
 							if (!empty($current_url)) {
 								$owner_link .= "&return_to=" . urlencode($current_url);
 							}
 							$htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($file['nickname']) . "</a>";
 
-							// Struttura HTML identica a media.php per ereditare l'icona e lo stile del link (colore rosa da CSS globale)
 							$title_html = "<div id='file_name'>{$file_icon}<a href='{$file_link}'>{$file_name}</a></div>";
+                            $size_html = formatFileSizeHtml((int)$file['dimensione']);
 
 							$datiFiles[] = [
 								'File'       => $title_html,
-								'Proprietario' => $owner_link,
-								'Dimensione' => htmlspecialchars($file['dimensione']) . " KB",
+								'Proprietario' => $htmlOwner,
+								'Dimensione' => $size_html
 							];
 						}
-						stampaTabella($datiFile, ['Nome File']);
+                        stampaTabella($datiFiles, ['File', 'Proprietario','Dimensione']);
 					} else {
 						echo "<p>Nessun file multimediale associato o caricato in questo gruppo.</p>";
 					}
