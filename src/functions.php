@@ -203,20 +203,24 @@ function getPagesNav(int $np,
     $leftArrowHTML = getLeftArrow();
     $rightArrowHTML = getRightArrow();
 
+    // Togliamo 'pagina=n' che sta nella $_GET quando clicchiamo più volte il bottone
+    $queryParams = array_diff_key($_GET, ['pagina' => '']);
+    $query = http_build_query($queryParams);
+
     if ($np - 1 > 1) {
-        $html .= "<a href='?pagina=$prev' class='page-item arrow'>$leftArrowHTML</a>";
-        $html .= "<a href='?pagina=1' class='page-item'>1</a>";
+        $html .= "<a href='?pagina=$prev&$query' class='page-item arrow'>$leftArrowHTML</a>";
+        $html .= "<a href='?pagina=1&$query' class='page-item'>1</a>";
         if ($np - 1 > 2) $html .= '<span class="page-dots">...</span>';
     }
     for ($i=$start; $i <= $end; $i++) {
         $active = "";
         if ($i == $np) $active = "active";
-        $html .= "<a href='?pagina=$i' class='page-item $active'>$i</a>";
+        $html .= "<a href='?pagina=$i&$query' class='page-item $active'>$i</a>";
     }
     if ($pagine_totali - $np > 1) {
         if ($pagine_totali - $np > 2) $html .= '<span class="page-dots">...</span>';
-        $html .= "<a href='?pagina=$pagine_totali' class='page-item'>$pagine_totali</a>";
-        $html .= "<a href='?pagina=$next' class='page-item arrow'>$rightArrowHTML</a>";
+        $html .= "<a href='?pagina=$pagine_totali&$query' class='page-item'>$pagine_totali</a>";
+        $html .= "<a href='?pagina=$next&$query' class='page-item arrow'>$rightArrowHTML</a>";
     }
     
     $html .= "</div>";
