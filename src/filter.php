@@ -101,7 +101,7 @@ if (!empty($reset_params)) {
 
         <?php endforeach; ?>
 
-        <button type="submit">Applica</button>
+        <button type="submit">Cerca</button>
         <button type="button" class="reset"
                 onclick="window.location='<?= htmlspecialchars($reset_url) ?>'">
             Reimposta
