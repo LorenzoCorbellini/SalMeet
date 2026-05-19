@@ -45,7 +45,7 @@ require_once __DIR__ . '/functions.php';
 				$current_url = $_SERVER['REQUEST_URI'];
 
 				$stmtGruppo = $pdo->prepare("
-                    SELECT g.nome, g.dataCreazione, u.nickname, u.codice as owner_id
+                    SELECT g.nome, g.dataCreazione, u.nickname, u.codice as ownerId
                     FROM Gruppo g
                     JOIN Utente u ON g.creatoDa = u.codice
                     WHERE g.codice = :id
@@ -57,7 +57,7 @@ require_once __DIR__ . '/functions.php';
 					echo "<h2>Gruppo: " . htmlspecialchars($infoGruppo['nome']) . "</h2>";
 					echo "<p><strong>Data Creazione:</strong> " . formattaData($infoGruppo['dataCreazione']) . "</p>";
 
-					$linkOwner = "utenti.php?utente=" . urlencode($infoGruppo['owner_id']) . "&return_to=" . urlencode($current_url);
+					$linkOwner = "utenti.php?utente=" . urlencode($infoGruppo['ownerId']) . "&return_to=" . urlencode($current_url);
 					echo "<p><strong>Creato da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>";
 					//echo "<hr>";
 
@@ -97,7 +97,7 @@ require_once __DIR__ . '/functions.php';
 
 					echo "<h3>File multimediali del gruppo</h3>";
 					$stmtFile = $pdo->prepare("
-                        SELECT uProp.nickname, f.titolo, f.tipo, f.dimensione, f.URL
+                        SELECT uProp.nickname, uProp.codice as caricatoDa, f.titolo, f.tipo, f.dimensione, f.URL
                         FROM FileAssociatoGruppo fag
                         JOIN FileMultimediale f ON fag.file = f.numero
 						JOIN Utente uProp ON uProp.codice=f.caricatoDa
@@ -108,7 +108,7 @@ require_once __DIR__ . '/functions.php';
 					$filesRaw = $stmtFile->fetchAll(PDO::FETCH_ASSOC);
 
 					if (!empty($filesRaw)) {
-						$datiFile = [];
+						$datiFiles = [];
 
 						$icon_types = [
 							'immagine' => 'images/image.png',
@@ -123,22 +123,22 @@ require_once __DIR__ . '/functions.php';
 							$file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($file['tipo']) . "'>";
 							$file_name = htmlspecialchars($file['titolo']);
 							$file_link = htmlspecialchars($file['URL']);
-							$owner_link = "utenti.php?utente=" . urlencode($file['nickname']);
+							$owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']);
 							if (!empty($current_url)) {
 								$owner_link .= "&return_to=" . urlencode($current_url);
 							}
 							$htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($file['nickname']) . "</a>";
 
-							// Struttura HTML identica a media.php per ereditare l'icona e lo stile del link (colore rosa da CSS globale)
 							$title_html = "<div id='file_name'>{$file_icon}<a href='{$file_link}'>{$file_name}</a></div>";
+							$size_html = formatFileSizeHtml((int)$file['dimensione']);
 
 							$datiFiles[] = [
 								'File'       => $title_html,
-								'Proprietario' => $owner_link,
-								'Dimensione' => htmlspecialchars($file['dimensione']) . " KB",
+								'Proprietario' => $htmlOwner,
+								'Dimensione' => $size_html
 							];
 						}
-						stampaTabella($datiFile, ['Nome File']);
+						stampaTabella($datiFiles, ['File', 'Proprietario', 'Dimensione']);
 					} else {
 						echo "<p>Nessun file multimediale associato o caricato in questo gruppo.</p>";
 					}
@@ -169,41 +169,33 @@ require_once __DIR__ . '/functions.php';
 					$params[':data'] = $_GET['data'];
 				}
 
-				if (function_exists('getParametriPaginazione')) {
+				
 					list($pagina, $limit, $offset) = getParametriPaginazione(50);
-				} else {
-					$limit = 50;
-					$pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
-					if ($pagina < 1) $pagina = 1;
-					$offset = ($pagina - 1) * $limit;
-				}
+				
 
-				if (function_exists('getParametriOrdinamento')) {
+				
 					list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 						'nome' => 'Gruppo.nome',
+						'Proprietario' => 'Proprietario',
 						'data' => 'Gruppo.dataCreazione'
-					], 'data', 'DESC');
-				} else {
-					$sort_col = 'data';
-					$sort_dir = 'DESC';
-					$sql_sort = 'Gruppo.dataCreazione DESC';
-				}
+					], 'data', 'ASC');
+				
 
-				$sqlConto = "SELECT COUNT(*) FROM Gruppo JOIN Utente ON Gruppo.creatoDa = Utente.codice";
+				$sqlContatore = "SELECT COUNT(*) FROM Gruppo JOIN Utente ON Gruppo.creatoDa = Utente.codice";
 				if (!empty($where)) {
-					$sqlConto .= " WHERE " . implode(" AND ", $where);
+					$sqlContatore .= " WHERE " . implode(" AND ", $where);
 				}
-				$stmtConto = $pdo->prepare($sqlConto);
+				$stmtConto = $pdo->prepare($sqlContatore);
 				$stmtConto->execute($params);
 				$totaleRisultati = $stmtConto->fetchColumn();
 
 				$sql = "
                     SELECT 
-                        Gruppo.codice as 'gruppo_id',
+                        Gruppo.codice as 'gruppoId',
                         Gruppo.nome as 'Nome Gruppo',
                         Gruppo.dataCreazione as 'Data Creazione',
                         Utente.nickname as 'Proprietario',
-                        Utente.codice as 'owner_id'
+                        Utente.codice as 'ownerId'
                     FROM Gruppo
                     JOIN Utente ON Gruppo.creatoDa = Utente.codice
                 ";
@@ -230,10 +222,10 @@ require_once __DIR__ . '/functions.php';
 					$current_url = $_SERVER['REQUEST_URI'];
 
 					foreach ($righe as $riga) {
-						$linkGruppo = "gruppi.php?gruppo=" . urlencode($riga['gruppo_id']) . "&return_to=" . urlencode($current_url);
+						$linkGruppo = "gruppi.php?gruppo=" . urlencode($riga['gruppoId']) . "&return_to=" . urlencode($current_url);
 						$htmlNomeGruppo = "<a href='{$linkGruppo}'>" . htmlspecialchars($riga['Nome Gruppo']) . "</a>";
 
-						$linkOwner = "utenti.php?utente=" . urlencode($riga['owner_id']) . "&return_to=" . urlencode($current_url);
+						$linkOwner = "utenti.php?utente=" . urlencode($riga['ownerId']) . "&return_to=" . urlencode($current_url);
 						$htmlProprietario = "<a href='{$linkOwner}'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
 
 						$datiGruppi[] = [
@@ -245,27 +237,13 @@ require_once __DIR__ . '/functions.php';
 
 					$customHeaders = generaIntestazioniOrdinabili([
 						'Nome Gruppo'    => 'nome',
+						'Proprietario'	 => 'Proprietario',
 						'Data Creazione' => 'data'
 					], $sort_col, $sort_dir);
 
 					stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
 
-					if (function_exists('stampaPaginazione')) {
-						stampaPaginazione($pagina, $totaleRisultati, $limit);
-					} else {
-						echo "<div style='margin-top:20px;'>";
-						$queryParams = $_GET;
-						if ($pagina > 1) {
-							$queryParams['pagina'] = $pagina - 1;
-							echo "<a href='?" . http_build_query($queryParams) . "'>&larr; Precedente</a> ";
-						}
-						echo "<span>Pagina $pagina</span> ";
-						if (($pagina * $limit) < $totaleRisultati) {
-							$queryParams['pagina'] = $pagina + 1;
-							echo "<a href='?" . http_build_query($queryParams) . "'>Successiva &rarr;</a>";
-						}
-						echo "</div>";
-					}
+					stampaPaginazione($pagina, $totaleRisultati, $limit);
 				} else {
 					echo "<p>Nessun risultato trovato.</p>";
 				}
