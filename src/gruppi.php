@@ -59,7 +59,7 @@ require_once __DIR__ . '/functions.php';
 
 					$linkOwner = "utenti.php?utente=" . urlencode($infoGruppo['owner_id']) . "&return_to=" . urlencode($current_url);
 					echo "<p><strong>Creato da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>";
-				
+					//echo "<hr>";
 
 					echo "<h3>Membri del gruppo</h3>";
 					$stmtMembri = $pdo->prepare("
@@ -92,12 +92,10 @@ require_once __DIR__ . '/functions.php';
 					echo "<br><hr>";
 
 					echo "<h3>File multimediali del gruppo</h3>";
-					// Query per recuperare i file e l'owner (caricatoDa) con il relativo nickname
 					$stmtFile = $pdo->prepare("
-                        SELECT f.numero, f.titolo, f.tipo, f.dimensione, f.url, f.caricatoDa, u.nickname AS owner_nickname
+                        SELECT f.numero, f.titolo, f.tipo, f.dimensione, f.url
                         FROM fileassociatogruppo fag
                         JOIN FileMultimediale f ON fag.file = f.numero
-                        LEFT JOIN utente u ON f.caricatoDa = u.codice
                         WHERE fag.codGruppo = :codice
                         ORDER BY f.titolo ASC
                     ");
@@ -106,41 +104,17 @@ require_once __DIR__ . '/functions.php';
 
 					if (!empty($filesRaw)) {
 						$datiFile = [];
-						
-						// Mappatura delle icone ereditata dal sistema (media.php / utenti.php)
-						$icon_types = [
-							'immagine'  => 'images/image.png',
-							'video'     => 'images/video.png',
-							'audio'     => 'images/headphones.png',
-							'documento' => 'images/document.png'
-						];
-
 						foreach ($filesRaw as $file) {
-							// Determinazione dell'icona corretta in base al tipo di file registrato sul DB
-							$icon_path = isset($icon_types[$file['tipo']]) ? $icon_types[$file['tipo']] : 'images/default.png';
-							$htmlIcona = "<img src='{$icon_path}' alt='" . htmlspecialchars($file['tipo']) . "' style='width:16px; height:16px; margin-right:8px; vertical-align:middle;'>";
-							
-							// Nome File ipertestuale con l'icona del tipo anteposta internamente
-							$htmlNomeFile = $htmlIcona . "<a href='" . htmlspecialchars($file['url']) . "' target='_blank'>" . htmlspecialchars($file['titolo']) . "</a>";
+							$htmlNomeFile = "<a href='" . htmlspecialchars($file['url']) . "' target='_blank'>" . htmlspecialchars($file['titolo']) . "</a>";
 
-							// Creazione del link ipertestuale al profilo del Proprietario del file
-							if (!empty($file['caricatoDa'])) {
-								$linkOwnerFile = "utenti.php?utente=" . urlencode($file['caricatoDa']) . "&return_to=" . urlencode($current_url);
-								$htmlProprietarioFile = "<a href='{$linkOwnerFile}'>" . htmlspecialchars($file['owner_nickname']) . "</a>";
-							} else {
-								$htmlProprietarioFile = "<i>Sconosciuto</i>";
-							}
-
-							// Struttura finale della riga (rimossi 'Codice File' e 'Tipo')
 							$datiFile[] = [
-								'Nome File'    => $htmlNomeFile,
-								'Proprietario' => $htmlProprietarioFile,
-								'Dimensione'   => $file['dimensione'] . " KB"
+								'Codice File' => $file['numero'],
+								'Nome File'   => $htmlNomeFile,
+								'Tipo'        => $file['tipo'],
+								'Dimensione'  => $file['dimensione'] . " KB"
 							];
 						}
-						
-						// Consentiamo il rendering dell'HTML per 'Nome File' e 'Proprietario'
-						stampaTabella($datiFile, ['Nome File', 'Proprietario']);
+						stampaTabella($datiFile, ['Nome File']);
 					} else {
 						echo "<p>Nessun file multimediale associato o caricato in questo gruppo.</p>";
 					}
