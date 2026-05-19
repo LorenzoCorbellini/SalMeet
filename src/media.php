@@ -69,7 +69,7 @@ function fetchMediaRecords(PDO $pdo,
  */
 function prepareMediaTableRows(array $righe, array $dati): array {
 	if (empty($righe)) {
-        throw new Exception("Errore: il set di dati dei media è vuoto o non valido.");
+        return [];
     }
 	
 	$icon_types = [
