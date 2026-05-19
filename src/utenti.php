@@ -177,13 +177,11 @@ require_once __DIR__ . '/functions.php';
                             // Struttura HTML identica a media.php per ereditare l'icona e lo stile del link (colore rosa da CSS globale)
                             $title_html = "<div id='file_name'>{$file_icon}<a href='{$file_link}'>{$file_name}</a></div>";
 
-                            $file_size = $file['dimensione'];
-                            $size_formatted = formatFileSize($file_size);
-                            $file_html = "<div id='file_size' title='$file_size'>$size_formatted</div>";
+                            $size_html = formatFileSizeHtml((int)$file['dimensione']);
 
                             $datiFiles[] = [
                                 'File'       => $title_html,
-                                'Dimensione' => $file_html
+                                'Dimensione' => $size_html
                             ];
                         }
                         // ABILITATO RENDERING HTML: Inserito 'File' nell'array delle colonne HTML consentite (secondo parametro)

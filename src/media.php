@@ -34,7 +34,7 @@ function fetchMediaRecords(PDO $pdo,
 	 * 'full' per selezionare i dati richiesti dalla business logic
 	 */
 	$columns_map = [
-        'visual' => "fmm.titolo AS 'File', u.nickname AS 'Proprietario', fmm.dimensione AS 'Dimensioni'",
+        'visual' => "fmm.titolo AS 'File', u.nickname AS 'Proprietario', fmm.dimensione AS 'Dimensione'",
         
         'full'   => "fmm.caricatoDa AS 'owner', fmm.numero AS 'file_id', fmm.titolo AS 'title', 
                      fmm.dimensione AS 'size', fmm.URL AS 'url', fmm.tipo AS 'type', u.nickname AS 'nickname'"
@@ -92,15 +92,12 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 		$owner_link = "utenti.php?utente=" . (int)$dati_riga['owner'];
 		$owner_html = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
 		
-		$file_size = (int)$dati_riga['size'];
-		$size_formatted = formatFileSize($file_size);
-		$size_html = "<div id='file_size' title='$file_size MB'>$size_formatted</div>";
-
+		$size_html = formatFileSizeHtml((int)$dati_riga['size']);
 
 		$result[] = [
 			'File' => $title_html,
 			'Proprietario' => $owner_html,
-			'Dimensioni' => $size_html
+			'Dimensione' => $size_html
 		];
 	}
 	return $result;
@@ -178,7 +175,7 @@ list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 $customHeaders = generaIntestazioniOrdinabili([
 	'File'   => 'File',
 	'Proprietario' => 'owner',
-	'Dimensioni' => 'size'
+	'Dimensione' => 'size'
 ], $sort_col, $sort_dir);
 
 /* PREPARAZIONE DATI PER LA TABELLA */
@@ -194,7 +191,7 @@ $output_html  = "<div id='results-and-page-nav'>";
 $output_html .= "<div id='results-number'>Trovati $numero_records risultati ($limit per pagina)</div>";
 $output_html .= getPagesNav($np, $numero_pagine, 1);
 $output_html .= "</div>";
-$output_html .= getTabella($righe, ['File', 'Proprietario', 'Dimensioni'], $customHeaders);
+$output_html .= getTabella($righe, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
 $output_html .= getPagesNav($np, $numero_pagine, 1);
 
 if (isAjaxRequest()) {

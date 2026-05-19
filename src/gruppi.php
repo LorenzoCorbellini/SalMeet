@@ -107,14 +107,16 @@ require_once __DIR__ . '/functions.php';
                         foreach ($filesRaw as $file) {
                             $htmlNomeFile = "<a href='" . htmlspecialchars($file['url']) . "' target='_blank'>" . htmlspecialchars($file['titolo']) . "</a>";
 
+							$size_html = formatFileSizeHtml((int)$file['dimensione']);
+
                             $datiFile[] = [
                                 'Codice File' => $file['numero'],
                                 'Nome File'   => $htmlNomeFile,
                                 'Tipo'        => $file['tipo'],
-                                'Dimensione'  => $file['dimensione'] . " KB"
+                                'Dimensione'  => $size_html
                             ];
                         }
-                        stampaTabella($datiFile, ['Nome File']);
+                        stampaTabella($datiFile, ['Nome File', 'Dimensione']);
                     } else {
                         echo "<p>Nessun file multimediale associato o caricato in questo gruppo.</p>";
                     }

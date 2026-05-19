@@ -223,6 +223,16 @@ function getPagesNav(int $np,
     return $html;
 }
 
+/**
+ * Formatta una dimensione in byte/kilobyte in un formato leggibile (MB, GB, TB).
+ *
+ * La funzione converte iterativamente la dimensione passata dividendo per 1000
+ * (notazione commerciale/SI) fino a raggiungere l'unità di misura corretta, 
+ * arrotondando il risultato a due cifre decimali.
+ *
+ * @param int $filesize La dimensione del file espressa nell'unità base (KB/Byte a seconda del DB).
+ * @return string La stringa formattata contenente il valore numerico e l'unità di misura (es. "4.25 MB").
+ */
 function formatFileSize(int $filesize): string {
     $units = array('MB', 'GB', 'TB');
     $formattedSize = $filesize;
@@ -234,4 +244,19 @@ function formatFileSize(int $filesize): string {
     }
 
     return $formattedSize . ' ' . $units[$index];
+}
+
+/**
+ * Genera il wrapper HTML per la visualizzazione della dimensione del file nelle tabelle.
+ *
+ * Restituisce un elemento `<div>` stilizzato con l'identificativo `file_size`. 
+ * Include un attributo `title` nativo che mostra il valore grezzo in MB al passaggio 
+ * del mouse (tooltip), utile per mantenere l'accessibilità del dato originale.
+ * 
+ * @param int $size La dimensione grezza del file da passare a {@see formatFileSize()}.
+ * @return string Il blocco HTML (`<div>`) pronto per essere renderizzato a schermo.
+ */
+function formatFileSizeHtml(int $size): string {
+    $size_formatted = formatFileSize($size);
+    return "<div id='file_size' title='$size MB'>$size_formatted</div>";
 }
