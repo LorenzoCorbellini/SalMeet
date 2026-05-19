@@ -170,7 +170,7 @@ li.navbar a:hover:not(.active) {
     display: flex;
     justify-content: left;
     align-items: center;
-    gap: 8px;               
+    gap: 4px;               
     /* margin-top: 10px; */
     /* margin-left: 10px; */
 }
@@ -180,16 +180,16 @@ li.navbar a:hover:not(.active) {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    min-width: 32px;
+    min-width: 24px;
     height: 32px;
     padding: 0 6px;
     text-decoration: none;
     color: var(--text-dark);
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: #fff;
+    border-radius: 32px;
     font-family: sans-serif;
     font-size: 14px;
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.2s ease;
+    border-color: #99999900;
 }
 
 /* Stile per la pagina attiva corrente*/
@@ -197,12 +197,18 @@ li.navbar a:hover:not(.active) {
     background-color: var(--primary);
     color: #fff;
     font-weight: bold;
+    border-left: 0px;
 }
 
 /* Effetto hover per i bottoni cliccabili */
 a.page-item:hover {
-    background-color: #f0f0f0;
+    background-color: #bda9a9;
     border-color: #999;
+}
+
+/* Effetto hover per i bottoni cliccabili */
+a.page-item.active:hover {
+    background-color: #d25d5d;
 }
 
 /* CSS specifico per le frecce SVG per rimuovere spazi fantasma */

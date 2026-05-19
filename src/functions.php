@@ -340,7 +340,7 @@ function getPagesNav(int $np,
     $rightArrowHTML = getRightArrow();
 
     if ($np - 1 > 1) {
-        // $html .= "<a href='?pagina=$prev' class='page-item arrow'>$leftArrowHTML</a>";
+        $html .= "<a href='?pagina=$prev' class='page-item arrow'>$leftArrowHTML</a>";
         $html .= "<a href='?pagina=1' class='page-item'>1</a>";
         if ($np - 1 > 2) $html .= '<span class="page-dots">...</span>';
     }
@@ -352,7 +352,7 @@ function getPagesNav(int $np,
     if ($pagine_totali - $np > 1) {
         if ($pagine_totali - $np > 2) $html .= '<span class="page-dots">...</span>';
         $html .= "<a href='?pagina=$pagine_totali' class='page-item'>$pagine_totali</a>";
-        // $html .= "<a href='?pagina=$next' class='page-item arrow'>$rightArrowHTML</a>";
+        $html .= "<a href='?pagina=$next' class='page-item arrow'>$rightArrowHTML</a>";
     }
     
     $html .= "</div>";
