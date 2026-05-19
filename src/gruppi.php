@@ -97,7 +97,7 @@ require_once __DIR__ . '/functions.php';
 
 					echo "<h3>File multimediali del gruppo</h3>";
 					$stmtFile = $pdo->prepare("
-                        SELECT uProp.nickname, f.titolo, f.tipo, f.dimensione, f.url
+                        SELECT uProp.nickname, f.titolo, f.tipo, f.dimensione, f.URL
                         FROM FileAssociatoGruppo fag
                         JOIN FileMultimediale f ON fag.file = f.numero
 						JOIN Utente uProp ON uProp.codice=f.caricatoDa
@@ -123,7 +123,7 @@ require_once __DIR__ . '/functions.php';
 							$file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($file['tipo']) . "'>";
 							$file_name = htmlspecialchars($file['titolo']);
 							$file_link = htmlspecialchars($file['URL']);
-							$owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']);
+							$owner_link = "utenti.php?utente=" . urlencode($file['nickname']);
 							if (!empty($current_url)) {
 								$owner_link .= "&return_to=" . urlencode($current_url);
 							}
