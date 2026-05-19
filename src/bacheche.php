@@ -97,13 +97,29 @@ require_once __DIR__ . '/functions.php';
 				$current_url = $_SERVER['REQUEST_URI'];
 
 				if ($vista === 'dettaglio') {
-					$stmtBacheca = $pdo->prepare("SELECT dataCreazione FROM Bacheca WHERE nome = :nome AND codiceUtente = :owner");
+					// 1. Modificata la query per fare una JOIN con l'utente e recuperare il nickname del proprietario
+					$stmtBacheca = $pdo->prepare("
+        SELECT b.dataCreazione, u.nickname 
+        FROM Bacheca b
+        JOIN Utente u ON b.codiceUtente = u.codice
+        WHERE b.nome = :nome AND b.codiceUtente = :owner
+    ");
 					$stmtBacheca->execute([':nome' => $bacheca, ':owner' => $owner]);
 					$datiBachecaDb = $stmtBacheca->fetch(PDO::FETCH_ASSOC);
 
-					if ($datiBachecaDb && !empty($datiBachecaDb['dataCreazione'])) {
-						$dataFormattata = function_exists('formattaData') ? formattaData($datiBachecaDb['dataCreazione']) : date('d/m/Y', strtotime($datiBachecaDb['dataCreazione']));
-						echo "<p style='margin-bottom: 25px;'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
+					if ($datiBachecaDb) {
+						$dataFormattata = "";
+						if (!empty($datiBachecaDb['dataCreazione'])) {
+							$dataFormattata = function_exists('formattaData') ? formattaData($datiBachecaDb['dataCreazione']) : date('d/m/Y', strtotime($datiBachecaDb['dataCreazione']));
+						}
+
+						if (!empty($dataFormattata)) {
+							echo "<p style='margin-bottom: 25px;'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
+							$current_url = $_SERVER['REQUEST_URI'];
+							$linkOwner = "utenti.php?utente=" . urlencode($owner) . "&return_to=" . urlencode($current_url);
+
+							echo "<p><strong>Creato da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
+						}
 					}
 				} else {
 					echo "<div style='margin-bottom: 25px;'></div>";

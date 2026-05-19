@@ -59,7 +59,7 @@ require_once __DIR__ . '/functions.php';
 
 					$linkOwner = "utenti.php?utente=" . urlencode($infoGruppo['owner_id']) . "&return_to=" . urlencode($current_url);
 					echo "<p><strong>Creato da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>";
-					echo "<hr>";
+					//echo "<hr>";
 
 					echo "<h3>Membri del gruppo</h3>";
 					$stmtMembri = $pdo->prepare("

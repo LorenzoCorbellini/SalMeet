@@ -65,9 +65,9 @@ require_once __DIR__ . '/functions.php';
 
 					$stmtBacheche = $pdo->prepare("
 						SELECT 
-							b.nome AS nome_bacheca,
-							b.codiceUtente AS bacheca_owner_id,
-							u_prop.nickname AS proprietario_nickname
+							b.nome AS 'nome_bacheca',
+							b.codiceUtente AS 'bacheca_owner_id',
+							u_prop.nickname AS 'proprietario_nickname'
 						FROM UtenteAutorizzatoBacheca uab
 						JOIN Bacheca b ON uab.codUtente = b.codiceUtente AND uab.nomeBacheca = b.nome
 						JOIN Utente u_prop ON b.codiceUtente = u_prop.codice
@@ -106,10 +106,10 @@ require_once __DIR__ . '/functions.php';
 
 					$stmtGruppi = $pdo->prepare("
 						SELECT 
-							g.codice AS gruppo_id,
-							g.nome AS nome_gruppo,
-							g.creatoDa AS gruppo_owner_id,
-							u_prop.nickname AS proprietario_nickname
+							g.codice AS 'gruppo_id',
+							g.nome AS 'nome_gruppo',
+							g.creatoDa AS 'gruppo_owner_id',
+							u_prop.nickname AS 'proprietario_nickname'
 						FROM UtenteAutorizzatoGruppo uag
 						JOIN Gruppo g ON uag.codGruppo = g.codice
 						JOIN Utente u_prop ON g.creatoDa = u_prop.codice
@@ -139,6 +139,53 @@ require_once __DIR__ . '/functions.php';
 						stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario']);
 					} else {
 						echo "<p>L'utente non è iscritto a nessun gruppo.</p>";
+					}
+
+					// ---------------------------------------------------------
+					// TABELLA 3: FILE MULTIMEDIALI CARICATI DALL'UTENTE (MODIFICATA)
+					// ---------------------------------------------------------
+					echo "<h3>File multimediali caricati</h3>";
+
+					// Aggiunto f.URL alla SELECT per poter creare l'indirizzo di destinazione ipertestuale
+					$stmtFiles = $pdo->prepare("
+						SELECT f.titolo, f.tipo, f.dimensione, f.URL
+						FROM FileMultimediale f
+						WHERE f.caricatoDa = :codice
+						ORDER BY f.titolo ASC
+					");
+					$stmtFiles->execute([':codice' => $idUtente]);
+					$filesRaw = $stmtFiles->fetchAll(PDO::FETCH_ASSOC);
+
+					if (!empty($filesRaw)) {
+						$datiFiles = [];
+						
+						// Mappatura delle icone ereditata direttamente da media.php
+						$icon_types = [
+							'immagine' => 'images/image.png',
+							'video'    => 'images/video.png',
+							'audio'    => 'images/headphones.png',
+							'default'  => 'images/document.png'
+						];
+
+						foreach ($filesRaw as $file) {
+							$icon_path = $icon_types[$file['tipo']] ?? $icon_types['default'];
+							
+							$file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($file['tipo']) . "'>";
+							$file_name = htmlspecialchars($file['titolo']);
+							$file_link = htmlspecialchars($file['URL']);
+							
+							// Struttura HTML identica a media.php per ereditare l'icona e lo stile del link (colore rosa da CSS globale)
+							$title_html = "<div id='file_name'>{$file_icon}<a href='{$file_link}'>{$file_name}</a></div>";
+
+							$datiFiles[] = [
+								'File'       => $title_html,
+								'Dimensione' => htmlspecialchars($file['dimensione']) . " KB",
+							];
+						}
+						// ABILITATO RENDERING HTML: Inserito 'File' nell'array delle colonne HTML consentite (secondo parametro)
+						stampaTabella($datiFiles, ['File']);
+					} else {
+						echo "<p>L'utente non ha caricato nessun file multimediale.</p>";
 					}
 				}
 			} else {
