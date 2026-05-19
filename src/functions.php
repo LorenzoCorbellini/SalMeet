@@ -60,9 +60,8 @@ function urlRitorno(): string
 }
 
 // =========================================================
-// HELPER PER RECUPERARE UTENTI (Con filtro integrato)
+// HELPER PER RECUPERARE UTENTI 
 // =========================================================
-// MODIFICA: Aggiunto $current_url = ''
 function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $current_url = '')
 {
     // Costruzione dinamica della query
@@ -130,7 +129,6 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 // =========================================================
 // HELPER PER RECUPERARE FILE (Con filtro integrato)
 // =========================================================
-// MODIFICA: Aggiunto $current_url = ''
 function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', $sort_dir = 'ASC', $current_url = '')
 {
     // Costruzione dinamica della query

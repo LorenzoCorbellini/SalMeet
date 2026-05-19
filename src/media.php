@@ -223,7 +223,6 @@ if (isAjaxRequest()) {
 <head>
 	<?php include 'head.html'; ?>
 	<title>SalMeet</title>
-	<script src="./js/AJAXHandler.js" defer></script>
 </head>
 
 <body>

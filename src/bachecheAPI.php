@@ -105,11 +105,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         try {
-            $pdo->prepare("DELETE FROM UtenteAutorizzatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ?")
-                ->execute([$nome, $owner, $target]);
+            $pdo->beginTransaction();
+
+            // 1. Rimuovi i file pubblicati da questo utente in questa bacheca
+            $stDeleteFiles = $pdo->prepare("
+                DELETE FROM FilePubblicatoBacheca 
+                WHERE nomeBacheca = ? AND codUtente = ? AND file IN (
+                    SELECT numero FROM FileMultimediale WHERE caricatoDa = ?
+                )
+            ");
+            $stDeleteFiles->execute([$nome, $owner, $target]);
+
+            // 2. Rimuovi l'utente dalla lista degli autorizzati
+            $stDeleteAuth = $pdo->prepare("
+                DELETE FROM UtenteAutorizzatoBacheca 
+                WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ?
+            ");
+            $stDeleteAuth->execute([$nome, $owner, $target]);
+
+            $pdo->commit();
             echo json_encode(['successo' => true]);
+            
         } catch (Exception $e) {
-            echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore durante la rimozione: ' . $e->getMessage()]);
         }
         exit;
     }
@@ -227,7 +248,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = null;
     exit;
 } else {
-    // Opzionale: blocca chi tenta di accedere a questo file aprendolo dal browser normalmente (GET)
     http_response_code(405);
     echo json_encode(['successo' => false, 'messaggio' => 'Metodo non consentito. Usa POST.']);
     exit;
