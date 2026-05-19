@@ -207,6 +207,8 @@ function getPagesNav(int $np,
     $queryParams = array_diff_key($_GET, ['pagina' => '']);
     $query = http_build_query($queryParams);
 
+    //TODO: rimuovere '&' in fondo all'url quando $query non ha parametri
+
     if ($np - 1 > 1) {
         $html .= "<a href='?pagina=$prev&$query' class='page-item arrow'>$leftArrowHTML</a>";
         $html .= "<a href='?pagina=1&$query' class='page-item'>1</a>";
