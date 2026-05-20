@@ -236,8 +236,9 @@ $output_html  = "<div id='results-and-page-nav'>";
 $output_html .= "<div id='results-number'>Trovati $numero_records risultati ($limit per pagina)</div>";
 $output_html .= getPagesNav($np, $numero_pagine, 1);
 $output_html .= "</div>";
+$output_html .= "<div class='table-container'>";
 $output_html .= getTabella($righe, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
-$output_html .= getPagesNav($np, $numero_pagine, 1);
+$output_html .= "</div>";
 
 if (isAjaxRequest()) {
     echo $output_html;

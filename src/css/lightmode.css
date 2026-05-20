@@ -179,10 +179,7 @@ li.navbar a:hover:not(.active) {
     display: flex;
     justify-content: flex-start; 
     align-items: center;
-    gap: 4px; 
-    margin-top: auto; 
-    padding-top: 15px; 
-    padding-bottom: 5px;
+    gap: 4px;
 }
 
 /* Numeri per navigare tra le pagine */
