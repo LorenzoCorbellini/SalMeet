@@ -160,6 +160,7 @@ function initFilters(): void {
 	$filtro_config = [
 		'campi' => [
 			['tipo'  => 'text',  'name' => 'filename', 'label' => 'File'],
+			['tipo'  => 'text',  'name' => 'owner', 'label' => 'Proprietario'],
 			['tipo'  => 'select',  'name' => 'filetype', 'label' => 'Tipo',
 				'opzioni' => ['Immagini', 'Audio', 'Video']]
 		]
@@ -184,6 +185,13 @@ if (!empty($_GET['filename'])) {
 	$where[]             = "fmm.titolo LIKE :filename";
 	$params[':filename'] = '%' . $_GET['filename'] . '%';
 }
+
+// Filtro per proprietario
+if (!empty($_GET['owner'])) {
+	$where[]             = "u.nickname LIKE :owner";
+	$params[':owner'] = '%' . $_GET['owner'] . '%';
+}
+
 // Filtro per tipo di file
 $filetypes = [
 	'Immagini' => 'immagine',
@@ -215,7 +223,12 @@ $righe = prepareMediaTableRows(
 	fetchMediaRecords($pdo, $where, $params, $start_from, $limit, $sql_sort, $sort_dir, 'visual'),
 	fetchMediaRecords($pdo, $where, $params, $start_from, $limit, $sql_sort, $sort_dir, 'full'),
 );
-$numero_records = getNumberOfRecords($pdo, "FileMultimediale as fmm", $where, $params);
+
+$table = "FileMultimediale as fmm";
+if (!empty($_GET['owner'])) {
+	$table .= " LEFT JOIN Utente AS u ON fmm.caricatoDa = u.codice ";
+}
+$numero_records = getNumberOfRecords($pdo, $table, $where, $params);
 $numero_pagine = getNumberOfPages($numero_records, $limit);
 
 /* PREPARAZIONE HTML DA STAMPARE */
