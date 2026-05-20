@@ -52,40 +52,6 @@ function getTabella(array $righe, array $htmlColumns = [], array $customHeaders 
 }
 
 // =========================================================
-// GESTIONE PAGINAZIONE 
-// =========================================================
-function getParametriPaginazione(int $elementiPerPagina = 50): array
-{
-    $pagina = isset($_GET['pagina']) ? max(1, (int)$_GET['pagina']) : 1;
-    $offset = ($pagina - 1) * $elementiPerPagina;
-
-    return [$pagina, $elementiPerPagina, $offset];
-}
-
-function stampaPaginazione(int $pagina, int $totaleRisultati, int $elementiPerPagina = 50): void
-{
-    $totalePagine = ceil($totaleRisultati / $elementiPerPagina);
-
-    if ($totalePagine <= 1) return;
-
-    echo "<div style='margin-top:20px;'>";
-    $queryParams = $_GET;
-
-    if ($pagina > 1) {
-        $queryParams['pagina'] = $pagina - 1;
-        echo "<a href='?" . http_build_query($queryParams) . "'>&larr;</a>";
-    }
-
-    echo "<span style='margin:0 10px;'>Pagina $pagina di $totalePagine</span>";
-
-    if ($pagina < $totalePagine) {
-        $queryParams['pagina'] = $pagina + 1;
-        echo "<a href='?" . http_build_query($queryParams) . "'>&rarr;</a>";
-    }
-    echo "</div>";
-}
-
-// =========================================================
 // GESTIONE ORDINAMENTO (ASC/DESC)
 // =========================================================
 
@@ -137,25 +103,6 @@ function generaIntestazioniOrdinabili(array $colonneOrdinabili, string $sort_col
     }
 
     return $customHeaders;
-}
-
-function getRightArrow(): string {
-   $html = '
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m9 18 6-6-6-6"></path>
-    </svg>
-    ';
-
-    return $html;
-}
-
-function getLeftArrow(): string {
-    $html = '
-    <svg data-v-b31b885d-s="" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-        <path d="m15 18-6-6 6-6"></path>
-    </svg>';
-
-    return $html;
 }
 
 /**
@@ -218,6 +165,25 @@ function getPagesNav(int $np,
     }
     
     $html .= "</div>";
+    return $html;
+}
+
+function getRightArrow(): string {
+   $html = '
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m9 18 6-6-6-6"></path>
+    </svg>
+    ';
+
+    return $html;
+}
+
+function getLeftArrow(): string {
+    $html = '
+    <svg data-v-b31b885d-s="" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+        <path d="m15 18-6-6 6-6"></path>
+    </svg>';
+
     return $html;
 }
 

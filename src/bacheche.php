@@ -228,8 +228,6 @@ function renderElencoBacheche($pdo, $isAjax)
 		$params[':data'] = $_GET['data'];
 	}
 
-	list($pagina, $limit, $offset) = getParametriPaginazione(50);
-
 	list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 		'nome'         => 'b.nome',
 		'data'         => 'b.dataCreazione',
@@ -255,14 +253,12 @@ function renderElencoBacheche($pdo, $isAjax)
     ";
 	if ($where) $sql .= " WHERE " . implode(" AND ", $where);
 
-	$sql .= " GROUP BY b.codiceUtente, u.nickname, b.nome, b.dataCreazione ORDER BY {$sql_sort} {$sort_dir} LIMIT :limit OFFSET :offset";
+	$sql .= " GROUP BY b.codiceUtente, u.nickname, b.nome, b.dataCreazione ORDER BY {$sql_sort} {$sort_dir}";
 
 	$stmt = $pdo->prepare($sql);
 	foreach ($params as $chiave => $valore) {
 		$stmt->bindValue($chiave, $valore);
 	}
-	$stmt->bindValue(':limit',  $limit,  PDO::PARAM_INT);
-	$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 	$stmt->execute();
 	$righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -271,7 +267,7 @@ function renderElencoBacheche($pdo, $isAjax)
 	}
 
 	echo "<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;'>";
-	echo "<p class='info-risultati' style='margin: 0;'>Trovate <strong>$totaleRisultati</strong> bacheche ($limit per pagina)</p>";
+	echo "<p class='info-risultati' style='margin: 0;'>Trovate <strong>$totaleRisultati</strong> bacheche</p>";
 	echo "<a onclick='aggiungiBacheca()' class='btn-aggiungi' style='cursor: pointer;'>
         <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi una nuova bacheca</strong>
     </a>";
@@ -316,7 +312,6 @@ function renderElencoBacheche($pdo, $isAjax)
 		], $sort_col, $sort_dir);
 
 		stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Azioni'], $customHeaders);
-		stampaPaginazione($pagina, $totaleRisultati, $limit);
 	}
 
 	if (!$isAjax) {

@@ -216,9 +216,6 @@ require_once __DIR__ . '/functions.php';
                     $params[':data'] = $_GET['data'];
                 }
 
-                // Parametri di Paginazione (es. 50 record per pagina)
-                list($pagina, $limit, $offset) = getParametriPaginazione(50);
-
                 // Parametri di Ordinamento Dinamico
                 list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
                     'nickname' => 'nickname',
@@ -248,18 +245,16 @@ require_once __DIR__ . '/functions.php';
                 if ($where) {
                     $sql .= " WHERE " . implode(" AND ", $where);
                 }
-                $sql .= " ORDER BY {$sql_sort} {$sort_dir} LIMIT :limit OFFSET :offset";
+                $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
 
                 $stmt = $pdo->prepare($sql);
                 foreach ($params as $chiave => $valore) {
                     $stmt->bindValue($chiave, $valore);
                 }
-                $stmt->bindValue(':limit',  $limit,  PDO::PARAM_INT);
-                $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
                 $stmt->execute();
                 $righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> utenti ($limit per pagina).</p>";
+                echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> utenti.</p>";
 
                 if (!empty($righe)) {
                     $datiUtenti = [];
@@ -287,9 +282,6 @@ require_once __DIR__ . '/functions.php';
 
                     // Stampiamo la tabella passando 'Nickname' nelle colonne HTML consentite per preservare il link <a>
                     stampaTabella($datiUtenti, ['Nickname'], $customHeaders);
-
-                    // Barra di navigazione per la paginazione
-                    stampaPaginazione($pagina, $totaleRisultati, $limit);
                 } else {
                     echo "<p class='info-risultati'>Nessun utente trovato con i criteri di ricerca selezionati.</p>";
                 }

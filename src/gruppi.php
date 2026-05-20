@@ -170,10 +170,6 @@ require_once __DIR__ . '/functions.php';
 				}
 
 				
-					list($pagina, $limit, $offset) = getParametriPaginazione(50);
-				
-
-				
 					list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 						'nome' => 'Gruppo.nome',
 						'Proprietario' => 'Proprietario',
@@ -204,18 +200,16 @@ require_once __DIR__ . '/functions.php';
 					$sql .= " WHERE " . implode(" AND ", $where);
 				}
 
-				$sql .= " ORDER BY " . $sql_sort . " LIMIT :limit OFFSET :offset";
+				$sql .= " ORDER BY " . $sql_sort;
 
 				$stmt = $pdo->prepare($sql);
 				foreach ($params as $chiave => $valore) {
 					$stmt->bindValue($chiave, $valore);
 				}
-				$stmt->bindValue(':limit',  $limit,  PDO::PARAM_INT);
-				$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 				$stmt->execute();
 				$righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-				echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> gruppi ($limit per pagina).</p>";
+				echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> gruppi.</p>";
 
 				if (!empty($righe)) {
 					$datiGruppi = [];
@@ -242,8 +236,6 @@ require_once __DIR__ . '/functions.php';
 					], $sort_col, $sort_dir);
 
 					stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
-
-					stampaPaginazione($pagina, $totaleRisultati, $limit);
 				} else {
 					echo "<p>Nessun risultato trovato.</p>";
 				}
