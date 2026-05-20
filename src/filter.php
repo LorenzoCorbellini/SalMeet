@@ -39,13 +39,12 @@ if (!empty($reset_params)) {
 ?>
 
 <div id="filtro">
-    <h3>Filtri</h3>
     <form method="GET" action="<?= $action ?>">
 
         <?php foreach ($filtro_config['campi'] as $campo):
             $name  = htmlspecialchars($campo['name']);
             $label = htmlspecialchars($campo['label'] ?? '');
-            
+
             if ($campo['tipo'] === 'hidden') {
                 $value = htmlspecialchars($_GET[$campo['name']] ?? $campo['value'] ?? '');
             } else {
@@ -59,8 +58,8 @@ if (!empty($reset_params)) {
             <?php elseif ($campo['tipo'] === 'checkbox'): ?>
                 <label>
                     <input type="checkbox" name="<?= $name ?>"
-                           value="1"
-                           <?= isset($_GET[$campo['name']]) ? 'checked' : '' ?>>
+                        value="1"
+                        <?= isset($_GET[$campo['name']]) ? 'checked' : '' ?>>
                     <?= $label ?>
                 </label>
 
@@ -83,10 +82,10 @@ if (!empty($reset_params)) {
 
                 <label for="<?= $name ?>"><?= $label ?></label>
                 <input type="<?= htmlspecialchars($campo['tipo']) ?>"
-                       name="<?= $name ?>"
-                       id="<?= $name ?>"
-                       value="<?= $value ?>"
-                       placeholder="Cerca...">
+                    name="<?= $name ?>"
+                    id="<?= $name ?>"
+                    value="<?= $value ?>"
+                    placeholder="Cerca...">
 
             <?php endif; ?>
 
@@ -94,7 +93,7 @@ if (!empty($reset_params)) {
 
         <button type="submit">Cerca</button>
         <button type="button" class="reset"
-                onclick="window.location='<?= htmlspecialchars($reset_url) ?>'">
+            onclick="window.location='<?= htmlspecialchars($reset_url) ?>'">
             Reimposta
         </button>
     </form>

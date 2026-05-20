@@ -211,7 +211,7 @@ if (isAjaxRequest()) {
 
 <body>
 	<header>
-		<h1 id="hcod1">Media</h1>
+		<h1 id="hcod1">File Multimediali</h1>
 	</header>
 	
 	

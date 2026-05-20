@@ -13,8 +13,7 @@
     --shadow: rgba(0, 0, 0, 0.08);
 
     --nav-width: clamp(160px, 18vw, 300px);
-
-    --fs-h1: clamp(2rem, 5vw, 4.5rem);
+    --fs-h1: clamp(1.5rem, 4vw, 3rem); 
     --fs-nav: clamp(1rem, 1.3vw, 1.25rem);
     --fs-body: clamp(0.9375rem, 1.1vw, 1.125rem);
     --fs-h2: clamp(1.4rem, 2.3vw, 2.5rem);
@@ -61,7 +60,7 @@ body {
 /* --- HEADER --- */
 h1 {
     margin: 0;
-    padding: clamp(20px, 3vh, 40px) 0;
+    padding: clamp(10px, 2vh, 20px) 0;
     font-size: var(--fs-h1);
     font-weight: 200;
     letter-spacing: clamp(3px, 0.5vw, 8px);
@@ -301,7 +300,7 @@ footer {
     background: var(--primary);
     color: rgba(255, 255, 255, 0.9);
     text-align: center;
-    padding: clamp(16px, 2vh, 16px) 0;
+    padding: clamp(6px, 1vh, 12px) 0; 
     box-sizing: border-box;
 }
 
