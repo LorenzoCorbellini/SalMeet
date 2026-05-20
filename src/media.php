@@ -103,21 +103,6 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 	return $result;
 }
 
-// Calcola il numero di records nel db che rispettano i filtri
-function getNumberOfRecords(PDO $pdo, array $where, array $params): int {
-	$sql_count = "SELECT COUNT(*) FROM FileMultimediale as fmm";
-	if ($where) $sql_count .= " WHERE " . implode(" AND ", $where);
-
-	$stmt_count = $pdo->prepare($sql_count);
-	$stmt_count->execute($params);
-	return (int)$stmt_count->fetchColumn();
-}
-
-// calcola il numero di pagine richieste per mostrare records_num records
-function getNumberOfPages(int $records_num, int $limit): int {
-	return (int)ceil($records_num / $limit);
-}
-
 function initFilters(): void {
 	$filtro_config = [
 		'campi' => [
@@ -135,13 +120,7 @@ function isAjaxRequest(): bool {
 }
 
 /* PAGINAZIONE */
-$limit = 50;
-if (!empty($_GET["pagina"])) { 
-	$np  = (int)$_GET["pagina"];
-} else { 
-	$np=1; 
-};
-$start_from = ($np - 1) * $limit;
+list($limit, $np, $start_from) = getPaginationParams(50);
 
 /* FILTRI */
 $where  = [];
@@ -183,7 +162,7 @@ $righe = prepareMediaTableRows(
 	fetchMediaRecords($pdo, $where, $params, $start_from, $limit, $sql_sort, $sort_dir, 'visual'),
 	fetchMediaRecords($pdo, $where, $params, $start_from, $limit, $sql_sort, $sort_dir, 'full'),
 );
-$numero_records = getNumberOfRecords($pdo, $where, $params);
+$numero_records = getNumberOfRecords($pdo, "FileMultimediale as fmm", $where, $params);
 $numero_pagine = getNumberOfPages($numero_records, $limit);
 
 /* PREPARAZIONE HTML DA STAMPARE */

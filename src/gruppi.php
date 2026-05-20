@@ -85,7 +85,9 @@ require_once __DIR__ . '/functions.php';
 								'Cognome'  => $membro['cognome']
 							];
 						}
+						echo '<div class="table-container">';
 						stampaTabella($datiMembri, ['Nickname']);
+						echo '</div>';
 					} else {
 						echo "<p>Nessun membro associato a questo gruppo.</p>";
 					}
@@ -138,7 +140,9 @@ require_once __DIR__ . '/functions.php';
 								'Dimensione' => $size_html
 							];
 						}
+						echo '<div class="table-container">';
 						stampaTabella($datiFiles, ['File', 'Proprietario', 'Dimensione']);
+						echo '</div>';
 					} else {
 						echo "<p>Nessun file multimediale associato o caricato in questo gruppo.</p>";
 					}
@@ -169,13 +173,13 @@ require_once __DIR__ . '/functions.php';
 					$params[':data'] = $_GET['data'];
 				}
 
-				
-					list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
-						'nome' => 'Gruppo.nome',
-						'Proprietario' => 'Proprietario',
-						'data' => 'Gruppo.dataCreazione'
-					], 'data', 'ASC');
-				
+
+				list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
+					'nome' => 'Gruppo.nome',
+					'Proprietario' => 'Proprietario',
+					'data' => 'Gruppo.dataCreazione'
+				], 'data', 'ASC');
+
 
 				$sqlContatore = "SELECT COUNT(*) FROM Gruppo JOIN Utente ON Gruppo.creatoDa = Utente.codice";
 				if (!empty($where)) {
@@ -235,7 +239,9 @@ require_once __DIR__ . '/functions.php';
 						'Data Creazione' => 'data'
 					], $sort_col, $sort_dir);
 
+					echo '<div class="table-container">';
 					stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
+					echo '</div>';
 				} else {
 					echo "<p>Nessun risultato trovato.</p>";
 				}

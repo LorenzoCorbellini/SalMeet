@@ -93,8 +93,11 @@ require_once __DIR__ . '/functions.php';
                                 'Proprietario' => $htmlProprietario
                             ];
                         }
+
                         // Consentiamo il rendering HTML dei link indicandoli nel secondo parametro
+                        echo '<div class="table-container">';
                         stampaTabella($datiBacheche, ['Nome Bacheca', 'Proprietario']);
+                        echo '</div>';
                     } else {
                         echo "<p>L'utente non partecipa a nessuna bacheca.</p>";
                     }
@@ -136,7 +139,9 @@ require_once __DIR__ . '/functions.php';
                             ];
                         }
                         // Consentiamo il rendering HTML dei link indicandoli nel secondo parametro
+                        echo '<div class="table-container">';
                         stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario']);
+                        echo '</div>';
                     } else {
                         echo "<p>L'utente non è iscritto a nessun gruppo.</p>";
                     }
@@ -158,7 +163,7 @@ require_once __DIR__ . '/functions.php';
 
                     if (!empty($filesRaw)) {
                         $datiFiles = [];
-                        
+
                         // Mappatura delle icone ereditata direttamente da media.php
                         $icon_types = [
                             'immagine' => 'images/image.png',
@@ -169,11 +174,11 @@ require_once __DIR__ . '/functions.php';
 
                         foreach ($filesRaw as $file) {
                             $icon_path = $icon_types[$file['tipo']] ?? $icon_types['default'];
-                            
+
                             $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($file['tipo']) . "'>";
                             $file_name = htmlspecialchars($file['titolo']);
                             $file_link = htmlspecialchars($file['URL']);
-                            
+
                             // Struttura HTML identica a media.php per ereditare l'icona e lo stile del link (colore rosa da CSS globale)
                             $title_html = "<div id='file_name'>{$file_icon}<a href='{$file_link}'>{$file_name}</a></div>";
 
@@ -185,7 +190,9 @@ require_once __DIR__ . '/functions.php';
                             ];
                         }
                         // ABILITATO RENDERING HTML: Inserito 'File' nell'array delle colonne HTML consentite (secondo parametro)
+                        echo '<div class="table-container">';
                         stampaTabella($datiFiles, ['File', 'Dimensione']);
+                        echo '</div>';
                     } else {
                         echo "<p>L'utente non ha caricato nessun file multimediale.</p>";
                     }
@@ -281,7 +288,9 @@ require_once __DIR__ . '/functions.php';
                     ], $sort_col, $sort_dir);
 
                     // Stampiamo la tabella passando 'Nickname' nelle colonne HTML consentite per preservare il link <a>
+                    echo '<div class="table-container">';
                     stampaTabella($datiUtenti, ['Nickname'], $customHeaders);
+                    echo '</div>';
                 } else {
                     echo "<p class='info-risultati'>Nessun utente trovato con i criteri di ricerca selezionati.</p>";
                 }

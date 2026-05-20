@@ -167,6 +167,39 @@ function getPagesNav(int $np,
     $html .= "</div>";
     return $html;
 }
+// =========================================================
+// ASSISTENTI DI CALCOLO PER LA PAGINAZIONE
+// =========================================================
+
+/**
+ * Estrae e calcola i parametri numerici per la paginazione da $_GET.
+ */
+function getPaginationParams(int $default_limit = 50): array {
+    $limit = $default_limit;
+    $np = !empty($_GET["pagina"]) ? max(1, (int)$_GET["pagina"]) : 1;
+    $start_from = ($np - 1) * $limit;
+    
+    return [$limit, $np, $start_from];
+}
+
+/**
+ * Conta i record totali in modo agnostico rispetto alla tabella.
+ */
+function getNumberOfRecords(PDO $pdo, string $table, array $where = [], array $params = []): int {
+    $sql_count = "SELECT COUNT(*) FROM " . $table;
+    if ($where) $sql_count .= " WHERE " . implode(" AND ", $where);
+
+    $stmt_count = $pdo->prepare($sql_count);
+    $stmt_count->execute($params);
+    return (int)$stmt_count->fetchColumn();
+}
+
+/**
+ * Calcola il numero totale di pagine.
+ */
+function getNumberOfPages(int $records_num, int $limit): int {
+    return (int)ceil($records_num / $limit);
+}
 
 function getRightArrow(): string {
    $html = '
