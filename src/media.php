@@ -55,6 +55,54 @@ function fetchMediaRecords(PDO $pdo,
 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function fetchGruppiConFile(PDO $pdo,
+	string $file_id,
+	array $where,
+	array $params,
+	int $start_from,
+	int $limit,
+	string $sql_sort,
+	string $sort_dir): array {
+
+	$sql = "SELECT *
+				FROM Gruppo g
+					LEFT JOIN FileAssociatoGruppo ag
+						ON g.codGruppo = ag.codGruppo
+				WHERE ag.file = $file_id
+		";
+	if ($where) $sql .= " WHERE " . implode(" AND ", $where);
+	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+	$sql .= " LIMIT " . (int)$start_from . ", " . (int)$limit;
+
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
+	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function fetchBachecheConFile(PDO $pdo,
+	string $file_id,
+	array $where,
+	array $params,
+	int $start_from,
+	int $limit,
+	string $sql_sort,
+	string $sort_dir): array {
+
+	$sql = "SELECT *
+				FROM Bacheca b
+					LEFT JOIN FilePubblicatoBacheca pb
+						ON b.nome = pb.nomeBacheca
+				WHERE pb.file = $file_id
+		";
+	if ($where) $sql .= " WHERE " . implode(" AND ", $where);
+	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+	$sql .= " LIMIT " . (int)$start_from . ", " . (int)$limit;
+
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
+	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 /**
  * Trasforma i dati grezzi del database in righe strutturate e formattate in HTML per la tabella dei media.
  *
@@ -87,7 +135,12 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 		$file_link = $dati_riga['url'];
 		$file_icon  = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($dati_riga['type']) . "'>";
 		$file_name   = htmlspecialchars($riga['File']);
-		$title_html = "<div id='file_name'>$file_icon<a href='$file_link'>$file_name</a></div>";
+		$follow_link_html = "<a class='media-download-link' href='$file_link' target='_blank'>
+								<img class='media-external-icon' src='images/external-link.png'>
+						</a>";
+		$media_item_html = "<div class='media-item'>$file_icon<a href='$file_link'>$file_name</a>
+							<div class='media-action-wrapper'>$follow_link_html</div>
+						</div>";
 		
 		$owner_link = "utenti.php?utente=" . (int)$dati_riga['owner'];
 		$owner_html = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
@@ -95,7 +148,7 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 		$size_html = formatFileSizeHtml((int)$dati_riga['size']);
 
 		$result[] = [
-			'File' => $title_html,
+			'File' => $media_item_html,
 			'Proprietario' => $owner_html,
 			'Dimensione' => $size_html
 		];

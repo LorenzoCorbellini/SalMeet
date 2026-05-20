@@ -411,6 +411,40 @@ td.titolo {
 .icona-filetype {
     vertical-align: middle;
     margin-right: 10px;
+    margin-top: 2px;
+}
+
+.media-action-wrapper {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+}
+
+tr:hover .media-action-wrapper {
+    opacity: 1;
+    visibility: visible;
+    transition: background-color 0.2s ease;
+}
+
+/* anchor per aprire il link di un file */
+.media-download-link {
+    display: flex;
+    align-items: center;
+}
+
+/* icona del pulsante per aprire il link di un file */
+.media-external-icon {
+    width: 16px;
+    height: 16px;
+    padding-top: 2px;
+}
+
+/* riga con icona filetype, nome file e pulsante per aprire il link */
+.media-item {
+    display: flex;
+    align-items: center;
 }
 
 .btn-aggiungi {
