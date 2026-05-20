@@ -24,11 +24,6 @@ $action = htmlspecialchars($filtro_config['action'] ?? $_SERVER['PHP_SELF']);
 // =========================================================
 $reset_params = [];
 
-// MODIFICA: Preserviamo il return_to nel tasto Reimposta
-if (!empty($_GET['return_to'])) {
-    $reset_params['return_to'] = $_GET['return_to'];
-}
-
 if (isset($filtro_config['campi'])) {
     foreach ($filtro_config['campi'] as $campo) {
         if ($campo['tipo'] === 'hidden' && isset($campo['value'])) {
@@ -46,10 +41,6 @@ if (!empty($reset_params)) {
 <div id="filtro">
     <h3>Filtri</h3>
     <form method="GET" action="<?= $action ?>">
-
-        <?php if (!empty($_GET['return_to'])): ?>
-            <input type="hidden" name="return_to" value="<?= htmlspecialchars($_GET['return_to']) ?>">
-        <?php endif; ?>
 
         <?php foreach ($filtro_config['campi'] as $campo):
             $name  = htmlspecialchars($campo['name']);

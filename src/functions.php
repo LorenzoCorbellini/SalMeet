@@ -51,14 +51,6 @@ function getTabella(array $righe, array $htmlColumns = [], array $customHeaders 
     return $html;
 }
 
-function urlRitorno(): string
-{
-    $p = $_GET;
-    unset($p['vista'], $p['bacheca'], $p['owner']);
-    $q = http_build_query($p);
-    return 'bacheche.php' . ($q ? "?$q" : '');
-}
-
 // =========================================================
 // GESTIONE PAGINAZIONE 
 // =========================================================

@@ -5,7 +5,7 @@ require_once __DIR__ . '/functions.php';
 // =========================================================
 //  FUNZIONE PER RECUPERARE UTENTI
 // =========================================================
-function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $current_url = '')
+function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC')
 {
 	$sql = "
         SELECT u.codice, u.nickname, u.nome, u.cognome, u.dataNascita
@@ -49,9 +49,6 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 			: "<div style='text-align:center;'><small style='color:gray;'>Proprietario</small></div>";
 
 		$user_link = "utenti.php?utente=" . urlencode($u['codice']);
-		if (!empty($current_url)) {
-			$user_link .= "&return_to=" . urlencode($current_url);
-		}
 
 		$htmlNickname = "<a href='" . htmlspecialchars($user_link) .  "'>" . htmlspecialchars($u['nickname']) . "</a>";
 
@@ -69,7 +66,7 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 // =========================================================
 //  FUNZIONE PER RECUPERARE FILE 
 // =========================================================
-function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', $sort_dir = 'ASC', $current_url = '')
+function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', $sort_dir = 'ASC')
 {
 	$sql = "
         SELECT fm.numero, fm.titolo, u.codice as caricatoDa, u.nickname, fm.dimensione, fm.URL, fm.tipo
@@ -113,9 +110,6 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
 		$htmlFile .= "<a href='" . htmlspecialchars($f['URL']) . "' target='_blank'>" . htmlspecialchars($title) . "</a>";
 
 		$owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
-		if (!empty($current_url)) {
-			$owner_link .= "&return_to=" . urlencode($current_url);
-		}
 		$htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
 
 		$azioni   = "<div style='text-align:center;'><img src='images/trash.png' alt='Elimina' style='width:16px; cursor:pointer;' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']})\"></div>";
@@ -135,12 +129,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
 // =========================================================
 function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc)
 {
-	$link_indietro = !empty($_GET['return_to']) ? $_GET['return_to'] : urlRitorno();
-	echo "<p><a href='" . htmlspecialchars($link_indietro) . "'>&larr; Torna alla pagina precedente</a></p>";
-
 	echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
-
-	$current_url = $_SERVER['REQUEST_URI'];
 
 	$stmtBacheca = $pdo->prepare("
         SELECT b.dataCreazione, u.nickname 
@@ -159,8 +148,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc)
 
 		if (!empty($dataFormattata)) {
 			echo "<p style='margin-bottom: 25px;'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
-			$current_url = $_SERVER['REQUEST_URI'];
-			$linkOwner = "utenti.php?utente=" . urlencode($owner) . "&return_to=" . urlencode($current_url);
+			$linkOwner = "utenti.php?utente=" . urlencode($owner);
 
 			echo "<p><strong>Creata da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
 		}
@@ -175,7 +163,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc)
 	];
 	list($sort_col_u, $sort_dir_u, $sql_sort_u) = getParametriOrdinamento($allowed_sorts_u, 'nickname', 'ASC');
 
-	list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_u, $sort_dir_u, $current_url);
+	list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_u, $sort_dir_u);
 
 	echo "<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;'>";
 	echo "<p style='margin: 0;'>Utenti autorizzati nella bacheca: <strong>{$countUtenti}</strong></p>";
@@ -201,7 +189,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc)
 	];
 	list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'file', 'ASC');
 
-	list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f, $current_url);
+	list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f);
 
 	echo "<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 30px;'>";
 	echo "<p style='margin: 0;'>File pubblicati nella bacheca: <strong>{$countFile}</strong></p>";
@@ -291,18 +279,15 @@ function renderElencoBacheche($pdo, $isAjax)
 
 	if (!empty($righe)) {
 		$datiBacheche = [];
-		$url_corrente = $_SERVER['REQUEST_URI'];
 
 		foreach ($righe as $riga) {
 			$p = $_GET;
-			$p['return_to'] = $url_corrente;
-
 			$p['vista']   = 'dettaglio';
 			$p['bacheca'] = $riga['Nome Bacheca'];
 			$p['owner']   = $riga['owner'];
 			$htmlNome = "<a href='bacheche.php?" . http_build_query($p) . "'>" . htmlspecialchars($riga['Nome Bacheca']) . "</a>";
 
-			$proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']) . "&return_to=" . urlencode($url_corrente);
+			$proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']);
 			$htmlProprietario = "<a href='" . htmlspecialchars($proprietarioLink) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
 
 			$nomeEnc  = htmlspecialchars(addslashes($riga['Nome Bacheca']), ENT_QUOTES);
