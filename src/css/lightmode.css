@@ -371,6 +371,7 @@ td {
     color: var(--text-dark);
     border-bottom: 1px solid rgba(179, 162, 159, 0.3);
     transition: background-color 0.2s ease;
+    position: relative;
 }
 
 tr:last-child td {
@@ -423,6 +424,27 @@ tr:hover .media-action-wrapper {
     opacity: 1;
     visibility: visible;
     transition: background-color 0.2s ease;
+}
+
+/* Crea una pellicola invisibile generata dal link che riempie tutta la cella */
+td a::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Protezione Colonna Azioni: 
+   Assicura che le icone di modifica/eliminazione rimangano 
+   in primissimo piano per non essere bloccate dal link espanso. */
+td div, 
+td img[onclick], 
+td span[onclick] {
+    position: relative;
+    z-index: 2; 
 }
 
 /* anchor per aprire il link di un file */
