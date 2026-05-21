@@ -206,7 +206,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 		list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_u, $sort_dir_u, $limit, $start_from);
 		$numero_pagine = getNumberOfPages($countUtenti, $limit);
 
-		echo "<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;'>";
+		echo "<div class='table-top-bar'>";
 		echo "<p style='margin: 0;'>Utenti autorizzati nella bacheca: <strong>{$countUtenti}</strong></p>";
 		echo "<a onclick=\"aggiungiAutorizzato('{$bEnc}', {$owner})\" class='btn-aggiungi'>
             <img src='images/add.png' alt='Aggiungi'> <strong>Aggiungi utente</strong>
@@ -230,7 +230,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 		list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f, $limit, $start_from);
 		$numero_pagine = getNumberOfPages($countFile, $limit);
 
-		echo "<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;'>";
+		echo "<div class='table-top-bar'>";
 		echo "<p style='margin: 0;'>File pubblicati nella bacheca: <strong>{$countFile}</strong></p>";
 		echo "<a onclick=\"aggiungiFile('{$bEnc}', {$owner})\" class='btn-aggiungi'>
             <img src='images/add.png' alt='Aggiungi'> <strong>Aggiungi file</strong>
@@ -316,7 +316,7 @@ function renderElencoBacheche($pdo, $isAjax)
 		echo '<div id="ajax-results">';
 	}
 
-	echo "<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;'>";
+	echo "<div class='table-top-bar'>";
 	echo "<p class='info-risultati' style='margin: 0;'>Trovate <strong>$totaleRisultati</strong> bacheche</p>";
 	echo "<a onclick='aggiungiBacheca()' class='btn-aggiungi' style='cursor: pointer;'>
         <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi una nuova bacheca</strong>
