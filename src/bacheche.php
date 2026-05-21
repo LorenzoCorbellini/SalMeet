@@ -3,11 +3,94 @@ require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
 
 // =========================================================
+//  FUNZIONE PER RENDERIZZARE LA LOGICA DEI FILTRI NELLA SIDEBAR
+// =========================================================
+function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $owner)
+{
+	if ($vista_corrente === 'dettaglio') {
+		// Campi nascosti comuni a tutti i tab di dettaglio per non perdere il contesto
+		$campi_base = [
+			['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
+			['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $bacheca, 'label' => ''],
+			['tipo' => 'hidden', 'name' => 'owner',   'value' => $owner, 'label' => ''],
+			['tipo' => 'hidden', 'name' => 'tab',     'value' => $tab_corrente, 'label' => ''],
+		];
+
+		// 1. FILTRO TAB UTENTI
+		if ($tab_corrente === 'utenti') {
+			$filtro_config = [
+				'campi' => array_merge($campi_base, [
+					['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname Utente'],
+					['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome Utente'],
+					['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome Utente'],
+					['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Data di Nascita (Da)'],
+				])
+			];
+			include 'filter.php';
+
+			// 2. FILTRO TAB FILE
+		} elseif ($tab_corrente === 'file') {
+			// Interrogiamo il DB per trovare il range esatto di dimensioni di questa bacheca
+			$stmtRange = $pdo->prepare("
+                SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
+                FROM FilePubblicatoBacheca fb
+                JOIN FileMultimediale fm ON fm.numero = fb.file
+                WHERE fb.nomeBacheca = :bacheca AND fb.codUtente = :owner
+            ");
+			$stmtRange->execute([':bacheca' => $bacheca, ':owner' => $owner]);
+			$rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
+
+			// Calcoliamo il minimo e il massimo arrotondando per eccesso/difetto
+			$minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
+			$maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
+			if ($minSize == $maxSize) $minSize = 0; // Protezione se c'è un solo file
+
+			// Recuperiamo i valori attualmente selezionati dall'URL, altrimenti usiamo i default
+			$currentMin = (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') ? (int)$_GET['dimensione_min'] : $minSize;
+			$currentMax = (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') ? (int)$_GET['dimensione_max'] : $maxSize;
+
+			$filtro_config = [
+				'campi' => array_merge($campi_base, [
+					['tipo' => 'text',   'name' => 'file',              'label' => 'Nome File'],
+					['tipo' => 'text',   'name' => 'proprietario_file', 'label' => 'Proprietario (nickname)'],
+					[
+						'tipo' => 'multi-range',
+						'name_min' => 'dimensione_min',
+						'name_max' => 'dimensione_max',
+						'label' => 'Dimensione File',
+						'min' => $minSize,
+						'max' => $maxSize,
+						'value_min' => $currentMin,
+						'value_max' => $currentMax
+					],
+				])
+			];
+			include 'filter.php';
+
+			// 3. MESSAGGIO PER TAB INFO (Nessun filtro disponibile)
+		} else {
+			echo '<div id="filtro" class="filter-empty">';
+			echo '    <p>Nessun filtro disponibile per questa sezione</p>';
+			echo '</div>';
+		}
+	} else {
+		// 4. VISTA NORMALE (Elenco Principale Bacheche)
+		$filtro_config = [
+			'campi' => [
+				['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome Bacheca'],
+				['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname)'],
+				['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Da)'],
+			]
+		];
+		include 'filter.php';
+	}
+}
+
+// =========================================================
 //  FUNZIONE PER RECUPERARE UTENTI (AGGIORNATA CON PAGINAZIONE)
 // =========================================================
 function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $limit = 20, $start_from = 0)
 {
-	// Separiamo la base della query per poter contare i record totali prima di applicare il LIMIT
 	$baseSql = "
         FROM UtenteAutorizzatoBacheca uab
         JOIN Utente u ON u.codice = uab.utenteAutorizzato
@@ -55,7 +138,11 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 	$datiUtenti = [];
 	foreach ($utenti as $u) {
 		$azioni = ((int)$u['codice'] !== (int)$owner)
-			? "<div style='text-align:center;'><img src='images/trash.png' alt='Elimina' style='width:16px; cursor:pointer;' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']})\"></div>"
+			? "<div style='text-align:center;'>
+                <span title='Elimina' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']})\">
+                    <img src='images/trash.png' alt='Elimina'>
+                </span>
+               </div>"
 			: "<div style='text-align:center;'><small style='color:gray;'>Proprietario</small></div>";
 
 		$user_link = "utenti.php?utente=" . urlencode($u['codice']);
@@ -69,7 +156,6 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 			'Azioni' => $azioni
 		];
 	}
-	// Restituisce i dati impaginati e il totale assoluto dei record per i pulsanti
 	return [$datiUtenti, $totale];
 }
 
@@ -99,17 +185,19 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
 		$whereSql .= " AND u.nickname LIKE :proprietario_file";
 		$params[':proprietario_file'] = '%' . $_GET['proprietario_file'] . '%';
 	}
-	if (!empty($_GET['dimensione_max'])) {
+	if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
+		$whereSql .= " AND fm.dimensione >= :dimensione_min";
+		$params[':dimensione_min'] = (float)$_GET['dimensione_min'];
+	}
+	if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
 		$whereSql .= " AND fm.dimensione <= :dimensione_max";
 		$params[':dimensione_max'] = (float)$_GET['dimensione_max'];
 	}
 
-	// 1. Calcolo del totale assoluto dei record
 	$stmtCount = $pdo->prepare("SELECT COUNT(*) " . $baseSql . $whereSql);
 	$stmtCount->execute($params);
 	$totale = $stmtCount->fetchColumn();
 
-	// 2. Estrazione limitata per la pagina corrente
 	$sql = "SELECT fm.numero, fm.titolo, u.codice as caricatoDa, u.nickname, fm.dimensione, fm.URL, fm.tipo " . $baseSql . $whereSql;
 	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
 
@@ -140,12 +228,17 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
 		$owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
 		$htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
 
-		$azioni   = "<div style='text-align:center;'><img src='images/trash.png' alt='Elimina' style='width:16px; cursor:pointer;' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']})\"></div>";
+		$azioni = "<div style='text-align:center;'>
+            <span title='Elimina' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']})\">
+                <img src='images/trash.png' alt='Elimina'>
+            </span>
+        </div>";
 
 		$datiFile[] = [
 			'File' => $htmlFile,
 			'Proprietario' => $htmlOwner,
-			'Dimensione (MB)' => $f['dimensione'],
+			// Converte il valore numerico usando la funzione di formattazione HTML
+			'Dimensione' => formatFileSizeHtml((int)$f['dimensione']),
 			'Azioni' => $azioni
 		];
 	}
@@ -166,11 +259,9 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 	$urlUtenti = '?' . http_build_query(array_merge($baseParams, ['tab' => 'utenti']));
 	$urlFile   = '?' . http_build_query(array_merge($baseParams, ['tab' => 'file']));
 
-	// Calcolo parametri di paginazione (condiviso tra i tab)
 	$recordsPerPage = 20;
 	list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
-	// SE NON È UNA RICHIESTA AJAX, STAMPIAMO IL CONTENITORE CONTROLLATO DA JAVASCRIPT
 	if (!$isAjax) {
 		echo '<div id="ajax-results">';
 	}
@@ -210,7 +301,6 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 		$allowed_sorts_u = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data_nascita' => 'u.dataNascita'];
 		list($sort_col_u, $sort_dir_u, $sql_sort_u) = getParametriOrdinamento($allowed_sorts_u, 'nickname', 'ASC');
 
-		// Estrazione con passaggio dei parametri di paginazione
 		list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_u, $sort_dir_u, $limit, $start_from);
 		$numero_pagine = getNumberOfPages($countUtenti, $limit);
 
@@ -228,13 +318,11 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 		stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
 		echo '</div>';
 
-		// Stampa i controlli di pagina per il tab UTENTI
 		echo getPagesNav($np, $numero_pagine, 1);
 	} elseif ($activeTab === 'file') {
 		$allowed_sorts_f = ['file' => 'fm.titolo', 'proprietario' => 'u.nickname', 'dimensione' => 'fm.dimensione'];
 		list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'file', 'ASC');
 
-		// Estrazione con passaggio dei parametri di paginazione
 		list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f, $limit, $start_from);
 		$numero_pagine = getNumberOfPages($countFile, $limit);
 
@@ -246,17 +334,14 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 		echo "</div>";
 
 		$_GET['tab'] = 'file';
-		$customHeaders_f = generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione (MB)' => 'dimensione'], $sort_col_f, $sort_dir_f);
-
+		$customHeaders_f = generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione' => 'dimensione'], $sort_col_f, $sort_dir_f);
 		echo '<div class="table-container">';
-		stampaTabella($datiFile, ['File', 'Proprietario', 'Azioni'], $customHeaders_f);
+		stampaTabella($datiFile, ['File', 'Proprietario', 'Dimensione', 'Azioni'], $customHeaders_f);
 		echo '</div>';
 
-		// Stampa i controlli di pagina per il tab FILE
 		echo getPagesNav($np, $numero_pagine, 1);
 	}
 
-	// CHIUSURA DEL CONTENITORE AJAX
 	if (!$isAjax) {
 		echo '</div>';
 	}
@@ -310,7 +395,6 @@ function renderElencoBacheche($pdo, $isAjax)
 	if ($where) $sql .= " WHERE " . implode(" AND ", $where);
 
 	$sql .= " GROUP BY b.codiceUtente, u.nickname, b.nome, b.dataCreazione ORDER BY {$sql_sort} {$sort_dir}";
-
 	$sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$start_from;
 
 	$stmt = $pdo->prepare($sql);
@@ -347,11 +431,11 @@ function renderElencoBacheche($pdo, $isAjax)
 			$nomeEnc  = htmlspecialchars(addslashes($riga['Nome Bacheca']), ENT_QUOTES);
 			$ownerEnc = (int) $riga['owner'];
 			$azioni = "<div style='text-align:center; white-space:nowrap;'>
-                <span title='Modifica' style='cursor:pointer; font-size:1.1rem; margin-right:8px;' onclick=\"modificaBacheca('{$nomeEnc}', {$ownerEnc})\">
-                    <img src='images/edit.png' alt='Modifica' style='width:16px; height:16px;'>
+                <span title='Modifica' class='btn-azione' onclick=\"modificaBacheca('{$nomeEnc}', {$ownerEnc})\">
+                    <img src='images/edit.png' alt='Modifica'>
                 </span>
-                <span title='Elimina' style='cursor:pointer; font-size:1.1rem;' onclick=\"eliminaBacheca('{$nomeEnc}', {$ownerEnc})\">
-                    <img src='images/trash.png' alt='Elimina' style='width:16px; height:16px;'>
+                <span title='Elimina' class='btn-azione' onclick=\"eliminaBacheca('{$nomeEnc}', {$ownerEnc})\">
+                    <img src='images/trash.png' alt='Elimina'>
                 </span>
             </div>";
 
@@ -373,7 +457,6 @@ function renderElencoBacheche($pdo, $isAjax)
 		stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Azioni'], $customHeaders);
 		echo '</div>';
 
-		// 5. Mostra la barra dei bottoni di navigazione delle pagine SOLO sotto la tabella
 		echo getPagesNav($np, $numero_pagine, 1);
 	}
 
@@ -409,85 +492,16 @@ if (!$isAjax):
 				<?php include 'nav.html'; ?>
 
 				<?php
+				// Catturiamo i parametri dall'URL
 				$vista_corrente = $_GET['vista'] ?? '';
+				$tab_corrente   = $_GET['tab'] ?? 'info';
+				$bacheca_val    = $_GET['bacheca'] ?? '';
+				$owner_val      = $_GET['owner'] ?? '';
 
-				if ($vista_corrente === 'dettaglio') {
-					$tab_corrente = $_GET['tab'] ?? 'info';
-
-					// Campi nascosti comuni a tutti i tab di dettaglio per non perdere il contesto
-					$campi_base = [
-						['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
-						['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $_GET['bacheca'] ?? '', 'label' => ''],
-						['tipo' => 'hidden', 'name' => 'owner',   'value' => $_GET['owner'] ?? '', 'label' => ''],
-						['tipo' => 'hidden', 'name' => 'tab',     'value' => $tab_corrente, 'label' => ''],
-					];
-
-					// 1. FILTRO TAB UTENTI
-					if ($tab_corrente === 'utenti') {
-						$filtro_config = [
-							'campi' => array_merge($campi_base, [
-								['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname Utente'],
-								['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome Utente'],
-								['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome Utente'],
-								['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Data di Nascita (Da)'],
-							])
-						];
-						include 'filter.php';
-
-						// 2. FILTRO TAB FILE
-					} elseif ($tab_corrente === 'file') {
-						// Interrogiamo il DB per trovare il range esatto di dimensioni di questa bacheca
-						$stmtRange = $pdo->prepare("
-                SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
-                FROM FilePubblicatoBacheca fb
-                JOIN FileMultimediale fm ON fm.numero = fb.file
-                WHERE fb.nomeBacheca = :bacheca AND fb.codUtente = :owner
-            ");
-						$stmtRange->execute([':bacheca' => $_GET['bacheca'], ':owner' => $_GET['owner']]);
-						$rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
-
-						// Calcoliamo il minimo e il massimo arrotondando per eccesso/difetto
-						$minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
-						$maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
-						if ($minSize == $maxSize) $minSize = 0; // Protezione se c'è un solo file
-
-						$filtro_config = [
-							'campi' => array_merge($campi_base, [
-								['tipo' => 'text',   'name' => 'file',              'label' => 'Nome File'],
-								['tipo' => 'text',   'name' => 'proprietario_file', 'label' => 'Proprietario (nickname)'],
-								[
-									'tipo' => 'range',
-									'name' => 'dimensione_max',
-									'label' => 'Dimensione Massima',
-									'min' => $minSize,
-									'max' => $maxSize,
-									'default' => $maxSize
-								],
-							])
-						];
-						include 'filter.php';
-
-						// 3. MESSAGGIO PER TAB INFO (Nessun filtro disponibile)
-					} else {
-				?>
-						<div id="filtro" class="filter-empty">
-							<p>Nessun filtro disponibile per questa sezione</p>
-						</div>
-				<?php
-					}
-				} else {
-					// 4. VISTA NORMALE (Elenco Principale Bacheche)
-					$filtro_config = [
-						'campi' => [
-							['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome Bacheca'],
-							['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname)'],
-							['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Da)'],
-						]
-					];
-					include 'filter.php';
-				}
+				renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca_val, $owner_val);
 				?>
 			</aside>
+
 			<div id="content">
 			<?php endif; ?>
 
