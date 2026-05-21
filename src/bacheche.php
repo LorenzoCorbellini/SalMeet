@@ -20,10 +20,10 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
 		if ($tab_corrente === 'utenti') {
 			$filtro_config = [
 				'campi' => array_merge($campi_base, [
-					['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname Utente'],
-					['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome Utente'],
-					['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome Utente'],
-					['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Data di Nascita (Da)'],
+					['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname'],
+					['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome'],
+					['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome'],
+					['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Nati dal'],
 				])
 			];
 			include 'filter.php';
@@ -51,13 +51,13 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
 
 			$filtro_config = [
 				'campi' => array_merge($campi_base, [
-					['tipo' => 'text',   'name' => 'file',              'label' => 'Nome File'],
-					['tipo' => 'text',   'name' => 'proprietario_file', 'label' => 'Proprietario (nickname)'],
+					['tipo' => 'text',   'name' => 'file',              'label' => 'Nome'],
+					['tipo' => 'text',   'name' => 'proprietario_file', 'label' => 'Nickname Proprietario'],
 					[
 						'tipo' => 'multi-range',
 						'name_min' => 'dimensione_min',
 						'name_max' => 'dimensione_max',
-						'label' => 'Dimensione File',
+						'label' => 'Dimensione',
 						'min' => $minSize,
 						'max' => $maxSize,
 						'value_min' => $currentMin,
@@ -77,9 +77,9 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
 		// 4. VISTA NORMALE (Elenco Principale Bacheche)
 		$filtro_config = [
 			'campi' => [
-				['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome Bacheca'],
-				['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname)'],
-				['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Da)'],
+				['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome'],
+				['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario'],
+				['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dal'],
 			]
 		];
 		include 'filter.php';
@@ -87,7 +87,7 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
 }
 
 // =========================================================
-//  FUNZIONE PER RECUPERARE UTENTI (AGGIORNATA CON PAGINAZIONE)
+//  FUNZIONE PER RECUPERARE UTENTI (AGGIORNATA CON PAGINAZIONE E CORONA)
 // =========================================================
 function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $limit = 20, $start_from = 0)
 {
@@ -137,7 +137,9 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 
 	$datiUtenti = [];
 	foreach ($utenti as $u) {
-		$azioni = ((int)$u['codice'] !== (int)$owner)
+		$isOwner = ((int)$u['codice'] === (int)$owner);
+
+		$azioni = !$isOwner
 			? "<div style='text-align:center;'>
                 <span title='Elimina' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']})\">
                     <img src='images/trash.png' alt='Elimina'>
@@ -147,6 +149,11 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 
 		$user_link = "utenti.php?utente=" . urlencode($u['codice']);
 		$htmlNickname = "<a href='" . htmlspecialchars($user_link) .  "'>" . htmlspecialchars($u['nickname']) . "</a>";
+
+		// --- SE L'UTENTE È IL PROPRIETARIO, AGGIUNGIAMO LA CORONA ALLA SINISTRA ---
+		if ($isOwner) {
+			$htmlNickname = "<img src='images/crown.png' alt='Owner' style='width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;'>" . $htmlNickname;
+		}
 
 		$datiUtenti[] = [
 			'Nickname' => $htmlNickname,
