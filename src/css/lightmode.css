@@ -156,6 +156,21 @@ li.navbar a:hover:not(.active) {
     margin-top: clamp(8px, 1vh, 14px);
 }
 
+.filter-empty {
+    text-align: center;
+    margin-top: clamp(20px, 3vh, 40px);
+    padding: clamp(30px, 4vh, 50px) clamp(15px, 1.2vw, 25px) !important;
+    border-top: none !important;
+}
+
+.filter-empty p {
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 0;
+    font-size: clamp(0.9rem, 0.95vw, 1rem);
+    line-height: 1.4;
+}
+
 /* --- INPUT --- */
 #filtro input[type="text"],
 #filtro input[type="date"],
@@ -625,7 +640,7 @@ tbody tr:hover td:hover {
 #results-and-page-nav {
     display: flex;
     align-items: center;
-    margin-top: auto; 
+    margin-top: auto;
     padding-top: 10px;
 }
 

@@ -78,6 +78,26 @@ if (!empty($reset_params)) {
                     <?php endforeach; ?>
                 </select>
 
+                <?php elseif ($campo['tipo'] === 'range'): 
+                $min = $campo['min'] ?? 0;
+                $max = $campo['max'] ?? 100;
+                // Prende il valore dal GET (se già cercato) oppure usa il valore massimo di default
+                $current_val = (isset($_GET[$name]) && $_GET[$name] !== '') ? htmlspecialchars($_GET[$name]) : ($campo['default'] ?? $max);
+            ?>
+
+                <label for="<?= $name ?>">
+                    <?= $label ?>: <span id="val_<?= $name ?>" style="font-weight: bold; color: var(--primary-dark);"><?= $current_val ?></span> MB
+                </label>
+                <input type="range" 
+                       name="<?= $name ?>" 
+                       id="<?= $name ?>" 
+                       min="<?= $min ?>" 
+                       max="<?= $max ?>" 
+                       value="<?= $current_val ?>" 
+                       step="1"
+                       style="width: 100%; accent-color: var(--primary); margin-bottom: 10px;"
+                       oninput="document.getElementById('val_<?= $name ?>').innerText = this.value">
+
             <?php else: ?>
 
                 <label for="<?= $name ?>"><?= $label ?></label>

@@ -95,6 +95,14 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
 		$whereSql .= " AND fm.titolo LIKE :file";
 		$params[':file'] = '%' . $_GET['file'] . '%';
 	}
+	if (!empty($_GET['proprietario_file'])) {
+		$whereSql .= " AND u.nickname LIKE :proprietario_file";
+		$params[':proprietario_file'] = '%' . $_GET['proprietario_file'] . '%';
+	}
+	if (!empty($_GET['dimensione_max'])) {
+		$whereSql .= " AND fm.dimensione <= :dimensione_max";
+		$params[':dimensione_max'] = (float)$_GET['dimensione_max'];
+	}
 
 	// 1. Calcolo del totale assoluto dei record
 	$stmtCount = $pdo->prepare("SELECT COUNT(*) " . $baseSql . $whereSql);
@@ -317,7 +325,7 @@ function renderElencoBacheche($pdo, $isAjax)
 	}
 
 	echo "<div class='table-top-bar'>";
-	echo "<p class='info-risultati' style='margin: 0;'>Trovate <strong>$totaleRisultati</strong> bacheche</p>";
+	echo "<p class='info-risultati' style='margin: 0;'>Trovate <strong>$totaleRisultati</strong> bacheche <strong>($recordsPerPage per pagina)</strong></p>";
 	echo "<a onclick='aggiungiBacheca()' class='btn-aggiungi' style='cursor: pointer;'>
         <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi una nuova bacheca</strong>
     </a>";
@@ -404,23 +412,71 @@ if (!$isAjax):
 				$vista_corrente = $_GET['vista'] ?? '';
 
 				if ($vista_corrente === 'dettaglio') {
-					$filtro_config = [
-						'campi' => [
-							['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
-							['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $_GET['bacheca'] ?? '', 'label' => ''],
-							['tipo' => 'hidden', 'name' => 'owner',   'value' => $_GET['owner'] ?? '', 'label' => ''],
-							// AGGIUNGI QUESTA RIGA PER MEMORIZZARE IL TAB:
-							['tipo' => 'hidden', 'name' => 'tab',     'value' => $_GET['tab'] ?? 'info', 'label' => ''],
+					$tab_corrente = $_GET['tab'] ?? 'info';
 
-							['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname Utente'],
-							['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome Utente'],
-							['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome Utente'],
-							['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Data di Nascita (Da)'],
-							['tipo' => 'text',   'name' => 'file',    'label' => 'Nome File'],
-						]
+					// Campi nascosti comuni a tutti i tab di dettaglio per non perdere il contesto
+					$campi_base = [
+						['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $_GET['bacheca'] ?? '', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'owner',   'value' => $_GET['owner'] ?? '', 'label' => ''],
+						['tipo' => 'hidden', 'name' => 'tab',     'value' => $tab_corrente, 'label' => ''],
 					];
-					include 'filter.php';
+
+					// 1. FILTRO TAB UTENTI
+					if ($tab_corrente === 'utenti') {
+						$filtro_config = [
+							'campi' => array_merge($campi_base, [
+								['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname Utente'],
+								['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome Utente'],
+								['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome Utente'],
+								['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Data di Nascita (Da)'],
+							])
+						];
+						include 'filter.php';
+
+						// 2. FILTRO TAB FILE
+					} elseif ($tab_corrente === 'file') {
+						// Interrogiamo il DB per trovare il range esatto di dimensioni di questa bacheca
+						$stmtRange = $pdo->prepare("
+                SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
+                FROM FilePubblicatoBacheca fb
+                JOIN FileMultimediale fm ON fm.numero = fb.file
+                WHERE fb.nomeBacheca = :bacheca AND fb.codUtente = :owner
+            ");
+						$stmtRange->execute([':bacheca' => $_GET['bacheca'], ':owner' => $_GET['owner']]);
+						$rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
+
+						// Calcoliamo il minimo e il massimo arrotondando per eccesso/difetto
+						$minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
+						$maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
+						if ($minSize == $maxSize) $minSize = 0; // Protezione se c'è un solo file
+
+						$filtro_config = [
+							'campi' => array_merge($campi_base, [
+								['tipo' => 'text',   'name' => 'file',              'label' => 'Nome File'],
+								['tipo' => 'text',   'name' => 'proprietario_file', 'label' => 'Proprietario (nickname)'],
+								[
+									'tipo' => 'range',
+									'name' => 'dimensione_max',
+									'label' => 'Dimensione Massima',
+									'min' => $minSize,
+									'max' => $maxSize,
+									'default' => $maxSize
+								],
+							])
+						];
+						include 'filter.php';
+
+						// 3. MESSAGGIO PER TAB INFO (Nessun filtro disponibile)
+					} else {
+				?>
+						<div id="filtro" class="filter-empty">
+							<p>Nessun filtro disponibile per questa sezione</p>
+						</div>
+				<?php
+					}
 				} else {
+					// 4. VISTA NORMALE (Elenco Principale Bacheche)
 					$filtro_config = [
 						'campi' => [
 							['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome Bacheca'],
@@ -432,7 +488,6 @@ if (!$isAjax):
 				}
 				?>
 			</aside>
-
 			<div id="content">
 			<?php endif; ?>
 
