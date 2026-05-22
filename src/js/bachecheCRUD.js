@@ -53,7 +53,6 @@ function eseguiRichiesta(bodyData, messaggioSuccesso) {
 // =========================================================
 
 async function aggiungiBacheca() {
-    // Popup con form multiplo (Nome e Proprietario)
     const { value: formValues } = await Swal.fire({
         title: 'Nuova Bacheca',
         heightAuto: false,
@@ -95,7 +94,7 @@ async function aggiungiBacheca() {
 
 async function modificaBacheca(nomeBacheca, owner) {
     const { value: nuovoNome } = await Swal.fire({
-        title: 'Modifica Bacheca',
+        title: 'Rinomina Bacheca',
         input: 'text',
         inputLabel: 'Inserisci il nuovo nome:',
         inputValue: nomeBacheca,
@@ -121,10 +120,10 @@ async function modificaBacheca(nomeBacheca, owner) {
     }
 }
 
-function eliminaBacheca(nomeBacheca, owner) {
+function eliminaBacheca(nomeBacheca, owner, ownerNickname) {
     Swal.fire({
         title: 'Sei sicuro?',
-        text: "Vuoi davvero eliminare questa bacheca e tutto il suo contenuto? L'azione è irreversibile!",
+        text: `Vuoi davvero eliminare la bacheca "${nomeBacheca}" creata da "${ownerNickname}"? L'azione è irreversibile!`,
         icon: 'warning',
         heightAuto: false,
         scrollbarPadding: false,
@@ -174,10 +173,10 @@ async function aggiungiAutorizzato(nomeBacheca, owner) {
     }
 }
 
-function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere) {
+function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
     Swal.fire({
         title: 'Rimuovi Utente',
-        text: "Vuoi revocare l'accesso a questo utente per questa bacheca?",
+        text: `Vuoi davvero revocare l'accesso all'utente "${nickname}" per questa bacheca? Verranno rimossi anche i suoi file pubblicati.`,
         icon: 'warning',
         heightAuto: false,
         scrollbarPadding: false,
@@ -228,10 +227,10 @@ async function aggiungiFile(nomeBacheca, owner) {
     }
 }
 
-function rimuoviFile(nomeBacheca, owner, fileDaRimuovere) {
+function rimuoviFile(nomeBacheca, owner, fileDaRimuovere, nomeFile, caricatoDa) {
     Swal.fire({
         title: 'Rimuovi File',
-        text: "Sei sicuro di voler togliere questo file dalla bacheca?",
+        text: `Vuoi davvero rimuovere il file "${nomeFile}" caricato da "${caricatoDa}" dalla bacheca?`,
         icon: 'warning',
         heightAuto: false,
         scrollbarPadding: false,

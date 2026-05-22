@@ -12,16 +12,27 @@ function getBottoneNuovaBacheca(): string
     </a>";
 }
 
-function getBottoneModificaBacheca($bEnc, $owner): string
+function getBottoneRinominaBacheca($bEnc, $owner, $isIcona = false): string
 {
-    return "<a onclick=\"modificaBacheca('{$bEnc}', {$owner})\" class='btn-aggiungi'>
-        <img src='images/edit.png' alt='Modifica' style='vertical-align: middle;'> <strong>Modifica</strong>
+    if ($isIcona) {
+        return "<span title='Rinomina' class='btn-azione' onclick=\"rinominaBacheca('{$bEnc}', {$owner})\">
+                    <img src='images/edit.png' alt='Rinomina'>
+                </span>";
+    }
+    return "<a onclick=\"rinominaBacheca('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+        <img src='images/edit.png' alt='Rinomina' style='vertical-align: middle;'> <strong>Rinomina</strong>
     </a>";
 }
 
-function getBottoneEliminaBacheca($bEnc, $owner): string
+function getBottoneEliminaBacheca($bEnc, $owner, $ownerNickname, $isIcona = false): string
 {
-    return "<a onclick=\"eliminaBacheca('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+    $ownerNicknameEnc = htmlspecialchars(addslashes($ownerNickname), ENT_QUOTES);
+    if ($isIcona) {
+        return "<span title='Elimina' class='btn-azione' onclick=\"eliminaBacheca('{$bEnc}', {$owner}, '{$ownerNicknameEnc}')\">
+                    <img src='images/trash.png' alt='Elimina'>
+                </span>";
+    }
+    return "<a onclick=\"eliminaBacheca('{$bEnc}', {$owner}, '{$ownerNicknameEnc}')\" class='btn-aggiungi'>
         <img src='images/trash.png' alt='Elimina' style='vertical-align: middle;'> <strong>Elimina</strong>
     </a>";
 }
@@ -41,12 +52,46 @@ function getBottoneAggiungiFile($bEnc, $owner): string
 }
 
 // =========================================================
+//  ASTRAZIONE ROUTING E GESTIONE PARAMETRI GET
+// =========================================================
+
+/**
+ * Recupera e normalizza i parametri GET principali per la vista.
+ */
+function getParametriRichiestaBacheche(): array
+{
+    return [
+        'vista'   => $_GET['vista'] ?? '',
+        'tab'     => $_GET['tab'] ?? 'info',
+        'bacheca' => $_GET['bacheca'] ?? '',
+        'owner'   => $_GET['owner'] ?? ''
+    ];
+}
+
+/**
+ * Gestisce il routing caricando la vista appropriata (Dettaglio o Elenco Generale).
+ */
+function gestisciRoutingBacheche($pdo, $isAjax, $params)
+{
+    if (!empty($params['vista']) && !empty($params['bacheca']) && !empty($params['owner'])) {
+        $bEnc = htmlspecialchars(addslashes($params['bacheca']), ENT_QUOTES);
+
+        if ($params['vista'] === 'dettaglio') {
+            renderDettaglioBacheca($pdo, $params['bacheca'], $params['owner'], $bEnc, $isAjax);
+        } else {
+            echo "<div style='margin-bottom: 25px;'></div>";
+        }
+    } else {
+        renderElencoBacheche($pdo, $isAjax);
+    }
+}
+
+// =========================================================
 //  FUNZIONE PER RENDERIZZARE LA LOGICA DEI FILTRI NELLA SIDEBAR
 // =========================================================
 function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $owner)
 {
     if ($vista_corrente === 'dettaglio') {
-        // Campi nascosti comuni a tutti i tab di dettaglio per non perdere il contesto
         $campi_base = [
             ['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
             ['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $bacheca, 'label' => ''],
@@ -54,7 +99,6 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
             ['tipo' => 'hidden', 'name' => 'tab',     'value' => $tab_corrente, 'label' => ''],
         ];
 
-        // 1. FILTRO TAB UTENTI
         if ($tab_corrente === 'utenti') {
             $filtro_config = [
                 'campi' => array_merge($campi_base, [
@@ -66,9 +110,7 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
             ];
             include 'filter.php';
 
-            // 2. FILTRO TAB FILE
         } elseif ($tab_corrente === 'file') {
-            // Interrogiamo il DB per trovare il range esatto di dimensioni di questa bacheca
             $stmtRange = $pdo->prepare("
                 SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
                 FROM FilePubblicatoBacheca fb
@@ -78,12 +120,10 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
             $stmtRange->execute([':bacheca' => $bacheca, ':owner' => $owner]);
             $rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
 
-            // Calcoliamo il minimo e il massimo arrotondando per eccesso/difetto
             $minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
             $maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
-            if ($minSize == $maxSize) $minSize = 0; // Protezione se c'è un solo file
+            if ($minSize == $maxSize) $minSize = 0;
 
-            // Recuperiamo i valori attualmente selezionati dall'URL, altrimenti usiamo i default
             $currentMin = (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') ? (int)$_GET['dimensione_min'] : $minSize;
             $currentMax = (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') ? (int)$_GET['dimensione_max'] : $maxSize;
 
@@ -105,14 +145,12 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
             ];
             include 'filter.php';
 
-            // 3. MESSAGGIO PER TAB INFO (Nessun filtro disponibile)
         } else {
             echo '<div id="filtro" class="filter-empty">';
             echo '    <p>Nessun filtro disponibile per questa sezione</p>';
             echo '</div>';
         }
     } else {
-        // 4. VISTA NORMALE (Elenco Principale Bacheche)
         $filtro_config = [
             'campi' => [
                 ['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome'],
@@ -125,7 +163,7 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
 }
 
 // =========================================================
-//  FUNZIONE PER RECUPERARE UTENTI (AGGIORNATA CON PAGINAZIONE E CORONA)
+//  FUNZIONE PER RECUPERARE UTENTI 
 // =========================================================
 function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $limit = 20, $start_from = 0)
 {
@@ -177,9 +215,11 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
     foreach ($utenti as $u) {
         $isOwner = ((int)$u['codice'] === (int)$owner);
 
+        $nicknameJS = htmlspecialchars(addslashes($u['nickname']), ENT_QUOTES);
+
         $azioni = !$isOwner
             ? "<div style='text-align:center;'>
-                <span title='Elimina' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']})\">
+                <span title='Elimina' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
                     <img src='images/trash.png' alt='Elimina'>
                 </span>
                </div>"
@@ -188,7 +228,6 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
         $user_link = "utenti.php?utente=" . urlencode($u['codice']);
         $htmlNickname = "<a href='" . htmlspecialchars($user_link) .  "'>" . htmlspecialchars($u['nickname']) . "</a>";
 
-        // --- SE L'UTENTE È IL PROPRIETARIO, AGGIUNGIAMO LA CORONA ALLA SINISTRA ---
         if ($isOwner) {
             $htmlNickname = "<img src='images/crown.png' alt='Owner' style='width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;'>" . $htmlNickname;
         }
@@ -205,7 +244,7 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 }
 
 // =========================================================
-//  FUNZIONE PER RECUPERARE FILE (AGGIORNATA CON PAGINAZIONE)
+//  FUNZIONE PER RECUPERARE FILE 
 // =========================================================
 function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', $sort_dir = 'ASC', $limit = 20, $start_from = 0)
 {
@@ -267,6 +306,9 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
         $title = preg_replace('/\d{3}$/', '', $f['titolo']);
 
+        $titleJS = htmlspecialchars(addslashes($title), ENT_QUOTES);
+        $caricatoDaJS = htmlspecialchars(addslashes($f['nickname']), ENT_QUOTES); 
+
         $htmlFile = "<div style='display: flex; align-items: center; gap: 8px;'>";
         $htmlFile .= "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipoStr) . "'>";
         $htmlFile .= "<a href='" . htmlspecialchars($f['URL']) . "' target='_blank'>" . htmlspecialchars($title) . "</a>";
@@ -276,7 +318,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
 
         $azioni = "<div style='text-align:center;'>
-            <span title='Elimina' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']})\">
+            <span title='Elimina' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']}, '{$titleJS}', '{$caricatoDaJS}')\">
                 <img src='images/trash.png' alt='Elimina'>
             </span>
         </div>";
@@ -316,7 +358,6 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
     $btnNuovaBacheca = getBottoneNuovaBacheca();
 
-    // Contenitore Flex per avere Tab a sinistra e Bottone a destra
     echo "
     <div style='display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-soft); margin-bottom: 15px;'>
         <div class='bacheca-tabs' style='border-bottom: none; margin-bottom: 0;'>
@@ -351,12 +392,11 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             }
             echo "</div>";
 
-            // --- INSERIMENTO DEI NUOVI BOTTONI MODIFICA ED ELIMINA ---
-            $btnModifica = getBottoneModificaBacheca($bEnc, $owner);
-            $btnElimina  = getBottoneEliminaBacheca($bEnc, $owner);
+            $btnRinomina = getBottoneRinominaBacheca($bEnc, $owner);
+            $btnElimina  = getBottoneEliminaBacheca($bEnc, $owner, $datiBachecaDb['nickname']);
 
-            echo "<div style='display: flex; gap: 15px; margin-top: 20px;'>
-                    {$btnModifica}
+            echo "<div style='display: flex; gap: 15px; margin-top: 5px;'>
+                    {$btnRinomina}
                     {$btnElimina}
                   </div>";
         }
@@ -369,7 +409,6 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
         echo "<div class='table-top-bar'>";
         echo "<p style='margin: 0;'>Utenti autorizzati nella bacheca: <strong>{$countUtenti}</strong></p>";
-        // Inserimento Bottone Astratto
         echo getBottoneAggiungiUtente($bEnc, $owner);
         echo "</div>";
 
@@ -390,7 +429,6 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
         echo "<div class='table-top-bar'>";
         echo "<p style='margin: 0;'>File pubblicati nella bacheca: <strong>{$countFile}</strong></p>";
-        // Inserimento Bottone Astratto
         echo getBottoneAggiungiFile($bEnc, $owner);
         echo "</div>";
 
@@ -409,7 +447,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 }
 
 // =========================================================
-//  FUNZIONE PER RENDERIZZARE LA VISTA PRINCIPALE (PAGINAZIONE SOLO IN BASSO)
+//  FUNZIONE PER RENDERIZZARE LA VISTA PRINCIPALE
 // =========================================================
 function renderElencoBacheche($pdo, $isAjax)
 {
@@ -471,7 +509,6 @@ function renderElencoBacheche($pdo, $isAjax)
 
     echo "<div class='table-top-bar'>";
     echo "<p class='info-risultati' style='margin: 0;'>Trovate <strong>$totaleRisultati</strong> bacheche <strong>($recordsPerPage per pagina)</strong></p>";
-    // Sostituito con la funzione helper astratta
     echo getBottoneNuovaBacheca();
     echo "</div>";
 
@@ -490,13 +527,14 @@ function renderElencoBacheche($pdo, $isAjax)
 
             $nomeEnc  = htmlspecialchars(addslashes($riga['Nome Bacheca']), ENT_QUOTES);
             $ownerEnc = (int) $riga['owner'];
+            $proprietarioEnc = htmlspecialchars(addslashes($riga['Proprietario']), ENT_QUOTES);
+
+            $btnRinominaIcona = getBottoneRinominaBacheca($nomeEnc, $ownerEnc, true);
+            $btnEliminaIcona  = getBottoneEliminaBacheca($nomeEnc, $ownerEnc, $proprietarioEnc, true);
+
             $azioni = "<div style='text-align:center; white-space:nowrap;'>
-                <span title='Modifica' class='btn-azione' onclick=\"modificaBacheca('{$nomeEnc}', {$ownerEnc})\">
-                    <img src='images/edit.png' alt='Modifica'>
-                </span>
-                <span title='Elimina' class='btn-azione' onclick=\"eliminaBacheca('{$nomeEnc}', {$ownerEnc})\">
-                    <img src='images/trash.png' alt='Elimina'>
-                </span>
+                {$btnRinominaIcona}
+                {$btnEliminaIcona}
             </div>";
 
             $datiBacheche[] = [
@@ -552,13 +590,8 @@ if (!$isAjax):
                 <?php include 'nav.html'; ?>
 
                 <?php
-                // Catturiamo i parametri dall'URL
-                $vista_corrente = $_GET['vista'] ?? '';
-                $tab_corrente   = $_GET['tab'] ?? 'info';
-                $bacheca_val    = $_GET['bacheca'] ?? '';
-                $owner_val      = $_GET['owner'] ?? '';
-
-                renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca_val, $owner_val);
+                $req_params = getParametriRichiestaBacheche();
+                renderFiltroSidebar($pdo, $req_params['vista'], $req_params['tab'], $req_params['bacheca'], $req_params['owner']);
                 ?>
             </aside>
 
@@ -566,23 +599,8 @@ if (!$isAjax):
             <?php endif; ?>
 
             <?php
-            // =========================================================
-            // ROUTER DELLE VISTE
-            // =========================================================
-            if (!empty($_GET['vista']) && !empty($_GET['bacheca']) && !empty($_GET['owner'])) {
-                $vista   = $_GET['vista'];
-                $bacheca = $_GET['bacheca'];
-                $owner   = $_GET['owner'];
-                $bEnc    = htmlspecialchars(addslashes($bacheca), ENT_QUOTES);
-
-                if ($vista === 'dettaglio') {
-                    renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax);
-                } else {
-                    echo "<div style='margin-bottom: 25px;'></div>";
-                }
-            } else {
-                renderElencoBacheche($pdo, $isAjax);
-            }
+            $req_params = getParametriRichiestaBacheche();
+            gestisciRoutingBacheche($pdo, $isAjax, $req_params);
             ?>
 
             <?php if (!$isAjax): ?>
