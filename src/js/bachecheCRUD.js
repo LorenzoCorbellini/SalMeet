@@ -7,39 +7,45 @@ function eseguiRichiesta(bodyData, messaggioSuccesso) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyData)
     })
-    .then(r => r.json())
-    .then(data => {
-        if (data.successo) {
-            if (messaggioSuccesso) {
-                // Popup di successo
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Operazione completata',
-                    text: messaggioSuccesso,
-                    timer: 2000,
-                    showConfirmButton: false
-                }).then(() => location.reload());
+        .then(r => r.json())
+        .then(data => {
+            if (data.successo) {
+                if (messaggioSuccesso) {
+                    // Popup di successo
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Operazione completata',
+                        text: messaggioSuccesso,
+                        timer: 2000,
+                        showConfirmButton: false,
+                        heightAuto: false,
+                        scrollbarPadding: false
+                    }).then(() => location.reload());
+                } else {
+                    location.reload();
+                }
             } else {
-                location.reload();
+                // Popup di errore logico
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Errore',
+                    text: data.messaggio,
+                    heightAuto: false,
+                    scrollbarPadding: false
+                });
             }
-        } else {
-            // Popup di errore logico
+        })
+        .catch((error) => {
+            console.error(error);
+            // Popup di errore critico/server
             Swal.fire({
                 icon: 'error',
-                title: 'Errore',
-                text: data.messaggio
+                title: 'Errore di sistema',
+                text: 'Impossibile comunicare con il server.',
+                heightAuto: false,
+                scrollbarPadding: false
             });
-        }
-    })
-    .catch((error) => {
-        console.error(error);
-        // Popup di errore critico/server
-        Swal.fire({
-            icon: 'error',
-            title: 'Errore di sistema',
-            text: 'Impossibile comunicare con il server.'
         });
-    });
 }
 
 // =========================================================
@@ -50,6 +56,8 @@ async function aggiungiBacheca() {
     // Popup con form multiplo (Nome e Proprietario)
     const { value: formValues } = await Swal.fire({
         title: 'Nuova Bacheca',
+        heightAuto: false,
+        scrollbarPadding: false,
         html:
             '<input id="swal-nome" class="swal2-input" placeholder="Nome della Bacheca">' +
             '<input id="swal-owner" type="number" class="swal2-input" placeholder="Codice Proprietario">',
@@ -60,18 +68,18 @@ async function aggiungiBacheca() {
         preConfirm: () => {
             const nome = document.getElementById('swal-nome').value.trim();
             const owner = document.getElementById('swal-owner').value;
-            
+
             if (!nome || !owner) {
                 Swal.showValidationMessage('Per favore compila entrambi i campi.');
                 return false;
             }
-            
+
             const ownerInt = parseInt(owner, 10);
             if (isNaN(ownerInt) || ownerInt <= 0) {
                 Swal.showValidationMessage('Il codice utente deve essere un numero valido.');
                 return false;
             }
-            
+
             return { nome: nome, owner: ownerInt };
         }
     });
@@ -91,6 +99,8 @@ async function modificaBacheca(nomeBacheca, owner) {
         input: 'text',
         inputLabel: 'Inserisci il nuovo nome:',
         inputValue: nomeBacheca,
+        heightAuto: false,
+        scrollbarPadding: false,
         showCancelButton: true,
         confirmButtonText: 'Salva',
         cancelButtonText: 'Annulla',
@@ -116,9 +126,9 @@ function eliminaBacheca(nomeBacheca, owner) {
         title: 'Sei sicuro?',
         text: "Vuoi davvero eliminare questa bacheca e tutto il suo contenuto? L'azione è irreversibile!",
         icon: 'warning',
+        heightAuto: false,
+        scrollbarPadding: false,
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
         confirmButtonText: 'Sì, elimina!',
         cancelButtonText: 'Annulla'
     }).then((result) => {
@@ -141,6 +151,8 @@ async function aggiungiAutorizzato(nomeBacheca, owner) {
         title: 'Autorizza Utente',
         input: 'number',
         inputLabel: "Inserisci il codice dell'utente da autorizzare:",
+        heightAuto: false,
+        scrollbarPadding: false,
         showCancelButton: true,
         confirmButtonText: 'Autorizza',
         cancelButtonText: 'Annulla',
@@ -167,9 +179,9 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere) {
         title: 'Rimuovi Utente',
         text: "Vuoi revocare l'accesso a questo utente per questa bacheca?",
         icon: 'warning',
+        heightAuto: false,
+        scrollbarPadding: false,
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
         confirmButtonText: 'Sì, rimuovi',
         cancelButtonText: 'Annulla'
     }).then((result) => {
@@ -193,6 +205,8 @@ async function aggiungiFile(nomeBacheca, owner) {
         title: 'Aggiungi File',
         input: 'number',
         inputLabel: "Inserisci l'ID del file da pubblicare:",
+        heightAuto: false,
+        scrollbarPadding: false,
         showCancelButton: true,
         confirmButtonText: 'Aggiungi File',
         cancelButtonText: 'Annulla',
@@ -219,9 +233,9 @@ function rimuoviFile(nomeBacheca, owner, fileDaRimuovere) {
         title: 'Rimuovi File',
         text: "Sei sicuro di voler togliere questo file dalla bacheca?",
         icon: 'warning',
+        heightAuto: false,
+        scrollbarPadding: false,
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
         confirmButtonText: 'Sì, rimuovi',
         cancelButtonText: 'Annulla'
     }).then((result) => {
