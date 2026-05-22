@@ -590,20 +590,50 @@ tbody tr:hover td:hover {
     align-items: center;
     gap: 10px;
     color: var(--accent);
-    transition: color 0.2s ease, transform 0.2s ease;
-    font-size: 1.4rem;
+    font-size: 1.1rem;
+    /* Ridotto leggermente per bilanciare le proporzioni del box */
+
+    /* --- AGGIUNTI PER IL BORDO E IL LOOK DA PULSANTE --- */
+    border: 2px solid var(--accent);
+    /* Crea il bordo con il colore accento */
+    padding: 8px 18px;
+    /* Spazio interno per dare volume al pulsante */
+    border-radius: 30px;
+    /* Angoli arrotondati a pillola (molto moderno) */
+    background-color: transparent;
+    /* Sfondo iniziale trasparente */
+    box-sizing: border-box;
+    transition: all 0.25s ease;
+    /* Transizione fluida estesa a tutte le proprietà */
 }
 
 .btn-aggiungi:hover {
-    color: var(--accent-hover);
-    transform: translateY(-1px);
+    color: var(--text-light);
+    /* Il testo diventa bianco al passaggio del mouse */
+    background-color: var(--accent);
+    /* Lo sfondo si riempie con il colore accento */
+    border-color: var(--accent);
+    /* Il bordo rimane coordinato */
+    transform: translateY(-2px);
+    /* Effetto leggero sollevamento (era -1px) */
+    box-shadow: 0 5px 15px rgba(230, 104, 90, 0.3);
+    /* Bagliore colorato sotto il tasto */
     text-decoration: none;
 }
 
 .btn-aggiungi img {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    /* Adattata la larghezza */
+    height: 20px;
+    /* Adattata l'altezza */
     vertical-align: middle;
+    transition: filter 0.25s ease;
+    /* Transizione fluida per il cambio colore dell'icona */
+}
+
+/* Rende l'icona "+" bianca quando si passa sopra con il mouse (se l'immagine di partenza è scura) */
+.btn-aggiungi:hover img {
+    filter: brightness(0) invert(1);
 }
 
 /* -- PERSONALIZZAZIONE SWEETALERT2 -- */

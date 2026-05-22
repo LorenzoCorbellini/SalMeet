@@ -3,12 +3,41 @@ require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
 
 // =========================================================
-//  ASTRAZIONE BOTTONE "Aggiungi nuova bacheca" 
+//  ASTRAZIONE BOTTONI AZIONE BACHECA
 // =========================================================
 function getBottoneNuovaBacheca(): string
 {
-    return "<a onclick='aggiungiBacheca()' class='btn-aggiungi' style='cursor: pointer;'>
+    return "<a onclick='aggiungiBacheca()' class='btn-aggiungi'>
         <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi una nuova bacheca</strong>
+    </a>";
+}
+
+function getBottoneModificaBacheca($bEnc, $owner): string
+{
+    return "<a onclick=\"modificaBacheca('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+        <img src='images/edit.png' alt='Modifica' style='vertical-align: middle;'> <strong>Modifica</strong>
+    </a>";
+}
+
+function getBottoneEliminaBacheca($bEnc, $owner): string
+{
+    // Colore rosso (#dc3545) per evidenziare l'azione distruttiva
+    return "<a onclick=\"eliminaBacheca('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+        <img src='images/trash.png' alt='Elimina' style='vertical-align: middle;'> <strong>Elimina</strong>
+    </a>";
+}
+
+function getBottoneAggiungiUtente($bEnc, $owner): string
+{
+    return "<a onclick=\"aggiungiAutorizzato('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+        <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi utente</strong>
+    </a>";
+}
+
+function getBottoneAggiungiFile($bEnc, $owner): string
+{
+    return "<a onclick=\"aggiungiFile('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+        <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi file</strong>
     </a>";
 }
 
@@ -287,7 +316,6 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
     $btnNuovaBacheca = getBottoneNuovaBacheca();
 
     // Contenitore Flex per avere Tab a sinistra e Bottone a destra
-    // Il bordo inferiore è stato spostato qui per dare uniformità
     echo "
     <div style='display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-soft); margin-bottom: 15px;'>
         <div class='bacheca-tabs' style='border-bottom: none; margin-bottom: 0;'>
@@ -321,6 +349,15 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
                 echo "<p style='font-size: 1.1rem; margin-bottom: 0;'><strong>Creata da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
             }
             echo "</div>";
+
+            // --- INSERIMENTO DEI NUOVI BOTTONI MODIFICA ED ELIMINA ---
+            $btnModifica = getBottoneModificaBacheca($bEnc, $owner);
+            $btnElimina  = getBottoneEliminaBacheca($bEnc, $owner);
+
+            echo "<div style='display: flex; gap: 15px; margin-top: 20px;'>
+                    {$btnModifica}
+                    {$btnElimina}
+                  </div>";
         }
     } elseif ($activeTab === 'utenti') {
         $allowed_sorts_u = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data_nascita' => 'u.dataNascita'];
@@ -331,9 +368,8 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
         echo "<div class='table-top-bar'>";
         echo "<p style='margin: 0;'>Utenti autorizzati nella bacheca: <strong>{$countUtenti}</strong></p>";
-        echo "<a onclick=\"aggiungiAutorizzato('{$bEnc}', {$owner})\" class='btn-aggiungi'>
-            <img src='images/add.png' alt='Aggiungi'> <strong>Aggiungi utente</strong>
-        </a>";
+        // Inserimento Bottone Astratto
+        echo getBottoneAggiungiUtente($bEnc, $owner);
         echo "</div>";
 
         $_GET['tab'] = 'utenti';
@@ -353,9 +389,8 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
         echo "<div class='table-top-bar'>";
         echo "<p style='margin: 0;'>File pubblicati nella bacheca: <strong>{$countFile}</strong></p>";
-        echo "<a onclick=\"aggiungiFile('{$bEnc}', {$owner})\" class='btn-aggiungi'>
-            <img src='images/add.png' alt='Aggiungi'> <strong>Aggiungi file</strong>
-        </a>";
+        // Inserimento Bottone Astratto
+        echo getBottoneAggiungiFile($bEnc, $owner);
         echo "</div>";
 
         $_GET['tab'] = 'file';
