@@ -20,3 +20,9 @@ DB_USER=
 DB_PASS=
 ```
 e impostare le credenziali per il database.
+
+### Avviare il sito in locale
+```
+cd src/
+php -S localhost:8000
+```
