@@ -92,7 +92,7 @@ async function aggiungiBacheca() {
     }
 }
 
-async function modificaBacheca(nomeBacheca, owner) {
+async function rinominaBacheca(nomeBacheca, owner) {
     const { value: nuovoNome } = await Swal.fire({
         title: 'Rinomina Bacheca',
         input: 'text',
@@ -116,7 +116,7 @@ async function modificaBacheca(nomeBacheca, owner) {
             nome: nomeBacheca,
             owner: owner,
             nuovoNome: nuovoNome.trim()
-        }, 'Bacheca modificata con successo.');
+        }, 'Bacheca rinominata con successo.');
     }
 }
 
