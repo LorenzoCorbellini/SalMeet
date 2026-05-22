@@ -89,6 +89,8 @@ ol {
     padding: clamp(8px, 1.5vh, 20px) 0;
     background-color: var(--primary);
     width: 100%;
+    flex-grow: 0;
+    flex-shrink: 0;
 }
 
 a {
@@ -136,6 +138,8 @@ li.navbar a:hover:not(.active) {
     padding: clamp(12px, 1.5vh, 24px) clamp(12px, 1.2vw, 20px);
     box-sizing: border-box;
     width: 100%;
+    flex-grow: 0;
+    height: max-content;
 }
 
 #filtro h3 {
@@ -157,10 +161,10 @@ li.navbar a:hover:not(.active) {
 }
 
 .filter-empty {
+    margin-top: 0 !important;
+    border-top: 2px solid var(--border-soft) !important;
+    padding: 30px 20px !important;
     text-align: center;
-    margin-top: clamp(20px, 3vh, 40px);
-    padding: clamp(30px, 4vh, 50px) clamp(15px, 1.2vw, 25px) !important;
-    border-top: none !important;
 }
 
 .filter-empty p {
@@ -171,7 +175,6 @@ li.navbar a:hover:not(.active) {
     line-height: 1.4;
 }
 
-/* --- DOPPIO SLIDER CONFIG --- */
 /* --- DOPPIO SLIDER CONFIG --- */
 .multi-range-container {
     position: relative;
@@ -825,8 +828,10 @@ tbody tr:hover td:hover {
 
 .tab-info-card {
     padding: 30px;
-    background: var(--text-light);
+    background-color: var(--text-light);
     border-radius: 12px;
     border: 1px solid var(--border-soft);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    margin-top: 10px;
+    margin-bottom: 20px;
 }

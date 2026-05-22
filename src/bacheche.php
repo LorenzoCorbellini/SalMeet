@@ -21,7 +21,6 @@ function getBottoneModificaBacheca($bEnc, $owner): string
 
 function getBottoneEliminaBacheca($bEnc, $owner): string
 {
-    // Colore rosso (#dc3545) per evidenziare l'azione distruttiva
     return "<a onclick=\"eliminaBacheca('{$bEnc}', {$owner})\" class='btn-aggiungi'>
         <img src='images/trash.png' alt='Elimina' style='vertical-align: middle;'> <strong>Elimina</strong>
     </a>";
@@ -268,8 +267,10 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
         $title = preg_replace('/\d{3}$/', '', $f['titolo']);
 
-        $htmlFile = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipoStr) . "'>";
+        $htmlFile = "<div style='display: flex; align-items: center; gap: 8px;'>";
+        $htmlFile .= "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipoStr) . "'>";
         $htmlFile .= "<a href='" . htmlspecialchars($f['URL']) . "' target='_blank'>" . htmlspecialchars($title) . "</a>";
+        $htmlFile .= "</div>";
 
         $owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
         $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
