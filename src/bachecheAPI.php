@@ -58,11 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $sql .= " ORDER BY nickname ASC LIMIT 15";
-            
+
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
             $utenti = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             foreach ($utenti as &$u) {
                 if (!empty($u['dataNascita'])) {
                     if (function_exists('formattaData')) {
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
-            
+
             echo json_encode(['successo' => true, 'utenti' => $utenti]);
         } catch (Exception $e) {
             echo json_encode(['successo' => false, 'messaggio' => 'Errore nel server durante la ricerca.']);
@@ -83,13 +83,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ---------------------------------------------------------
     // CONTROLLO PARAMETRI PER TUTTE LE ALTRE AZIONI STANDARD
     // ---------------------------------------------------------
-    if (empty($input['nome']) || empty($input['owner'])) {
+    if (empty($input['nome']) || !isset($input['owner'])) {
         echo json_encode(['successo' => false, 'messaggio' => 'Parametri mancanti.']);
         exit;
     }
 
     $nome   = trim($input['nome']);
     $owner  = (int) $input['owner'];
+
+    // ---------------------------------------------------------
+    // CERCA FILE DEGLI UTENTI AUTORIZZATI 
+    // ---------------------------------------------------------
+    if ($azione === 'cerca_file_bacheca') {
+        $termine_file = isset($input['termine_file']) ? trim($input['termine_file']) : '';
+        $nickname     = isset($input['nickname']) ? trim($input['nickname']) : '';
+        $filtro_nome  = isset($input['filtro_nome']) ? trim($input['filtro_nome']) : '';
+        $cognome      = isset($input['cognome']) ? trim($input['cognome']) : '';
+
+        try {
+            // Seleziona inizialmente TUTTI i file caricati dagli utenti autorizzati alla bacheca
+            $sql = "SELECT f.numero, f.titolo AS nome_file, u.nickname, u.nome AS utente_nome, u.cognome AS utente_cognome 
+                    FROM FileMultimediale f
+                    JOIN Utente u ON f.caricatoDa = u.codice
+                    WHERE f.caricatoDa IN (
+                        SELECT utenteAutorizzato 
+                        FROM UtenteAutorizzatoBacheca 
+                        WHERE nomeBacheca = :nomeBacheca AND codUtente = :ownerBacheca
+                    )";
+
+            $params = [
+                ':nomeBacheca'  => $nome,
+                ':ownerBacheca' => $owner
+            ];
+
+            // Escludiamo i file già pubblicati in questa bacheca per evitare duplicati
+            $sql .= " AND f.numero NOT IN (
+                SELECT file 
+                FROM FilePubblicatoBacheca 
+                WHERE nomeBacheca = :nomeBacheca AND codUtente = :ownerBacheca
+            )";
+
+            // Applica i filtri di ricerca in cascata SOLO se sono stati compilati
+            if ($termine_file !== '') {
+                $sql .= " AND f.titolo LIKE :termine_file";
+                $params[':termine_file'] = '%' . $termine_file . '%';
+            }
+            if ($nickname !== '') {
+                $sql .= " AND u.nickname LIKE :nickname";
+                $params[':nickname'] = '%' . $nickname . '%';
+            }
+            if ($filtro_nome !== '') {
+                $sql .= " AND u.nome LIKE :filtro_nome";
+                $params[':filtro_nome'] = '%' . $filtro_nome . '%';
+            }
+            if ($cognome !== '') {
+                $sql .= " AND u.cognome LIKE :cognome";
+                $params[':cognome'] = '%' . $cognome . '%';
+            }
+
+            $sql .= " ORDER BY f.numero DESC LIMIT 30";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode(['successo' => true, 'files' => $files]);
+        } catch (Exception $e) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore nel server durante la ricerca dei file.']);
+        }
+        exit;
+    }
 
     // ---------------------------------------------------------
     // AGGIUNGI BACHECA
@@ -102,7 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Qui il controllo va bene così: se esiste già una bacheca "basket" (case-insensitive), non ne creiamo un'altra omonima.
         $st = $pdo->prepare("SELECT COUNT(*) FROM Bacheca WHERE nome = ? AND codiceUtente = ?");
         $st->execute([$nome, $owner]);
         if ($st->fetchColumn() > 0) {
@@ -194,7 +256,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->commit();
             echo json_encode(['successo' => true]);
-            
         } catch (Exception $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -277,7 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ---------------------------------------------------------
-    // RINOMINA BACHECA (CORRETTO PER GESTIRE IL CASE-CHANGING)
+    // RINOMINA BACHECA
     // ---------------------------------------------------------
     if ($azione === 'rinomina') {
         $nuovoNome = trim($input['nuovoNome'] ?? '');
@@ -286,14 +347,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // AGGIORNAMENTO: Aggiunto "AND nome != :vecchioNome" per ignorare la bacheca stessa che stiamo modificando
         $checkDup = $pdo->prepare("SELECT COUNT(*) FROM Bacheca WHERE nome = :nuovoNome AND codiceUtente = :owner AND nome != :vecchioNome");
         $checkDup->execute([
-            ':nuovoNome'   => $nuovoNome, 
+            ':nuovoNome'   => $nuovoNome,
             ':owner'       => $owner,
             ':vecchioNome' => $nome
         ]);
-        
+
         if ($checkDup->fetchColumn() > 0) {
             echo json_encode(['successo' => false, 'messaggio' => 'Bacheca omonima esistente.']);
             exit;

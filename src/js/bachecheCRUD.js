@@ -89,7 +89,6 @@ async function cercaESelezionaUtente(titoloPopup) {
                 const dateInput = document.getElementById('swal-search-date');
                 const resultsDiv = document.getElementById('swal-search-results');
 
-                // Consente l'invio rapido tramite tasto Enter da qualunque campo
                 [nickInput, nomeInput, cognomeInput, dateInput].forEach(input => {
                     input.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') {
@@ -106,7 +105,6 @@ async function cercaESelezionaUtente(titoloPopup) {
                     const cognomeTerm = cognomeInput.value.trim();
                     const dateTerm = dateInput.value;
 
-                    // Validazione: Almeno un campo deve essere riempito
                     if (nicknameTerm.length === 0 && nomeTerm.length === 0 && cognomeTerm.length === 0 && !dateTerm) {
                         resultsDiv.innerHTML = '<p style="color:var(--accent); font-size:0.95em; margin:10px 0; text-align:center;">Inserisci almeno un criterio per la ricerca.</p>';
                         return;
@@ -118,8 +116,8 @@ async function cercaESelezionaUtente(titoloPopup) {
                         const response = await fetch(API_URL, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                azione: 'cerca_utente', 
+                            body: JSON.stringify({
+                                azione: 'cerca_utente',
                                 nickname: nicknameTerm,
                                 filtro_nome: nomeTerm,
                                 cognome: cognomeTerm,
@@ -156,6 +154,124 @@ async function cercaESelezionaUtente(titoloPopup) {
                 const selected = document.querySelector('input[name="swal-user-radio"]:checked');
                 if (!selected) {
                     Swal.showValidationMessage('Seleziona un utente dalla lista prima di proseguire.');
+                    return false;
+                }
+                return selected.value;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) resolve(result.value);
+            else resolve(null);
+        });
+    });
+}
+
+// ====================================================================
+// ASTRAZIONE: FUNZIONE DI RICERCA FILE DEGLI UTENTI AUTORIZZATI
+// ====================================================================
+async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
+    return new Promise((resolve) => {
+        Swal.fire({
+            title: titoloPopup,
+            heightAuto: false,
+            scrollbarPadding: false,
+            html: `
+                <div style="text-align: left; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                    <div>
+                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome File:</label>
+                        <input id="swal-search-filename" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. foto.jpg">
+                    </div>
+                    <div>
+                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nickname Utente:</label>
+                        <input id="swal-search-file-nickname" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. supermario">
+                    </div>
+                    <div>
+                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome Utente:</label>
+                        <input id="swal-search-file-nome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Mario">
+                    </div>
+                    <div>
+                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Cognome Utente:</label>
+                        <input id="swal-search-file-cognome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Rossi">
+                    </div>
+                    <button id="swal-file-search-btn" class="swal2-styled swal2-confirm" style="margin: 10px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important;">Cerca</button>
+                </div>
+                <div id="swal-file-search-results" style="max-height: 180px; overflow-y: auto; text-align: left; margin-top: 15px; border-top: 1px solid var(--border-soft); padding-top: 12px;">
+                    <p style="color: var(--text-muted); text-align: center; margin-top: 5px; font-size: 0.9rem;">Caricamento file disponibili...</p>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Seleziona',
+            cancelButtonText: 'Annulla',
+            didOpen: () => {
+                const searchBtn = document.getElementById('swal-file-search-btn');
+                const filenameInput = document.getElementById('swal-search-filename');
+                const nicknameInput = document.getElementById('swal-search-file-nickname');
+                const nomeInput = document.getElementById('swal-search-file-nome');
+                const cognomeInput = document.getElementById('swal-search-file-cognome');
+                const resultsDiv = document.getElementById('swal-file-search-results');
+
+                const eseguiCercaFile = async () => {
+                    resultsDiv.innerHTML = '<p style="color:var(--text-muted); text-align:center; margin:15px 0;"><i>Ricerca in corso...</i></p>';
+                    try {
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                azione: 'cerca_file_bacheca',
+                                nome: nomeBacheca,
+                                owner: owner,
+                                termine_file: filenameInput.value.trim(),
+                                nickname: nicknameInput.value.trim(),
+                                filtro_nome: nomeInput.value.trim(),
+                                cognome: cognomeInput.value.trim()
+                            })
+                        });
+                        const data = await response.json();
+
+                        if (data.successo && data.files.length > 0) {
+                            let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
+                            data.files.forEach(f => {
+                                html += `
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid var(--border-soft); border-radius:8px; transition: background 0.2s;">
+                                        <input type="radio" name="swal-file-radio" value="${f.numero}" style="margin:0; width: 18px; height: 18px; accent-color: var(--primary);">
+                                        <span style="color: var(--text-dark); font-size: 0.95rem;">
+                                            <strong>${f.nome_file}</strong> 
+                                            <span style="color: var(--text-muted); font-size: 0.85em; display:block; margin-top:2px;">Caricato da: <b>@${f.nickname}</b> (${f.utente_nome} ${f.utente_cognome})</span>
+                                        </span>
+                                    </label>
+                                `;
+                            });
+                            html += '</div>';
+                            resultsDiv.innerHTML = html;
+                        } else {
+                            resultsDiv.innerHTML = '<p style="color:var(--text-muted); text-align:center; margin:15px 0;">Nessun file disponibile o trovato per i criteri inseriti.</p>';
+                        }
+                    } catch (err) {
+                        resultsDiv.innerHTML = '<p style="color:var(--accent); text-align:center; margin:15px 0;">Errore di comunicazione col server.</p>';
+                    }
+                };
+
+                // Consente l'invio rapido premendo Invio sui campi di testo
+                [filenameInput, nicknameInput, nomeInput, cognomeInput].forEach(input => {
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            eseguiCercaFile();
+                        }
+                    });
+                });
+
+                searchBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    eseguiCercaFile();
+                });
+
+                // Avvio iniziale immediato all'apertura del popup per mostrare tutti i file autorizzati
+                eseguiCercaFile();
+            },
+            preConfirm: () => {
+                const selected = document.querySelector('input[name="swal-file-radio"]:checked');
+                if (!selected) {
+                    Swal.showValidationMessage('Seleziona un file dalla lista prima di proseguire.');
                     return false;
                 }
                 return selected.value;
@@ -291,30 +407,134 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
 // GESTIONE FILE NELLA BACHECA
 // =========================================================
 
-async function aggiungiFile(nomeBacheca, owner) {
-    const { value: fileInput } = await Swal.fire({
-        title: 'Aggiungi File',
-        input: 'number',
-        inputLabel: "Inserisci l'ID del file da pubblicare:",
-        heightAuto: false,
-        scrollbarPadding: false,
-        showCancelButton: true,
-        confirmButtonText: 'Aggiungi File',
-        cancelButtonText: 'Annulla',
-        inputValidator: (value) => {
-            const val = parseInt(value, 10);
-            if (isNaN(val) || val <= 0) {
-                return 'ID file non valido.';
-            }
-        }
-    });
+// ====================================================================
+// ASTRAZIONE: FUNZIONE DI RICERCA FILE DEGLI UTENTI AUTORIZZATI
+// ====================================================================
+async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
+    return new Promise((resolve) => {
+        Swal.fire({
+            title: titoloPopup,
+            heightAuto: false,
+            scrollbarPadding: false,
+            html: `
+                <div style="text-align: left; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                    <div>
+                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome File:</label>
+                        <input id="swal-search-filename" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. foto.png">
+                    </div>
+                    <div>
+                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nickname Utente:</label>
+                        <input id="swal-search-file-nickname" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. supermario">
+                    </div>
+                    <div>
+                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome Utente:</label>
+                        <input id="swal-search-file-nome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Mario">
+                    </div>
+                    <div>
+                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Cognome Utente:</label>
+                        <input id="swal-search-file-cognome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Rossi">
+                    </div>
+                    <button id="swal-file-search-btn" class="swal2-styled swal2-confirm" style="margin: 10px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important;">Filtra Risultati</button>
+                </div>
+                <div id="swal-file-search-results" style="max-height: 180px; overflow-y: auto; text-align: left; margin-top: 15px; border-top: 1px solid #ddd; padding-top: 12px;">
+                    <p style="color: #666; text-align: center; margin-top: 5px; font-size: 0.9rem;">Caricamento iniziale dei file...</p>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Seleziona',
+            cancelButtonText: 'Annulla',
+            didOpen: () => {
+                const searchBtn = document.getElementById('swal-file-search-btn');
+                const filenameInput = document.getElementById('swal-search-filename');
+                const nicknameInput = document.getElementById('swal-search-file-nickname');
+                const nomeInput = document.getElementById('swal-search-file-nome');
+                const cognomeInput = document.getElementById('swal-search-file-cognome');
+                const resultsDiv = document.getElementById('swal-file-search-results');
 
-    if (fileInput) {
+                const eseguiCercaFile = async () => {
+                    resultsDiv.innerHTML = '<p style="color:#666; text-align:center; margin:15px 0;"><i>Ricerca in corso...</i></p>';
+                    try {
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                azione: 'cerca_file_bacheca',
+                                nome: nomeBacheca,
+                                owner: owner,
+                                termine_file: filenameInput.value.trim(),
+                                nickname: nicknameInput.value.trim(),
+                                filtro_nome: nomeInput.value.trim(),
+                                cognome: cognomeInput.value.trim()
+                            })
+                        });
+                        const data = await response.json();
+
+                        if (data.successo && data.files.length > 0) {
+                            let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
+                            data.files.forEach(f => {
+                                html += `
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid #ddd; border-radius:8px; transition: background 0.2s;">
+                                        <input type="radio" name="swal-file-radio" value="${f.numero}" style="margin:0; width: 18px; height: 18px;">
+                                        <span style="color: #333; font-size: 0.95rem;">
+                                            <strong>${f.nome_file}</strong> 
+                                            <span style="color: #666; font-size: 0.85em; display:block; margin-top:2px;">Caricato da: <b>@${f.nickname}</b> (${f.utente_nome} ${f.utente_cognome})</span>
+                                        </span>
+                                    </label>
+                                `;
+                            });
+                            html += '</div>';
+                            resultsDiv.innerHTML = html;
+                        } else {
+                            resultsDiv.innerHTML = '<p style="color:#666; text-align:center; margin:15px 0;">Nessun file disponibile o trovato per i criteri inseriti.</p>';
+                        }
+                    } catch (err) {
+                        resultsDiv.innerHTML = '<p style="color:red; text-align:center; margin:15px 0;">Errore di comunicazione col server.</p>';
+                    }
+                };
+
+                // Consente l'invio rapido della ricerca premendo Invio sui campi di testo
+                [filenameInput, nicknameInput, nomeInput, cognomeInput].forEach(input => {
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            eseguiCercaFile();
+                        }
+                    });
+                });
+
+                searchBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    eseguiCercaFile();
+                });
+
+                // AVVIO IMMEDIATO ALL'APERTURA: Carica subito tutti i file degli utenti autorizzati
+                eseguiCercaFile();
+            },
+            preConfirm: () => {
+                const selected = document.querySelector('input[name="swal-file-radio"]:checked');
+                if (!selected) {
+                    Swal.showValidationMessage('Seleziona un file dalla lista prima di proseguire.');
+                    return false;
+                }
+                return selected.value;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) resolve(result.value);
+            else resolve(null);
+        });
+    });
+}
+
+// Aggiornamento della funzione standard di pubblicazione file
+async function aggiungiFile(nomeBacheca, owner) {
+    const fileId = await cercaESelezionaFile(nomeBacheca, owner, 'Seleziona un File da Pubblicare');
+
+    if (fileId) {
         eseguiRichiesta({
             azione: 'aggiungi_file',
             nome: nomeBacheca,
             owner: owner,
-            nuovoFile: parseInt(fileInput, 10)
+            nuovoFile: parseInt(fileId, 10)
         }, 'File aggiunto con successo alla bacheca.');
     }
 }
