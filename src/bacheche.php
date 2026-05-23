@@ -356,17 +356,12 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
     echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
 
-    $btnNuovaBacheca = getBottoneNuovaBacheca();
-
     echo "
     <div style='display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-soft); margin-bottom: 15px;'>
         <div class='bacheca-tabs' style='border-bottom: none; margin-bottom: 0;'>
             <a href='{$urlInfo}' class='" . ($activeTab === 'info' ? 'active' : '') . "'>Informazioni</a>
             <a href='{$urlUtenti}' class='" . ($activeTab === 'utenti' ? 'active' : '') . "'>Dettaglio Utenti</a>
             <a href='{$urlFile}' class='" . ($activeTab === 'file' ? 'active' : '') . "'>Dettaglio File</a>
-        </div>
-        <div style='padding-bottom: 8px;'>
-            {$btnNuovaBacheca}
         </div>
     </div>";
 
@@ -388,7 +383,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             if (!empty($dataFormattata)) {
                 echo "<p style='font-size: 1.1rem;'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
                 $linkOwner = "utenti.php?utente=" . urlencode($owner);
-                echo "<p style='font-size: 1.1rem; margin-bottom: 0;'><strong>Creata da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
+                echo "<p style='font-size: 1.1rem; margin-bottom: 0;'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
             }
             echo "</div>";
 

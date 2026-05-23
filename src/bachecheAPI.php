@@ -12,12 +12,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $input = json_decode(file_get_contents('php://input'), true);
 
-    if (empty($input['azione']) || empty($input['nome']) || empty($input['owner'])) {
-        echo json_encode(['successo' => false, 'messaggio' => 'Parametri mancanti.']);
+    if (empty($input['azione'])) {
+        echo json_encode(['successo' => false, 'messaggio' => 'Azione mancante.']);
         exit;
     }
 
     $azione = $input['azione'];
+
+    // ---------------------------------------------------------
+    // AZIONE ASTRATTA: CERCA UTENTE (Filtri puntuali Separati)
+    // ---------------------------------------------------------
+    if ($azione === 'cerca_utente') {
+        $nickname     = isset($input['nickname']) ? trim($input['nickname']) : '';
+        $filtro_nome  = isset($input['filtro_nome']) ? trim($input['filtro_nome']) : '';
+        $cognome      = isset($input['cognome']) ? trim($input['cognome']) : '';
+        $data_nascita = !empty($input['data_nascita']) ? $input['data_nascita'] : null;
+
+        try {
+            $sql = "SELECT codice, nickname, nome, cognome, dataNascita FROM Utente WHERE 1=1";
+            $params = [];
+
+            if ($nickname !== '') {
+                $sql .= " AND nickname LIKE :nickname";
+                $params[':nickname'] = '%' . $nickname . '%';
+            }
+
+            if ($filtro_nome !== '') {
+                $sql .= " AND nome LIKE :filtro_nome";
+                $params[':filtro_nome'] = '%' . $filtro_nome . '%';
+            }
+
+            if ($cognome !== '') {
+                $sql .= " AND cognome LIKE :cognome";
+                $params[':cognome'] = '%' . $cognome . '%';
+            }
+
+            if ($data_nascita !== null) {
+                $sql .= " AND dataNascita = :data_nascita";
+                $params[':data_nascita'] = $data_nascita;
+            }
+
+            if (empty($params)) {
+                echo json_encode(['successo' => true, 'utenti' => []]);
+                exit;
+            }
+
+            $sql .= " ORDER BY nickname ASC LIMIT 15";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $utenti = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($utenti as &$u) {
+                if (!empty($u['dataNascita'])) {
+                    if (function_exists('formattaData')) {
+                        $u['data_formattata'] = formattaData($u['dataNascita']);
+                    } else {
+                        $u['data_formattata'] = date('d/m/Y', strtotime($u['dataNascita']));
+                    }
+                }
+            }
+            
+            echo json_encode(['successo' => true, 'utenti' => $utenti]);
+        } catch (Exception $e) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore nel server durante la ricerca.']);
+        }
+        exit;
+    }
+
+    // ---------------------------------------------------------
+    // CONTROLLO PARAMETRI PER TUTTE LE ALTRE AZIONI STANDARD
+    // ---------------------------------------------------------
+    if (empty($input['nome']) || empty($input['owner'])) {
+        echo json_encode(['successo' => false, 'messaggio' => 'Parametri mancanti.']);
+        exit;
+    }
+
     $nome   = trim($input['nome']);
     $owner  = (int) $input['owner'];
 
@@ -32,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        // Qui il controllo va bene così: se esiste già una bacheca "basket" (case-insensitive), non ne creiamo un'altra omonima.
         $st = $pdo->prepare("SELECT COUNT(*) FROM Bacheca WHERE nome = ? AND codiceUtente = ?");
         $st->execute([$nome, $owner]);
         if ($st->fetchColumn() > 0) {
@@ -107,7 +178,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            // 1. Rimuovi i file pubblicati da questo utente in questa bacheca
             $stDeleteFiles = $pdo->prepare("
                 DELETE FROM FilePubblicatoBacheca 
                 WHERE nomeBacheca = ? AND codUtente = ? AND file IN (
@@ -116,7 +186,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ");
             $stDeleteFiles->execute([$nome, $owner, $target]);
 
-            // 2. Rimuovi l'utente dalla lista degli autorizzati
             $stDeleteAuth = $pdo->prepare("
                 DELETE FROM UtenteAutorizzatoBacheca 
                 WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ?
@@ -207,15 +276,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($azione === 'modifica') {
+    // ---------------------------------------------------------
+    // RINOMINA BACHECA (CORRETTO PER GESTIRE IL CASE-CHANGING)
+    // ---------------------------------------------------------
+    if ($azione === 'rinomina') {
         $nuovoNome = trim($input['nuovoNome'] ?? '');
         if ($nuovoNome === '') {
             echo json_encode(['successo' => false, 'messaggio' => 'Nome non valido.']);
             exit;
         }
 
-        $checkDup = $pdo->prepare("SELECT COUNT(*) FROM Bacheca WHERE nome = :nuovoNome AND codiceUtente = :owner");
-        $checkDup->execute([':nuovoNome' => $nuovoNome, ':owner' => $owner]);
+        // AGGIORNAMENTO: Aggiunto "AND nome != :vecchioNome" per ignorare la bacheca stessa che stiamo modificando
+        $checkDup = $pdo->prepare("SELECT COUNT(*) FROM Bacheca WHERE nome = :nuovoNome AND codiceUtente = :owner AND nome != :vecchioNome");
+        $checkDup->execute([
+            ':nuovoNome'   => $nuovoNome, 
+            ':owner'       => $owner,
+            ':vecchioNome' => $nome
+        ]);
+        
         if ($checkDup->fetchColumn() > 0) {
             echo json_encode(['successo' => false, 'messaggio' => 'Bacheca omonima esistente.']);
             exit;
@@ -228,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
             echo json_encode(['successo' => true]);
         } catch (Exception $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) $pdo->rollBack();
             echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
         }
     } elseif ($azione === 'elimina') {
@@ -239,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
             echo json_encode(['successo' => true]);
         } catch (Exception $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) $pdo->rollBack();
             echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
         }
     } else {
