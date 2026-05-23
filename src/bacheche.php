@@ -79,7 +79,7 @@ function gestisciRoutingBacheche($pdo, $isAjax, $params)
         if ($params['vista'] === 'dettaglio') {
             renderDettaglioBacheca($pdo, $params['bacheca'], $params['owner'], $bEnc, $isAjax);
         } else {
-            echo "<div style='margin-bottom: 25px;'></div>";
+            echo "<div style='margin-bottom: 25px;'>Errore! La pagina richiesta non esiste.</div>";
         }
     } else {
         renderElencoBacheche($pdo, $isAjax);
@@ -109,7 +109,6 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
                 ])
             ];
             include 'filter.php';
-
         } elseif ($tab_corrente === 'file') {
             $stmtRange = $pdo->prepare("
                 SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
@@ -144,7 +143,6 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
                 ])
             ];
             include 'filter.php';
-
         } else {
             echo '<div id="filtro" class="filter-empty">';
             echo '    <p>Nessun filtro disponibile per questa sezione</p>';
@@ -307,7 +305,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $title = preg_replace('/\d{3}$/', '', $f['titolo']);
 
         $titleJS = htmlspecialchars(addslashes($title), ENT_QUOTES);
-        $caricatoDaJS = htmlspecialchars(addslashes($f['nickname']), ENT_QUOTES); 
+        $caricatoDaJS = htmlspecialchars(addslashes($f['nickname']), ENT_QUOTES);
 
         $htmlFile = "<div style='display: flex; align-items: center; gap: 8px;'>";
         $htmlFile .= "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipoStr) . "'>";
@@ -507,49 +505,52 @@ function renderElencoBacheche($pdo, $isAjax)
     echo getBottoneNuovaBacheca();
     echo "</div>";
 
+    // Prepariamo SEMPRE l'array (che sarà vuoto se non ci sono record)
+    $datiBacheche = [];
+
+    foreach ($righe as $riga) {
+        $p = $_GET;
+        $p['vista']   = 'dettaglio';
+        $p['bacheca'] = $riga['Nome Bacheca'];
+        $p['owner']   = $riga['owner'];
+        $htmlNome = "<a href='bacheche.php?" . http_build_query($p) . "'>" . htmlspecialchars($riga['Nome Bacheca']) . "</a>";
+
+        $proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']);
+        $htmlProprietario = "<a href='" . htmlspecialchars($proprietarioLink) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
+
+        $nomeEnc  = htmlspecialchars(addslashes($riga['Nome Bacheca']), ENT_QUOTES);
+        $ownerEnc = (int) $riga['owner'];
+        $proprietarioEnc = htmlspecialchars(addslashes($riga['Proprietario']), ENT_QUOTES);
+
+        $btnRinominaIcona = getBottoneRinominaBacheca($nomeEnc, $ownerEnc, true);
+        $btnEliminaIcona  = getBottoneEliminaBacheca($nomeEnc, $ownerEnc, $proprietarioEnc, true);
+
+        $azioni = "<div style='text-align:center; white-space:nowrap;'>
+            {$btnRinominaIcona}
+            {$btnEliminaIcona}
+        </div>";
+
+        $datiBacheche[] = [
+            'Nome Bacheca' => $htmlNome,
+            'Proprietario' => $htmlProprietario,
+            'Data Creazione' => $riga['Data Creazione'],
+            'Azioni' => $azioni
+        ];
+    }
+
+    $customHeaders = generaIntestazioniOrdinabili([
+        'Nome Bacheca'   => 'nome',
+        'Proprietario'   => 'proprietario',
+        'Data Creazione' => 'data'
+    ], $sort_col, $sort_dir);
+
+    echo '<div class="table-container">';
+    // Se $datiBacheche è vuoto, stampaTabella genererà in automatico la classe CSS gestita dal tuo file
+    stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Azioni'], $customHeaders);
+    echo '</div>';
+
+    // Stampiamo la paginazione solo se ci sono risultati per evitare pagine a vuoto
     if (!empty($righe)) {
-        $datiBacheche = [];
-
-        foreach ($righe as $riga) {
-            $p = $_GET;
-            $p['vista']   = 'dettaglio';
-            $p['bacheca'] = $riga['Nome Bacheca'];
-            $p['owner']   = $riga['owner'];
-            $htmlNome = "<a href='bacheche.php?" . http_build_query($p) . "'>" . htmlspecialchars($riga['Nome Bacheca']) . "</a>";
-
-            $proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']);
-            $htmlProprietario = "<a href='" . htmlspecialchars($proprietarioLink) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
-
-            $nomeEnc  = htmlspecialchars(addslashes($riga['Nome Bacheca']), ENT_QUOTES);
-            $ownerEnc = (int) $riga['owner'];
-            $proprietarioEnc = htmlspecialchars(addslashes($riga['Proprietario']), ENT_QUOTES);
-
-            $btnRinominaIcona = getBottoneRinominaBacheca($nomeEnc, $ownerEnc, true);
-            $btnEliminaIcona  = getBottoneEliminaBacheca($nomeEnc, $ownerEnc, $proprietarioEnc, true);
-
-            $azioni = "<div style='text-align:center; white-space:nowrap;'>
-                {$btnRinominaIcona}
-                {$btnEliminaIcona}
-            </div>";
-
-            $datiBacheche[] = [
-                'Nome Bacheca' => $htmlNome,
-                'Proprietario' => $htmlProprietario,
-                'Data Creazione' => $riga['Data Creazione'],
-                'Azioni' => $azioni
-            ];
-        }
-
-        $customHeaders = generaIntestazioniOrdinabili([
-            'Nome Bacheca'   => 'nome',
-            'Proprietario'   => 'proprietario',
-            'Data Creazione' => 'data'
-        ], $sort_col, $sort_dir);
-
-        echo '<div class="table-container">';
-        stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Azioni'], $customHeaders);
-        echo '</div>';
-
         echo getPagesNav($np, $numero_pagine, 1);
     }
 
