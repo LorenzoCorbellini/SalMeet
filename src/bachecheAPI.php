@@ -207,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($azione === 'modifica') {
+    if ($azione === 'rinomina') {
         $nuovoNome = trim($input['nuovoNome'] ?? '');
         if ($nuovoNome === '') {
             echo json_encode(['successo' => false, 'messaggio' => 'Nome non valido.']);

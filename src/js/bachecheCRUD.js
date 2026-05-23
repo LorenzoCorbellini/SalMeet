@@ -112,7 +112,7 @@ async function rinominaBacheca(nomeBacheca, owner) {
 
     if (nuovoNome && nuovoNome.trim() !== nomeBacheca) {
         eseguiRichiesta({
-            azione: 'modifica',
+            azione: 'rinomina',
             nome: nomeBacheca,
             owner: owner,
             nuovoNome: nuovoNome.trim()
