@@ -257,3 +257,32 @@ function formatFileSizeHtml(int $size): string {
     $size_formatted = formatFileSize($size);
     return "<div id='file_size' title='$size MB'>$size_formatted</div>";
 }
+
+// =========================================================
+// FUNZIONI PER LA DASHBOARD (index.php)
+// =========================================================
+
+/**
+ * Calcola la somma totale dello spazio occupato da tutti i file.
+ */
+function getSpazioTotaleOccupato($pdo) {
+    $stmt = $pdo->query("SELECT SUM(dimensione) FROM FileMultimediale");
+    return (int)$stmt->fetchColumn();
+}
+
+/**
+ * Recupera gli ultimi N file caricati nel sistema.
+ */
+function getUltimiFileCaricati($pdo, $limite = 5) {
+    $sql = "SELECT f.titolo AS nome_file, u.nickname AS autore, f.tipo AS tipo_file, f.dimensione 
+            FROM FileMultimediale f 
+            LEFT JOIN Utente u ON f.caricatoDa = u.codice 
+            ORDER BY f.numero DESC LIMIT :limite";
+    
+    $stmt = $pdo->prepare($sql);
+    // Usiamo bindValue per sicurezza, forzando il limite come intero
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
