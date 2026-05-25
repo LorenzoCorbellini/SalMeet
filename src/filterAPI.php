@@ -1,94 +1,136 @@
 <?php
 /*
- * Modulo per la gestione, l'estrazione e l'inizializzazione centralizzata dei filtri.
+ * Modulo universale per l'inizializzazione dei filtri grafici e la compilazione SQL dinamica.
  */
-
-/* =============================================================================
-    Filtri Bacheche
-   ============================================================================= */
-/**
- * Genera l'array dei campi nascosti (hidden) necessari a preservare lo stato 
- * della bacheca e del tab attivo durante il filtraggio in modalità dettaglio.
- */
-function getCampiBaseDettaglio(string $bacheca, $owner, string $tab): array
-{
-    return [
-        ['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
-        ['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $bacheca,    'label' => ''],
-        ['tipo' => 'hidden', 'name' => 'owner',   'value' => $owner,      'label' => ''],
-        ['tipo' => 'hidden', 'name' => 'tab',     'value' => $tab,        'label' => ''],
-    ];
-}
 
 /**
- * Inizializza il filtro per l'elenco generale delle bacheche.
+ * 1. CONFIGURAZIONE DEI FILTRI (Interfaccia Grafica)
+ * Genera la configurazione dei campi input da passare al componente filter.php.
+ *
+ * @param string $entita L'entità da filtrare ('bacheche', 'utenti', 'file', 'gruppi', 'vuoto')
+ * @param array $parametriExtra Chiave-valore di campi hidden (es. ['vista' => 'dettaglio', 'tab' => 'utenti'])
  */
-function getFiltroBachecheGenerale(): array
+function getFiltroConfig(string $entita, array $parametriExtra = []): array
 {
-    return [
-        'campi' => [
-            ['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome'],
-            ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario'],
-            ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo'],
-        ]
-    ];
-}
-
-/**
- * Inizializza il filtro per la lista degli utenti autorizzati (Tab Utenti).
- */
-function getFiltroBachecheUtenti(string $bacheca, $owner, string $tab): array
-{
-    return [
-        'campi' => array_merge(getCampiBaseDettaglio($bacheca, $owner, $tab), [
-            ['tipo' => 'text',   'name' => 'utente',       'label' => 'Nickname'],
-            ['tipo' => 'text',   'name' => 'nome',         'label' => 'Nome'],
-            ['tipo' => 'text',   'name' => 'cognome',      'label' => 'Cognome'],
-            ['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Nato dal'],
-        ])
-    ];
-}
-
-/**
- * Inizializza il filtro per la lista dei file multimediali (Tab File).
- * Esegue il calcolo automatico dei limiti min/max di dimensione presenti nel DB per quella bacheca.
- */
-function getFiltroBachecheFile(PDO $pdo, string $bacheca, $owner, string $tab): array
-{
-    // Calcolo dinamico del range di dimensioni dei file legati alla bacheca
-    $stmtRange = $pdo->prepare("
-        SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
-        FROM FilePubblicatoBacheca fb
-        JOIN FileMultimediale fm ON fm.numero = fb.file
-        WHERE fb.nomeBacheca = :bacheca AND fb.codUtente = :owner
-    ");
-    $stmtRange->execute([':bacheca' => $bacheca, ':owner' => $owner]);
-    $rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
-
-    $minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
-    $maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
-    if ($minSize == $maxSize) {
-        $minSize = 0;
+    $campiBase = [];
+    
+    // Genera automaticamente i campi hidden strutturali passati dalla pagina corrente
+    foreach ($parametriExtra as $name => $value) {
+        $campiBase[] = ['tipo' => 'hidden', 'name' => $name, 'value' => $value, 'label' => ''];
     }
 
-    // Lettura dei valori correnti impostati dall'utente (o fallback sul min/max calcolato)
-    $currentMin = (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') ? (int)$_GET['dimensione_min'] : $minSize;
-    $currentMax = (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') ? (int)$_GET['dimensione_max'] : $maxSize;
+    switch ($entita) {
+        //filtro bacheche
+        case 'bacheche':
+            return [
+                'campi' => array_merge($campiBase, [
+                    ['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome'],
+                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario'],
+                    ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo'],
+                ])
+            ];
+        
+        //filtro utenti
+        case 'utenti':
+            return [
+                'campi' => array_merge($campiBase, [
+                    ['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname'],
+                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome'],
+                    ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome'],
+                    ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nati dal'],
+                ])
+            ];
+
+        //filtro file
+        case 'file':
+            $minSize = $parametriExtra['min_size'] ?? 0;
+            $maxSize = $parametriExtra['max_size'] ?? 100;
+            return [
+                'campi' => array_merge($campiBase, [
+                    ['tipo' => 'text', 'name' => 'file',              'label' => 'Nome File'],
+                    ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Nickname Proprietario'],
+                    [
+                        'tipo' => 'multi-range',
+                        'name_min' => 'dimensione_min',
+                        'name_max' => 'dimensione_max',
+                        'label' => 'Dimensione',
+                        'min' => $minSize,
+                        'max' => $maxSize,
+                        'value_min' => (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') ? (int)$_GET['dimensione_min'] : $minSize,
+                        'value_max' => (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') ? (int)$_GET['dimensione_max'] : $maxSize
+                    ],
+                ])
+            ];
+
+        //filtro vuoto
+        default:
+            return [
+                'vuoto' => true,
+                'messaggio' => 'Non sono presenti filtri per questa sezione',
+                'campi' => []
+            ];
+    }
+}
+
+/**
+ * 2. DIZIONARIO DELLE REGOLE SQL
+ * Mappa le chiavi ricevute dal form HTML con le colonne reali del database e i relativi operatori.
+ */
+function getRegoleFiltroSQL(string $entita): array
+{
+    $mappe = [
+        'bacheche' => [
+            'titolo'        => ['colonna' => 'b.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
+            'proprietario'  => ['colonna' => 'u.nickname',      'operatore' => 'LIKE', 'formato' => '%val%'],
+            'data'          => ['colonna' => 'b.dataCreazione',  'operatore' => '>=',   'formato' => 'val'],
+        ],
+        'utenti' => [
+            'utente'        => ['colonna' => 'u.nickname',      'operatore' => 'LIKE', 'formato' => '%val%'],
+            'nome'          => ['colonna' => 'u.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
+            'cognome'       => ['colonna' => 'u.cognome',       'operatore' => 'LIKE', 'formato' => '%val%'],
+            'data_nascita'  => ['colonna' => 'u.dataNascita',   'operatore' => '>=',   'formato' => 'val'],
+        ],
+        'file' => [
+            'file'              => ['colonna' => 'fm.nome',       'operatore' => 'LIKE', 'formato' => '%val%'],
+            'proprietario_file' => ['colonna' => 'u.nickname',    'operatore' => 'LIKE', 'formato' => '%val%'],
+            'dimensione_min'    => ['colonna' => 'fm.dimensione', 'operatore' => '>=',   'formato' => 'val'],
+            'dimensione_max'    => ['colonna' => 'fm.dimensione', 'operatore' => '<=',   'formato' => 'val'],
+        ]
+    ];
+
+    return $mappe[$entita] ?? [];
+}
+
+/**
+ * 3. COMPILATORE DI QUERY UNIVERSALE
+ * Analizza i dati in ingresso (es. $_GET) in base alle regole dell'entità e restituisce la clausola SQL e i parametri PDO sanificati.
+ */
+function applicaFiltriDinamici(array $inputs, string $entita): array
+{
+    $regole = getRegoleFiltroSQL($entita);
+    $condizioni = [];
+    $parametri = [];
+
+    foreach ($regole as $chiaveInput => $regola) {
+        if (isset($inputs[$chiaveInput]) && $inputs[$chiaveInput] !== '') {
+            $valore = trim($inputs[$chiaveInput]);
+            $colonna = $regola['colonna'];
+            $operatore = $regola['operatore'];
+            
+            // Genera placeholder univoco per PDO (es. :dimensione_min)
+            $placeholder = ":" . str_replace('.', '_', $chiaveInput);
+
+            if ($regola['formato'] === '%val%') {
+                $valore = "%" . $valore . "%";
+            }
+
+            $condizioni[] = "{$colonna} {$operatore} {$placeholder}";
+            $parametri[$placeholder] = $valore;
+        }
+    }
 
     return [
-        'campi' => array_merge(getCampiBaseDettaglio($bacheca, $owner, $tab), [
-            ['tipo' => 'text',   'name' => 'file',              'label' => 'Nome'],
-            ['tipo' => 'text',   'name' => 'proprietario_file', 'label' => 'Nickname Proprietario'],
-            [
-                'tipo' => 'multi-range',
-                'name_min' => 'dimensione_min',
-                'name_max' => 'dimensione_max',
-                'label' => 'Dimensione',
-                'min' => $minSize,
-                'max' => $maxSize,
-                'value_min' => $currentMin,
-                'value_max' => $currentMax
-            ],
-        ])
+        'sql' => !empty($condizioni) ? " AND " . implode(" AND ", $condizioni) : "",
+        'parametri' => $parametri
     ];
 }

@@ -92,30 +92,60 @@ function gestisciRoutingBacheche($pdo, $isAjax, $params)
 // =========================================================
 function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $owner)
 {
-
-    $filtro_config = null;
+    
+    $entita = 'bacheche'; // Entità di default (Vista Generale)
+    $parametriExtra = [];
 
     if ($vista_corrente === 'dettaglio') {
+        // Salviamo lo stato strutturale corrente come campi hidden per i tab della bacheca
+        $parametriExtra = [
+            'vista'   => 'dettaglio',
+            'bacheca' => $bacheca,
+            'owner'   => $owner,
+            'tab'     => $tab_corrente
+        ];
+
         if ($tab_corrente === 'utenti') {
-            $filtro_config = getFiltroBachecheUtenti($bacheca, $owner, $tab_corrente);
+            $entita = 'utenti';
         } elseif ($tab_corrente === 'file') {
-            $filtro_config = getFiltroBachecheFile($pdo, $bacheca, $owner, $tab_corrente);
+            $entita = 'file';
+
+            // Calcolo dinamico del range di dimensioni per la bacheca corrente
+            $stmtRange = $pdo->prepare("
+                SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
+                FROM FilePubblicatoBacheca fb
+                JOIN FileMultimediale fm ON fm.numero = fb.file
+                WHERE fb.nomeBacheca = :bacheca AND fb.codUtente = :owner
+            ");
+            $stmtRange->execute([':bacheca' => $bacheca, ':owner' => $owner]);
+            $rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
+
+            $minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
+            $maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
+            if ($minSize == $maxSize) {
+                $minSize = 0;
+            }
+
+            // Aggiungiamo i limiti calcolati ai parametri per l'interfaccia grafica
+            $parametriExtra['min_size'] = $minSize;
+            $parametriExtra['max_size'] = $maxSize;
+        } else {
+            $entita = 'vuoto';
         }
-    } else {
-        // Vista generale elenco bacheche
-        $filtro_config = getFiltroBachecheGenerale();
     }
 
-    // Se la configurazione del filtro esiste, la stampa, altrimenti mostra il box vuoto
-    if ($filtro_config !== null) {
-        include 'filter.php';
-    } else {
+    // Estraiamo la configurazione unificata basandoci sull'entità e i metadati passati
+    $filtro_config = getFiltroConfig($entita, $parametriExtra);
+
+    // Renderizzazione visiva del box dei filtri
+    if (isset($filtro_config['vuoto']) && $filtro_config['vuoto'] === true) {
         echo '<div id="filtro" class="filter-empty">';
-        echo '    <p>Nessun filtro disponibile per questa sezione</p>';
+        echo '    <p>' . htmlspecialchars($filtro_config['messaggio']) . '</p>';
         echo '</div>';
+    } else {
+        include 'filter.php';
     }
 }
-
 // =========================================================
 //  FUNZIONE PER RECUPERARE UTENTI 
 // =========================================================
@@ -461,7 +491,7 @@ function renderElencoBacheche($pdo, $isAjax)
     }
 
     echo "<div class='table-top-bar'>";
-    echo "<p class='info-risultati zero-margin'>Trovate <strong>$totaleRisultati</strong> bacheche <strong>($recordsPerPage per pagina)</strong></p>";
+    echo "<p class='info-risultati zero-margin'>Trovate <strong>$totaleRisultati</strong> bacheche (<strong>$recordsPerPage</strong> per pagina)</p>";
     echo getBottoneNuovaBacheca();
     echo "</div>";
 
