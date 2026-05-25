@@ -71,3 +71,61 @@ document.addEventListener('DOMContentLoaded', () => {
         aggiornaDoppioSlider();
     }
 });
+
+// =========================================================
+// LOGICA DEI FILTRI ISTANTANEI
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Inizializzazione degli Slider grafici
+    const inputMin = document.getElementById('dimensione_min');
+    const inputMax = document.getElementById('dimensione_max');
+
+    if (inputMin && inputMax) {
+        inputMin.addEventListener('input', aggiornaDoppioSlider);
+        inputMax.addEventListener('input', aggiornaDoppioSlider);
+        aggiornaDoppioSlider();
+    }
+
+    // 2. Intercettazione filtri
+    const filterForm = document.querySelector('#filtro form, .sidebar form');
+    if (!filterForm) return;
+
+    let debounceTimer;
+
+    // Questa funzione crea un URL con i filtri e chiama direttamente l'AJAX
+    function applicaFiltriAJAX() {
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        
+        // Crea l'URL combinando la pagina corrente e i nuovi parametri
+        const url = window.location.pathname + '?' + params.toString();
+        
+        // Usa la funzione definita in AJAXHandler.js
+        if (typeof caricaPaginaAjax === 'function') {
+            caricaPaginaAjax(url);
+        }
+    }
+
+    // Intercetta la scrittura del testo (con un ritardo di 400ms per non sovraccaricare)
+    filterForm.addEventListener('input', function (e) {
+        if (e.target.type === 'text' || e.target.tagName === 'TEXTAREA') {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(applicaFiltriAJAX, 100); // 100ms di ritardo dopo l'ultimo input
+        } else if (e.target.type === 'range') {
+            applicaFiltriAJAX(); // Gli slider partono istantaneamente
+        }
+    });
+
+    // Intercetta menu a tendina, date e checkbox
+    filterForm.addEventListener('change', function (e) {
+        if (e.target.type !== 'text' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'range') {
+            applicaFiltriAJAX();
+        }
+    });
+
+    // Blocca il tasto "Invio" sulla tastiera per evitare che il form ricarichi la pagina
+    filterForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        applicaFiltriAJAX();
+    });
+});

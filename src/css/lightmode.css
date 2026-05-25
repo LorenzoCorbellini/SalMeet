@@ -352,6 +352,7 @@ a.page-item.active:hover {
     background-color: var(--border-soft);
     color: var(--text-light);
     border-color: #9c8b88;
+    font-weight: 400;
 }
 
 #filtro button.reset:hover {
