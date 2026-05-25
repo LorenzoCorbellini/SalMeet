@@ -151,28 +151,28 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
             customClass: { popup: 'swal-wide-split' },
             html: `
                 <div style="display: flex; gap: 20px; text-align: left; align-items: stretch; min-height: 250px; margin-top: 15px;">
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-soft); padding-right: 15px;">
-                        <div>
-                            <label class="swal-filter-label">Nickname:</label>
-                            <input id="swal-search-nickname" class="swal2-input" placeholder="Es. supermario">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid var(--border-soft); padding-right: 15px;">
+                        <div style="width: 100%;">
+                            <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Nickname</label>
+                            <input id="swal-search-nickname" class="swal2-input" placeholder="Es. supermario" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
-                        <div>
-                            <label class="swal-filter-label">Nome:</label>
-                            <input id="swal-search-nome" class="swal2-input" placeholder="Es. Mario">
+                        <div style="width: 100%;">
+                            <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Nome</label>
+                            <input id="swal-search-nome" class="swal2-input" placeholder="Es. Mario" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
-                        <div>
-                            <label class="swal-filter-label">Cognome:</label>
-                            <input id="swal-search-cognome" class="swal2-input" placeholder="Es. Rossi">
+                        <div style="width: 100%;">
+                            <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Cognome</label>
+                            <input id="swal-search-cognome" class="swal2-input" placeholder="Es. Rossi" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
-                        <div>
-                            <label class="swal-filter-label">Data di Nascita:</label>
-                            <input id="swal-search-date" type="date" class="swal2-input">
+                        <div style="width: 100%;">
+                            <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Data di Nascita</label>
+                            <input id="swal-search-date" type="date" class="swal2-input" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
-                        <button id="swal-search-btn" class="swal2-styled swal2-confirm" style="margin: 15px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important; padding: 0;">Cerca Utente</button>
+                        <button id="swal-search-btn" class="swal2-styled swal2-confirm" style="margin: 10px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important; padding: 0;">Cerca Utente</button>
                     </div>
                     
                     <div style="flex: 1.5; display: flex; flex-direction: column;">
-                        <span class="swal-filter-label" style="margin-bottom: 10px; color: var(--primary-dark); font-weight: 600;">Risultati della ricerca:</span>
+                        <span class="swal-filter-label" style="margin-bottom: 10px; color: var(--primary-dark); font-weight: bold !important;">Risultati della ricerca:</span>
                         <div id="swal-search-results" style="flex: 1; overflow-y: auto; max-height: 280px; padding-right: 5px;">
                             <p style="color: var(--text-muted); text-align: center; margin-top: 15px; font-size: 0.9rem;">Compila almeno un campo a sinistra per avviare la ricerca.</p>
                         </div>
@@ -323,30 +323,30 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
             customClass: { popup: 'swal-wide-split' },
             html: `
                 <div style="display: flex; gap: 20px; text-align: left; align-items: stretch; min-height: 280px; margin-top: 15px;">
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-soft); padding-right: 15px;">
-                        <div>
-                            <label class="swal-filter-label">Nome File:</label>
-                            <input id="swal-search-filename" class="swal2-input" placeholder="Es. foto.jpg">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid var(--border-soft); padding-right: 15px;">
+                        <div style="width: 100%;">
+                            <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Nome File</label>
+                            <input id="swal-search-filename" class="swal2-input" placeholder="Es. foto.jpg" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
-                        <hr style="margin: 8px 0; border:0; border-top:1px dashed var(--border-soft);">
-                        <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold;">Filtra per Autore</span>
-                        <div>
-                            <label class="swal-filter-label">Nickname:</label>
-                            <input id="swal-search-file-nickname" class="swal2-input" placeholder="Es. supermario">
+                        <hr style="margin: 4px 0; border:0; border-top:1px dashed var(--border-soft); width: 100%;">
+                        <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight: bold !important;">Filtra per Autore</span>
+                        <div style="width: 100%;">
+                            <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Nickname</label>
+                            <input id="swal-search-file-nickname" class="swal2-input" placeholder="Es. supermario" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
-                        <div>
-                            <label class="swal-filter-label">Nome:</label>
-                            <input id="swal-search-file-nome" class="swal2-input" placeholder="Es. Mario">
+                        <div style="width: 100%;">
+                            <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Nome</label>
+                            <input id="swal-search-file-nome" class="swal2-input" placeholder="Es. Mario" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
-                        <div>
-                            <label class="swal-filter-label">Cognome:</label>
-                            <input id="swal-search-file-cognome" class="swal2-input" placeholder="Es. Rossi">
+                        <div style="width: 100%;">
+                            <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Cognome</label>
+                            <input id="swal-search-file-cognome" class="swal2-input" placeholder="Es. Rossi" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
-                        <button id="swal-file-search-btn" class="swal2-styled swal2-confirm" style="margin: 15px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important; padding: 0;">Filtra Risultati</button>
+                        <button id="swal-file-search-btn" class="swal2-styled swal2-confirm" style="margin: 10px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important; padding: 0;">Filtra file</button>
                     </div>
                     
                     <div style="flex: 1.5; display: flex; flex-direction: column;">
-                        <span class="swal-filter-label" style="margin-bottom: 10px; color: var(--primary-dark); font-weight: 600;">File degli utenti autorizzati:</span>
+                        <span class="swal-filter-label" style="margin-bottom: 10px; color: var(--primary-dark); font-weight: bold !important;">File degli utenti autorizzati:</span>
                         <div id="swal-file-search-results" style="flex: 1; overflow-y: auto; max-height: 310px; padding-right: 5px;">
                             <p style="color: var(--text-muted); text-align: center; margin-top: 15px; font-size: 0.9rem;">Caricamento file disponibili...</p>
                         </div>
