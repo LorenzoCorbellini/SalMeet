@@ -1,6 +1,5 @@
 const API_URL = 'bachecheAPI.php';
 
-// Funzione helper per le chiamate fetch standardizzate con REDIRECT
 function eseguiRichiesta(bodyData, messaggioSuccesso, urlRedirect = null) {
     fetch(API_URL, {
         method: 'POST',
@@ -14,8 +13,8 @@ function eseguiRichiesta(bodyData, messaggioSuccesso, urlRedirect = null) {
                     Swal.fire({
                         icon: 'success',
                         title: 'Operazione completata',
-                        text: messaggioSuccesso,
-                        timer: 2000,
+                        html: messaggioSuccesso,
+                        timer: 3000,
                         showConfirmButton: false,
                         heightAuto: false,
                         scrollbarPadding: false
@@ -67,10 +66,13 @@ async function aggiungiBacheca() {
         }
     });
 
+    // Se l'utente clicca Annulla o chiude il popup, fermiamo tutto
     if (!nomeBacheca) return;
 
+    // Richiamiamo il popup di ricerca utente (Layout Split a due colonne)
     const ownerId = await cercaESelezionaUtente('Assegna un Proprietario');
 
+    // Se un utente è stato selezionato, inviamo la richiesta al server
     if (ownerId) {
         eseguiRichiesta({
             azione: 'aggiungi',
@@ -99,17 +101,20 @@ async function rinominaBacheca(nomeBacheca, owner) {
     if (nuovoNome && nuovoNome.trim() !== nomeBacheca) {
         const nomePulito = nuovoNome.trim();
         const urlAttuale = new URL(window.location.href);
-        
+
+        // Sostituiamo il vecchio nome con il nuovo nell'URL
         if (urlAttuale.searchParams.has('bacheca')) {
             urlAttuale.searchParams.set('bacheca', nomePulito);
         }
+
+        const messaggioConferma = `<b style="font-weight: bold !important;">${nomeBacheca}</b> rinominata con successo in <b style="font-weight: bold !important;">${nomePulito}</b>`;
 
         eseguiRichiesta({
             azione: 'rinomina',
             nome: nomeBacheca,
             owner: owner,
             nuovoNome: nomePulito
-        }, 'Bacheca rinominata con successo.', urlAttuale.toString());
+        }, messaggioConferma, urlAttuale.toString());
     }
 }
 
@@ -129,7 +134,7 @@ function eliminaBacheca(nomeBacheca, owner) {
                 azione: 'elimina',
                 nome: nomeBacheca,
                 owner: owner
-            }, 'Bacheca eliminata con successo.', 'bacheche.php');
+            }, `Bacheca <b style="font-weight: bold !important;">${nomeBacheca}</b> eliminata con successo.`, 'bacheche.php');
         }
     });
 }
@@ -137,7 +142,7 @@ function eliminaBacheca(nomeBacheca, owner) {
 // =========================================================
 // GESTIONE UTENTI (Layout Split a due colonne)
 // =========================================================
-async function cercaESelezionaUtente(titoloPopup) {
+async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
     return new Promise((resolve) => {
         Swal.fire({
             title: titoloPopup,
@@ -228,7 +233,7 @@ async function cercaESelezionaUtente(titoloPopup) {
                                 const infoData = u.data_formattata ? ` | Nascita: ${u.data_formattata}` : '';
                                 html += `
                                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px 12px; border:1px solid var(--border-soft); border-radius:8px; transition: background 0.2s;">
-                                        <input type="radio" name="swal-user-radio" value="${u.codice}" style="margin:0; width: 16px; height: 16px; accent-color: var(--primary);">
+                                        <input type="radio" name="swal-user-radio" value="${u.codice}" data-nickname="${u.nickname}" style="margin:0; width: 16px; height: 16px; accent-color: var(--primary);">
                                         <span style="color: var(--text-dark); font-size: 0.95rem;">
                                             <strong>${u.nickname}</strong> 
                                             <span style="color: var(--text-muted); font-size: 0.85em; display:block; margin-top:2px;">${u.nome} ${u.cognome}${infoData}</span>
@@ -252,24 +257,35 @@ async function cercaESelezionaUtente(titoloPopup) {
                     Swal.showValidationMessage('Seleziona un utente dalla lista a destra prima di proseguire.');
                     return false;
                 }
-                return selected.value;
+                return {
+                    id: selected.value,
+                    nickname: selected.getAttribute('data-nickname')
+                };
             }
         }).then((result) => {
-            if (result.isConfirmed) resolve(result.value);
-            else resolve(null);
+            if (result.isConfirmed) {
+                if (returnFullObject) {
+                    resolve(result.value);
+                } else {
+                    resolve(result.value.id);
+                }
+            } else {
+                resolve(null);
+            }
         });
     });
 }
 
 async function aggiungiAutorizzato(nomeBacheca, owner) {
-    const utenteId = await cercaESelezionaUtente('Cerca Utente da Autorizzare');
-    if (utenteId) {
+    const utenteScelto = await cercaESelezionaUtente('Cerca Utente da Autorizzare', true);
+
+    if (utenteScelto) {
         eseguiRichiesta({
             azione: 'aggiungi_autorizzato',
             nome: nomeBacheca,
             owner: owner,
-            nuovoUtente: parseInt(utenteId, 10)
-        }, 'Utente autorizzato con successo.');
+            nuovoUtente: parseInt(utenteScelto.id, 10)
+        }, `Utente <b style="font-weight: bold !important;">${utenteScelto.nickname}</b> autorizzato con successo.`);
     }
 }
 
@@ -290,7 +306,7 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
                 nome: nomeBacheca,
                 owner: owner,
                 utenteDaRimuovere: parseInt(utenteDaRimuovere, 10)
-            }, 'Autorizzazione revocata e file rimossi.');
+            }, `Autorizzazione revocata a <b style="font-weight: bold !important;">${nickname}</b> e file rimossi.`);
         }
     });
 }
@@ -298,7 +314,7 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
 // ====================================================================
 // GESTIONE FILE (Layout Split a due colonne)
 // ====================================================================
-async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
+async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullObject = false) {
     return new Promise((resolve) => {
         Swal.fire({
             title: titoloPopup,
@@ -371,7 +387,7 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
                             data.files.forEach(f => {
                                 html += `
                                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px 12px; border:1px solid var(--border-soft); border-radius:8px; transition: background 0.2s;">
-                                        <input type="radio" name="swal-file-radio" value="${f.numero}" style="margin:0; width: 16px; height: 16px; accent-color: var(--primary);">
+                                        <input type="radio" name="swal-file-radio" value="${f.numero}" data-nome="${f.nome_file}" data-owner="${f.nickname}" style="margin:0; width: 16px; height: 16px; accent-color: var(--primary);">
                                         <span style="color: var(--text-dark); font-size: 0.95rem;">
                                             <strong>${f.nome_file}</strong> 
                                             <span style="color: var(--text-muted); font-size: 0.85em; display:block; margin-top:2px;">Caricato da: <b>@${f.nickname}</b> (${f.utente_nome} ${f.utente_cognome})</span>
@@ -403,7 +419,6 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
                     eseguiCercaFile();
                 });
 
-                // Cerca automaticamente tutti i file all'apertura
                 eseguiCercaFile();
             },
             preConfirm: () => {
@@ -412,24 +427,38 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
                     Swal.showValidationMessage('Seleziona un file dalla lista a destra prima di proseguire.');
                     return false;
                 }
-                return selected.value;
+                return {
+                    id: selected.value,
+                    nome: selected.getAttribute('data-nome'),
+                    proprietario: selected.getAttribute('data-owner')
+                };
             }
         }).then((result) => {
-            if (result.isConfirmed) resolve(result.value);
-            else resolve(null);
+            if (result.isConfirmed) {
+                if (returnFullObject) {
+                    resolve(result.value);
+                } else {
+                    resolve(result.value.id);
+                }
+            } else {
+                resolve(null);
+            }
         });
     });
 }
 
 async function aggiungiFile(nomeBacheca, owner) {
-    const fileId = await cercaESelezionaFile(nomeBacheca, owner, 'Seleziona un File da Pubblicare');
-    if (fileId) {
+    const fileScelto = await cercaESelezionaFile(nomeBacheca, owner, 'Seleziona un File da Pubblicare', true);
+
+    if (fileScelto) {
+        const messaggioConferma = `File <b style="font-weight: bold !important;">${fileScelto.nome}</b> di <b style="font-weight: bold !important;">${fileScelto.proprietario}</b> aggiunto con successo alla bacheca.`;
+
         eseguiRichiesta({
             azione: 'aggiungi_file',
             nome: nomeBacheca,
             owner: owner,
-            nuovoFile: parseInt(fileId, 10)
-        }, 'File aggiunto con successo alla bacheca.');
+            nuovoFile: parseInt(fileScelto.id, 10)
+        }, messaggioConferma);
     }
 }
 
@@ -445,12 +474,14 @@ function rimuoviFile(nomeBacheca, owner, fileDaRimuovere, nomeFile, caricatoDa) 
         cancelButtonText: 'Annulla'
     }).then((result) => {
         if (result.isConfirmed) {
+            const messaggioSuccesso = `File <b style="font-weight: bold !important;">${nomeFile}</b> di <b style="font-weight: bold !important;">${caricatoDa}</b> rimosso con successo.`;
+
             eseguiRichiesta({
                 azione: 'rimuovi_file',
                 nome: nomeBacheca,
                 owner: owner,
                 fileDaRimuovere: parseInt(fileDaRimuovere, 10)
-            }, 'File rimosso con successo.');
+            }, messaggioSuccesso);
         }
     });
 }
