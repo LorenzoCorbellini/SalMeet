@@ -8,7 +8,7 @@ require_once __DIR__ . '/functions.php';
 function getBottoneNuovaBacheca(): string
 {
     return "<a onclick='aggiungiBacheca()' class='btn-aggiungi'>
-        <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi una nuova bacheca</strong>
+        <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi una nuova bacheca</strong>
     </a>";
 }
 
@@ -20,7 +20,7 @@ function getBottoneRinominaBacheca($bEnc, $owner, $isIcona = false): string
                 </span>";
     }
     return "<a onclick=\"rinominaBacheca('{$bEnc}', {$owner})\" class='btn-aggiungi'>
-        <img src='images/edit.png' alt='Rinomina' style='vertical-align: middle;'> <strong>Rinomina</strong>
+        <img src='images/edit.png' alt='Rinomina' class='btn-img-align'> <strong>Rinomina</strong>
     </a>";
 }
 
@@ -33,21 +33,21 @@ function getBottoneEliminaBacheca($bEnc, $owner, $ownerNickname, $isIcona = fals
                 </span>";
     }
     return "<a onclick=\"eliminaBacheca('{$bEnc}', {$owner}, '{$ownerNicknameEnc}')\" class='btn-aggiungi'>
-        <img src='images/trash.png' alt='Elimina' style='vertical-align: middle;'> <strong>Elimina</strong>
+        <img src='images/trash.png' alt='Elimina' class='btn-img-align'> <strong>Elimina</strong>
     </a>";
 }
 
 function getBottoneAggiungiUtente($bEnc, $owner): string
 {
     return "<a onclick=\"aggiungiAutorizzato('{$bEnc}', {$owner})\" class='btn-aggiungi'>
-        <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi utente</strong>
+        <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi utente</strong>
     </a>";
 }
 
 function getBottoneAggiungiFile($bEnc, $owner): string
 {
     return "<a onclick=\"aggiungiFile('{$bEnc}', {$owner})\" class='btn-aggiungi'>
-        <img src='images/add.png' alt='Aggiungi' style='vertical-align: middle;'> <strong>Aggiungi file</strong>
+        <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi file</strong>
     </a>";
 }
 
@@ -79,7 +79,7 @@ function gestisciRoutingBacheche($pdo, $isAjax, $params)
         if ($params['vista'] === 'dettaglio') {
             renderDettaglioBacheca($pdo, $params['bacheca'], $params['owner'], $bEnc, $isAjax);
         } else {
-            echo "<div style='margin-bottom: 25px;'>Errore! La pagina richiesta non esiste.</div>";
+            echo "<div class='routing-error-msg'>Errore! La pagina richiesta non esiste.</div>";
         }
     } else {
         renderElencoBacheche($pdo, $isAjax);
@@ -216,18 +216,18 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
         $nicknameJS = htmlspecialchars(addslashes($u['nickname']), ENT_QUOTES);
 
         $azioni = !$isOwner
-            ? "<div style='text-align:center;'>
+            ? "<div class='cell-center'>
                 <span title='Elimina' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
                     <img src='images/trash.png' alt='Elimina'>
                 </span>
                </div>"
-            : "<div style='text-align:center;'><small style='color:gray;'>Proprietario</small></div>";
+            : "<div class='cell-center'><small class='text-gray-small'>Proprietario</small></div>";
 
         $user_link = "utenti.php?utente=" . urlencode($u['codice']);
         $htmlNickname = "<a href='" . htmlspecialchars($user_link) .  "'>" . htmlspecialchars($u['nickname']) . "</a>";
 
         if ($isOwner) {
-            $htmlNickname = "<img src='images/crown.png' alt='Owner' style='width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;'>" . $htmlNickname;
+            $htmlNickname = "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'>" . $htmlNickname;
         }
 
         $datiUtenti[] = [
@@ -307,7 +307,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $titleJS = htmlspecialchars(addslashes($title), ENT_QUOTES);
         $caricatoDaJS = htmlspecialchars(addslashes($f['nickname']), ENT_QUOTES);
 
-        $htmlFile = "<div style='display: flex; align-items: center; gap: 8px;'>";
+        $htmlFile = "<div class='file-cell-wrapper'>";
         $htmlFile .= "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipoStr) . "'>";
         $htmlFile .= "<a href='" . htmlspecialchars($f['URL']) . "' target='_blank'>" . htmlspecialchars($title) . "</a>";
         $htmlFile .= "</div>";
@@ -315,7 +315,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
         $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
 
-        $azioni = "<div style='text-align:center;'>
+        $azioni = "<div class='cell-center'>
             <span title='Elimina' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']}, '{$titleJS}', '{$caricatoDaJS}')\">
                 <img src='images/trash.png' alt='Elimina'>
             </span>
@@ -355,8 +355,8 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
     echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
 
     echo "
-    <div style='display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-soft); margin-bottom: 15px;'>
-        <div class='bacheca-tabs' style='border-bottom: none; margin-bottom: 0;'>
+    <div class='detail-tabs-header'>
+        <div class='bacheca-tabs tabs-reset'>
             <a href='{$urlInfo}' class='" . ($activeTab === 'info' ? 'active' : '') . "'>Informazioni</a>
             <a href='{$urlUtenti}' class='" . ($activeTab === 'utenti' ? 'active' : '') . "'>Dettaglio Utenti</a>
             <a href='{$urlFile}' class='" . ($activeTab === 'file' ? 'active' : '') . "'>Dettaglio File</a>
@@ -366,8 +366,8 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
     if ($activeTab === 'info') {
         $stmtBacheca = $pdo->prepare("
             SELECT b.dataCreazione, u.nickname,
-                   (SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab WHERE uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente) AS numUtenti,
-                   (SELECT COUNT(*) FROM FilePubblicatoBacheca fpb WHERE fpb.nomeBacheca = b.nome AND fpb.codUtente = b.codiceUtente) AS numFile
+                   (SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab WHERE uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente) AS total_utenti,
+                   (SELECT COUNT(*) FROM FilePubblicatoBacheca fpb WHERE fpb.nomeBacheca = b.nome AND fpb.codUtente = b.codiceUtente) AS total_file
             FROM Bacheca b
             JOIN Utente u ON b.codiceUtente = u.codice
             WHERE b.nome = :nome AND b.codiceUtente = :owner
@@ -379,21 +379,20 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             $dataFormattata = !empty($datiBachecaDb['dataCreazione']) ? (function_exists('formattaData') ? formattaData($datiBachecaDb['dataCreazione']) : date('d/m/Y', strtotime($datiBachecaDb['dataCreazione']))) : "";
 
             echo "<div class='tab-info-card'>";
-            echo "<h3 style='margin-top: 0; color: var(--primary-dark);'>Dettagli Bacheca</h3>";
+            echo "<h3 class='info-card-title'>Dettagli Bacheca</h3>";
             if (!empty($dataFormattata)) {
-                echo "<p style='font-size: 1.1rem;'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
+                echo "<p class='info-card-text'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
                 $linkOwner = "utenti.php?utente=" . urlencode($owner);
-                echo "<p style='font-size: 1.1rem;'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
-
-                echo "<p style='font-size: 1.1rem;'><strong>Utenti autorizzati:</strong> <a href='{$urlUtenti}'>" . (int)$datiBachecaDb['numUtenti'] . "</a></p>";
-                echo "<p style='font-size: 1.1rem; margin-bottom: 0;'><strong>File caricati:</strong> <a href='{$urlFile}'>" . (int)$datiBachecaDb['numFile'] . "</a></p>";
+                echo "<p class='info-card-text'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
+                echo "<p class='info-card-text'><strong>Utenti autorizzati:</strong> <a href='{$urlUtenti}'>" . (int)$datiBachecaDb['total_utenti'] . "</a></p>";
+                echo "<p class='info-card-text-last'><strong>File caricati:</strong> <a href='{$urlFile}'>" . (int)$datiBachecaDb['total_file'] . "</a></p>";
             }
             echo "</div>";
 
             $btnRinomina = getBottoneRinominaBacheca($bEnc, $owner);
             $btnElimina  = getBottoneEliminaBacheca($bEnc, $owner, $datiBachecaDb['nickname']);
 
-            echo "<div style='display: flex; gap: 15px; margin-top: 5px;'>
+            echo "<div class='info-card-actions'>
                     {$btnRinomina}
                     {$btnElimina}
                   </div>";
@@ -406,7 +405,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         $numero_pagine = getNumberOfPages($countUtenti, $limit);
 
         echo "<div class='table-top-bar'>";
-        echo "<p style='margin: 0;'>Utenti trovati nella bacheca: <strong>{$countUtenti}</strong></p>";
+        echo "<p class='zero-margin'>Utenti trovati nella bacheca: <strong>{$countUtenti}</strong></p>";
         echo getBottoneAggiungiUtente($bEnc, $owner);
         echo "</div>";
 
@@ -426,7 +425,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         $numero_pagine = getNumberOfPages($countFile, $limit);
 
         echo "<div class='table-top-bar'>";
-        echo "<p style='margin: 0;'>File trovati nella bacheca: <strong>{$countFile}</strong></p>";
+        echo "<p class='zero-margin'>File trovati nella bacheca: <strong>{$countFile}</strong></p>";
         echo getBottoneAggiungiFile($bEnc, $owner);
         echo "</div>";
 
@@ -506,11 +505,10 @@ function renderElencoBacheche($pdo, $isAjax)
     }
 
     echo "<div class='table-top-bar'>";
-    echo "<p class='info-risultati' style='margin: 0;'>Trovate <strong>$totaleRisultati</strong> bacheche <strong>($recordsPerPage per pagina)</strong></p>";
+    echo "<p class='info-risultati zero-margin'>Trovate <strong>$totaleRisultati</strong> bacheche <strong>($recordsPerPage per pagina)</strong></p>";
     echo getBottoneNuovaBacheca();
     echo "</div>";
 
-    // Prepariamo SEMPRE l'array (che sarà vuoto se non ci sono record)
     $datiBacheche = [];
 
     foreach ($righe as $riga) {
@@ -530,7 +528,7 @@ function renderElencoBacheche($pdo, $isAjax)
         $btnRinominaIcona = getBottoneRinominaBacheca($nomeEnc, $ownerEnc, true);
         $btnEliminaIcona  = getBottoneEliminaBacheca($nomeEnc, $ownerEnc, $proprietarioEnc, true);
 
-        $azioni = "<div style='text-align:center; white-space:nowrap;'>
+        $azioni = "<div class='actions-cell-nowrap'>
             {$btnRinominaIcona}
             {$btnEliminaIcona}
         </div>";
@@ -550,11 +548,9 @@ function renderElencoBacheche($pdo, $isAjax)
     ], $sort_col, $sort_dir);
 
     echo '<div class="table-container">';
-    // Se $datiBacheche è vuoto, stampaTabella genererà in automatico la classe CSS gestita dal tuo file
     stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Azioni'], $customHeaders);
     echo '</div>';
 
-    // Stampiamo la paginazione solo se ci sono risultati per evitare pagine a vuoto
     if (!empty($righe)) {
         echo getPagesNav($np, $numero_pagine, 1);
     }

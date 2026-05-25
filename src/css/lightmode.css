@@ -170,6 +170,7 @@ li.navbar a:hover:not(.active) {
     margin: 0;
     font-size: clamp(0.9rem, 0.95vw, 1rem);
     line-height: 1.4;
+    font-weight: 600;
 }
 
 /* --- DOPPIO SLIDER CONFIG --- */
@@ -868,4 +869,246 @@ div.swal2-container .swal-wide-split .swal2-input {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     margin-top: 10px;
     margin-bottom: 20px;
+}
+
+.swal-text-bold {
+    font-weight: bold !important;
+}
+
+.swal-text-heavy {
+    font-weight: 900 !important;
+}
+
+.swal-split-container {
+    display: flex;
+    gap: 20px;
+    text-align: left;
+    align-items: stretch;
+    margin-top: 15px;
+}
+
+.swal-user-split {
+    min-height: 250px;
+}
+
+.swal-file-split {
+    min-height: 280px;
+}
+
+.swal-split-sidebar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-right: 1px solid var(--border-soft);
+    padding-right: 15px;
+}
+
+.swal-input-wrapper {
+    width: 100%;
+}
+
+.swal-input-label {
+    font-weight: bold !important;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.swal2-input.swal-custom-input {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+    height: 38px;
+    font-size: 0.95rem;
+}
+
+.swal2-styled.swal2-confirm.swal-search-btn {
+    margin: 10px 0 0 0;
+    width: 100%;
+    height: 40px;
+    font-size: 0.95rem !important;
+    padding: 0;
+}
+
+.swal-split-main {
+    flex: 1.5;
+    display: flex;
+    flex-direction: column;
+}
+
+.swal-results-title {
+    margin-bottom: 10px;
+    color: var(--primary-dark);
+    font-weight: bold !important;
+}
+
+.swal-results-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.swal-results-user {
+    max-height: 280px;
+}
+
+.swal-results-file {
+    max-height: 310px;
+}
+
+.swal-text-placeholder {
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.9rem;
+}
+
+.swal-text-error {
+    color: var(--accent);
+    font-size: 0.95em;
+    margin: 10px 0;
+    text-align: center;
+}
+
+.swal-text-error-center {
+    color: var(--accent);
+    text-align: center;
+    margin: 15px 0;
+}
+
+.swal-text-info {
+    color: var(--text-muted);
+    text-align: center;
+    margin: 15px 0;
+}
+
+.swal-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.swal-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.swal-radio-label:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.swal-radio-input {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+}
+
+.swal-user-info {
+    color: var(--text-dark);
+    font-size: 0.95rem;
+}
+
+.swal-user-subinfo {
+    color: var(--text-muted);
+    font-size: 0.85em;
+    display: block;
+    margin-top: 2px;
+}
+
+.swal-divider {
+    margin: 4px 0;
+    border: 0;
+    border-top: 1px dashed var(--border-soft);
+    width: 100%;
+}
+
+.swal-section-header {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: bold !important;
+}
+
+.btn-img-align {
+    vertical-align: middle;
+}
+
+.routing-error-msg {
+    margin-bottom: 25px;
+    font-weight: 500;
+}
+
+.cell-center {
+    text-align: center;
+}
+
+.text-gray-small {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.owner-crown-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.file-cell-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.zero-margin {
+    margin: 0 !important;
+}
+
+.detail-tabs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--border-soft);
+    margin-bottom: 15px;
+}
+
+.tabs-reset {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+}
+
+.info-card-title {
+    margin-top: 0;
+    color: var(--primary-dark);
+}
+
+.info-card-text {
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.info-card-text-last {
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.info-card-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.actions-cell-nowrap {
+    text-align: center;
+    white-space: nowrap;
 }
