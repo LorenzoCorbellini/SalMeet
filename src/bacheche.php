@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/filterAPI.php';
 
 // =========================================================
 //  ASTRAZIONE BOTTONI AZIONE BACHECA
@@ -91,72 +92,27 @@ function gestisciRoutingBacheche($pdo, $isAjax, $params)
 // =========================================================
 function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $owner)
 {
+
+    $filtro_config = null;
+
     if ($vista_corrente === 'dettaglio') {
-        $campi_base = [
-            ['tipo' => 'hidden', 'name' => 'vista',   'value' => 'dettaglio', 'label' => ''],
-            ['tipo' => 'hidden', 'name' => 'bacheca', 'value' => $bacheca, 'label' => ''],
-            ['tipo' => 'hidden', 'name' => 'owner',   'value' => $owner, 'label' => ''],
-            ['tipo' => 'hidden', 'name' => 'tab',     'value' => $tab_corrente, 'label' => ''],
-        ];
-
         if ($tab_corrente === 'utenti') {
-            $filtro_config = [
-                'campi' => array_merge($campi_base, [
-                    ['tipo' => 'text',   'name' => 'utente',  'label' => 'Nickname'],
-                    ['tipo' => 'text',   'name' => 'nome',    'label' => 'Nome'],
-                    ['tipo' => 'text',   'name' => 'cognome', 'label' => 'Cognome'],
-                    ['tipo' => 'date',   'name' => 'data_nascita', 'label' => 'Nati dal'],
-                ])
-            ];
-            include 'filter.php';
+            $filtro_config = getFiltroBachecheUtenti($bacheca, $owner, $tab_corrente);
         } elseif ($tab_corrente === 'file') {
-            $stmtRange = $pdo->prepare("
-                SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
-                FROM FilePubblicatoBacheca fb
-                JOIN FileMultimediale fm ON fm.numero = fb.file
-                WHERE fb.nomeBacheca = :bacheca AND fb.codUtente = :owner
-            ");
-            $stmtRange->execute([':bacheca' => $bacheca, ':owner' => $owner]);
-            $rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
-
-            $minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
-            $maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
-            if ($minSize == $maxSize) $minSize = 0;
-
-            $currentMin = (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') ? (int)$_GET['dimensione_min'] : $minSize;
-            $currentMax = (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') ? (int)$_GET['dimensione_max'] : $maxSize;
-
-            $filtro_config = [
-                'campi' => array_merge($campi_base, [
-                    ['tipo' => 'text',   'name' => 'file',              'label' => 'Nome'],
-                    ['tipo' => 'text',   'name' => 'proprietario_file', 'label' => 'Nickname Proprietario'],
-                    [
-                        'tipo' => 'multi-range',
-                        'name_min' => 'dimensione_min',
-                        'name_max' => 'dimensione_max',
-                        'label' => 'Dimensione',
-                        'min' => $minSize,
-                        'max' => $maxSize,
-                        'value_min' => $currentMin,
-                        'value_max' => $currentMax
-                    ],
-                ])
-            ];
-            include 'filter.php';
-        } else {
-            echo '<div id="filtro" class="filter-empty">';
-            echo '    <p>Nessun filtro disponibile per questa sezione</p>';
-            echo '</div>';
+            $filtro_config = getFiltroBachecheFile($pdo, $bacheca, $owner, $tab_corrente);
         }
     } else {
-        $filtro_config = [
-            'campi' => [
-                ['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome'],
-                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario'],
-                ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo'],
-            ]
-        ];
+        // Vista generale elenco bacheche
+        $filtro_config = getFiltroBachecheGenerale();
+    }
+
+    // Se la configurazione del filtro esiste, la stampa, altrimenti mostra il box vuoto
+    if ($filtro_config !== null) {
         include 'filter.php';
+    } else {
+        echo '<div id="filtro" class="filter-empty">';
+        echo '    <p>Nessun filtro disponibile per questa sezione</p>';
+        echo '</div>';
     }
 }
 
