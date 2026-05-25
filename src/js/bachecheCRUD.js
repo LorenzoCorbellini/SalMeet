@@ -326,7 +326,7 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid var(--border-soft); padding-right: 15px;">
                         <div style="width: 100%;">
                             <label class="swal-filter-label" style="font-weight: bold !important; display: block; margin-bottom: 4px;">Nome File</label>
-                            <input id="swal-search-filename" class="swal2-input" placeholder="Es. foto.jpg" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
+                            <input id="swal-search-filename" class="swal2-input" placeholder="Es. foto panorama" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; height: 38px; font-size: 0.95rem;">
                         </div>
                         <hr style="margin: 4px 0; border:0; border-top:1px dashed var(--border-soft); width: 100%;">
                         <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight: bold !important;">Filtra per Autore</span>

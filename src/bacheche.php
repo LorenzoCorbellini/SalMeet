@@ -365,7 +365,9 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
     if ($activeTab === 'info') {
         $stmtBacheca = $pdo->prepare("
-            SELECT b.dataCreazione, u.nickname 
+            SELECT b.dataCreazione, u.nickname,
+                   (SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab WHERE uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente) AS numUtenti,
+                   (SELECT COUNT(*) FROM FilePubblicatoBacheca fpb WHERE fpb.nomeBacheca = b.nome AND fpb.codUtente = b.codiceUtente) AS numFile
             FROM Bacheca b
             JOIN Utente u ON b.codiceUtente = u.codice
             WHERE b.nome = :nome AND b.codiceUtente = :owner
@@ -381,7 +383,10 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             if (!empty($dataFormattata)) {
                 echo "<p style='font-size: 1.1rem;'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
                 $linkOwner = "utenti.php?utente=" . urlencode($owner);
-                echo "<p style='font-size: 1.1rem; margin-bottom: 0;'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
+                echo "<p style='font-size: 1.1rem;'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
+
+                echo "<p style='font-size: 1.1rem;'><strong>Utenti autorizzati:</strong> <a href='{$urlUtenti}'>" . (int)$datiBachecaDb['numUtenti'] . "</a></p>";
+                echo "<p style='font-size: 1.1rem; margin-bottom: 0;'><strong>File caricati:</strong> <a href='{$urlFile}'>" . (int)$datiBachecaDb['numFile'] . "</a></p>";
             }
             echo "</div>";
 
@@ -401,7 +406,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         $numero_pagine = getNumberOfPages($countUtenti, $limit);
 
         echo "<div class='table-top-bar'>";
-        echo "<p style='margin: 0;'>Utenti autorizzati nella bacheca: <strong>{$countUtenti}</strong></p>";
+        echo "<p style='margin: 0;'>Utenti trovati nella bacheca: <strong>{$countUtenti}</strong></p>";
         echo getBottoneAggiungiUtente($bEnc, $owner);
         echo "</div>";
 
@@ -421,7 +426,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         $numero_pagine = getNumberOfPages($countFile, $limit);
 
         echo "<div class='table-top-bar'>";
-        echo "<p style='margin: 0;'>File pubblicati nella bacheca: <strong>{$countFile}</strong></p>";
+        echo "<p style='margin: 0;'>File trovati nella bacheca: <strong>{$countFile}</strong></p>";
         echo getBottoneAggiungiFile($bEnc, $owner);
         echo "</div>";
 
