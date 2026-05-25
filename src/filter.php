@@ -98,7 +98,7 @@ if (!empty($reset_params)) {
                     name="<?= $name ?>"
                     id="<?= $name ?>"
                     value="<?= $value ?>"
-                    min="1950-01-01"
+                    min="1900-01-01"
                     max="<?= $max_date ?>">
 
             <?php else: ?>

@@ -126,7 +126,7 @@ function eliminaBacheca(nomeBacheca, idOwner, nicknameOwner) {
         showCancelButton: true,
         confirmButtonText: 'Sì, elimina',
         cancelButtonText: 'Annulla',
-        reverseButtons: true 
+        reverseButtons: true
     }).then((result) => {
         if (result.isConfirmed) {
             eseguiRichiesta({
@@ -142,6 +142,13 @@ function eliminaBacheca(nomeBacheca, idOwner, nicknameOwner) {
 // GESTIONE UTENTI (Layout Split a due colonne)
 // =========================================================
 async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
+    // Calcola la data odierna in formato YYYY-MM-DD
+    const oggi = new Date();
+    const yyyy = oggi.getFullYear();
+    const mm = String(oggi.getMonth() + 1).padStart(2, '0');
+    const dd = String(oggi.getDate()).padStart(2, '0');
+    const oggiStringa = `${yyyy}-${mm}-${dd}`;
+
     return new Promise((resolve) => {
         Swal.fire({
             title: titoloPopup,
@@ -165,7 +172,7 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                         </div>
                         <div class="swal-input-wrapper">
                             <label class="swal-filter-label swal-input-label">Data di Nascita</label>
-                            <input id="swal-search-date" type="date" class="swal2-input swal-custom-input">
+                            <input id="swal-search-date" type="date" class="swal2-input swal-custom-input" min="1900-01-01" max="${oggiStringa}">
                         </div>
                         <button id="swal-search-btn" class="swal2-styled swal2-confirm swal-search-btn">Cerca Utente</button>
                     </div>
@@ -181,7 +188,7 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
             showCancelButton: true,
             confirmButtonText: 'Seleziona',
             cancelButtonText: 'Annulla',
-            reverseButtons: true, 
+            reverseButtons: true,
             didOpen: () => {
                 const searchBtn = document.getElementById('swal-search-btn');
                 const nickInput = document.getElementById('swal-search-nickname');
@@ -204,7 +211,20 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                     const nicknameTerm = nickInput.value.trim();
                     const nomeTerm = nomeInput.value.trim();
                     const cognomeTerm = cognomeInput.value.trim();
-                    const dateTerm = dateInput.value;
+                    let dateTerm = dateInput.value;
+
+                    // Blocco di controllo/aggiustamento data
+                    if (dateTerm) {
+                        const limiteMin = '1900-01-01';
+
+                        if (dateTerm < limiteMin) {
+                            dateTerm = limiteMin;
+                            dateInput.value = limiteMin; // Aggiorna anche a schermo
+                        } else if (dateTerm > oggiStringa) {
+                            dateTerm = oggiStringa;
+                            dateInput.value = oggiStringa; // Aggiorna anche a schermo
+                        }
+                    }
 
                     if (nicknameTerm.length === 0 && nomeTerm.length === 0 && cognomeTerm.length === 0 && !dateTerm) {
                         resultsDiv.innerHTML = '<p class="swal-text-error">Inserisci almeno un criterio per la ricerca.</p>';
@@ -299,7 +319,7 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
         showCancelButton: true,
         confirmButtonText: 'Sì, revoca',
         cancelButtonText: 'Annulla',
-        reverseButtons: true 
+        reverseButtons: true
     }).then((result) => {
         if (result.isConfirmed) {
             eseguiRichiesta({
@@ -357,7 +377,7 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
             showCancelButton: true,
             confirmButtonText: 'Seleziona',
             cancelButtonText: 'Annulla',
-            reverseButtons: true, 
+            reverseButtons: true,
             didOpen: () => {
                 const searchBtn = document.getElementById('swal-file-search-btn');
                 const filenameInput = document.getElementById('swal-search-filename');
@@ -474,7 +494,7 @@ function rimuoviFile(nomeBacheca, owner, fileDaRimuovere, nomeFile, caricatoDa) 
         showCancelButton: true,
         confirmButtonText: 'Sì, rimuovi',
         cancelButtonText: 'Annulla',
-        reverseButtons: true 
+        reverseButtons: true
     }).then((result) => {
         if (result.isConfirmed) {
             const messaggioSuccesso = `File rimosso con successo.`;

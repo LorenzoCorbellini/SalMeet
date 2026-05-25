@@ -15,7 +15,7 @@ function formattaData(string $val): string
 
 /**
  * Verifica che una data sia nel formato corretto e compresa 
- * tra il 1 Gennaio 1950 e il giorno corrente (incluso).
+ * tra il 1 Gennaio 1900 e il giorno corrente (incluso).
  *
  * @param string $val La data in formato YYYY-MM-DD
  * @return bool True se valida e nel range, False altrimenti.
@@ -30,14 +30,14 @@ function isDataValidaRange(string $val): bool
     try {
         // 2. Crea gli oggetti DateTime per i confronti
         $dataInserita = new DateTime($val);
-        $limiteMinimo = new DateTime('1950-01-01');
+        $limiteMinimo = new DateTime('1900-01-01');
         $limiteMassimo = new DateTime(); // Prende in automatico data e ora di oggi
 
         // Imposta l'orario del limite massimo alle 23:59:59 di oggi
         // per permettere inserimenti relativi alla giornata odierna
         $limiteMassimo->setTime(23, 59, 59);
 
-        // 3. Verifica i range (>= 1 Gennaio 1950 E <= Oggi)
+        // 3. Verifica i range (>= 1 Gennaio 1900 E <= Oggi)
         return ($dataInserita >= $limiteMinimo && $dataInserita <= $limiteMassimo);
 
     } catch (Exception $e) {
