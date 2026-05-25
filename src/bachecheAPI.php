@@ -23,10 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // AZIONE ASTRATTA: CERCA UTENTE (Filtri puntuali Separati)
     // ---------------------------------------------------------
     if ($azione === 'cerca_utente') {
-        $nickname     = isset($input['nickname']) ? trim($input['nickname']) : '';
-        $filtro_nome  = isset($input['filtro_nome']) ? trim($input['filtro_nome']) : '';
-        $cognome      = isset($input['cognome']) ? trim($input['cognome']) : '';
-        $data_nascita = !empty($input['data_nascita']) ? $input['data_nascita'] : null;
+        // CORREZIONE: Uso di !empty e trim per evitare che stringhe vuote "" o falsi positivi passino il controllo
+        $nickname     = !empty($input['nickname']) ? trim($input['nickname']) : '';
+        $filtro_nome  = !empty($input['filtro_nome']) ? trim($input['filtro_nome']) : '';
+        $cognome      = !empty($input['cognome']) ? trim($input['cognome']) : '';
+        $data_nascita = !empty($input['data_nascita']) ? trim($input['data_nascita']) : null;
 
         try {
             $sql = "SELECT codice, nickname, nome, cognome, dataNascita FROM Utente WHERE 1=1";
@@ -47,8 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $params[':cognome'] = '%' . $cognome . '%';
             }
 
+            //deve cercare i nati dopo la data inserita
             if ($data_nascita !== null) {
-                $sql .= " AND dataNascita = :data_nascita";
+                $sql .= " AND dataNascita >= :data_nascita";
                 $params[':data_nascita'] = $data_nascita;
             }
 
@@ -57,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
-            $sql .= " ORDER BY nickname ASC LIMIT 15";
+            $sql .= " ORDER BY nickname ASC LIMIT 50";
 
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);

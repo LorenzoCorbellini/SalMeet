@@ -132,7 +132,7 @@ function eliminaBacheca(nomeBacheca, idOwner, nicknameOwner) {
             eseguiRichiesta({
                 azione: 'elimina',
                 nome: nomeBacheca,
-                owner: idOwner // Al server passi il codice numerico corretto
+                owner: idOwner
             }, `Bacheca eliminata con successo.`, 'bacheche.php');
         }
     });
@@ -142,7 +142,6 @@ function eliminaBacheca(nomeBacheca, idOwner, nicknameOwner) {
 // GESTIONE UTENTI (Layout Split a due colonne)
 // =========================================================
 async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
-    // Calcola la data odierna in formato YYYY-MM-DD
     const oggi = new Date();
     const yyyy = oggi.getFullYear();
     const mm = String(oggi.getMonth() + 1).padStart(2, '0');
@@ -178,7 +177,7 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                     </div>
                     
                     <div class="swal-split-main">
-                        <span class="swal-filter-label swal-results-title">Risultati della ricerca:</span>
+                        <span id="swal-user-count" class="swal-filter-label swal-results-title"></span>
                         <div id="swal-search-results" class="swal-results-container swal-results-user">
                             <p class="swal-text-placeholder">Compila almeno un campo a sinistra per avviare la ricerca.</p>
                         </div>
@@ -196,6 +195,7 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                 const cognomeInput = document.getElementById('swal-search-cognome');
                 const dateInput = document.getElementById('swal-search-date');
                 const resultsDiv = document.getElementById('swal-search-results');
+                const countSpan = document.getElementById('swal-user-count');
 
                 [nickInput, nomeInput, cognomeInput, dateInput].forEach(input => {
                     input.addEventListener('keypress', (e) => {
@@ -213,41 +213,50 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                     const cognomeTerm = cognomeInput.value.trim();
                     let dateTerm = dateInput.value;
 
-                    // Blocco di controllo/aggiustamento data
                     if (dateTerm) {
                         const limiteMin = '1900-01-01';
-
                         if (dateTerm < limiteMin) {
                             dateTerm = limiteMin;
-                            dateInput.value = limiteMin; // Aggiorna anche a schermo
+                            dateInput.value = limiteMin;
                         } else if (dateTerm > oggiStringa) {
                             dateTerm = oggiStringa;
-                            dateInput.value = oggiStringa; // Aggiorna anche a schermo
+                            dateInput.value = oggiStringa;
                         }
                     }
 
                     if (nicknameTerm.length === 0 && nomeTerm.length === 0 && cognomeTerm.length === 0 && !dateTerm) {
                         resultsDiv.innerHTML = '<p class="swal-text-error">Inserisci almeno un criterio per la ricerca.</p>';
+                        countSpan.innerHTML = '';
                         return;
                     }
 
                     resultsDiv.innerHTML = '<p class="swal-text-info"><i>Ricerca in corso...</i></p>';
+                    countSpan.innerHTML = 'Ricerca in corso...';
+
+                    const payloadDati = { azione: 'cerca_utente' };
+                    if (nicknameTerm) payloadDati.nickname = nicknameTerm;
+                    if (nomeTerm) payloadDati.filtro_nome = nomeTerm;
+                    if (cognomeTerm) payloadDati.cognome = cognomeTerm;
+                    if (dateTerm) payloadDati.data_nascita = dateTerm;
 
                     try {
                         const response = await fetch(API_URL, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                azione: 'cerca_utente',
-                                nickname: nicknameTerm,
-                                filtro_nome: nomeTerm,
-                                cognome: cognomeTerm,
-                                data_nascita: dateTerm
-                            })
+                            body: JSON.stringify(payloadDati)
                         });
                         const data = await response.json();
 
                         if (data.successo && data.utenti.length > 0) {
+                            const limitUtenti = 50; 
+                            const hasMore = data.utenti.length >= limitUtenti;
+
+                            if (hasMore) {
+                                countSpan.innerHTML = `Primi <strong>${limitUtenti}</strong> risultati (affina la ricerca):`;
+                            } else {
+                                countSpan.innerHTML = `Trovati <strong>${data.utenti.length}</strong> risultati:`;
+                            }
+
                             let html = '<div class="swal-radio-group">';
                             data.utenti.forEach(u => {
                                 const infoData = u.data_formattata ? ` | Nascita: ${u.data_formattata}` : '';
@@ -264,9 +273,11 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                             html += '</div>';
                             resultsDiv.innerHTML = html;
                         } else {
+                            countSpan.innerHTML = `Trovati <strong>0</strong> risultati:`;
                             resultsDiv.innerHTML = '<p class="swal-text-info">Nessun utente trovato con questi criteri.</p>';
                         }
                     } catch (err) {
+                        countSpan.innerHTML = 'Errore';
                         resultsDiv.innerHTML = '<p class="swal-text-error-center">Errore di comunicazione col server.</p>';
                     }
                 });
@@ -367,7 +378,7 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
                     </div>
                     
                     <div class="swal-split-main">
-                        <span class="swal-filter-label swal-results-title">File degli utenti autorizzati:</span>
+                        <span id="swal-file-count" class="swal-filter-label swal-results-title">Risultati trovati:</span>
                         <div id="swal-file-search-results" class="swal-results-container swal-results-file">
                             <p class="swal-text-placeholder">Caricamento file disponibili...</p>
                         </div>
@@ -385,26 +396,45 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
                 const nomeInput = document.getElementById('swal-search-file-nome');
                 const cognomeInput = document.getElementById('swal-search-file-cognome');
                 const resultsDiv = document.getElementById('swal-file-search-results');
+                const countSpan = document.getElementById('swal-file-count');
 
                 const eseguiCercaFile = async () => {
                     resultsDiv.innerHTML = '<p class="swal-text-info"><i>Ricerca in corso...</i></p>';
+                    countSpan.innerHTML = 'Ricerca in corso...';
+
+                    const tFile = filenameInput.value.trim();
+                    const tNick = nicknameInput.value.trim();
+                    const tNome = nomeInput.value.trim();
+                    const tCogn = cognomeInput.value.trim();
+
+                    const payloadDati = {
+                        azione: 'cerca_file_bacheca',
+                        nome: nomeBacheca,
+                        owner: owner
+                    };
+                    if (tFile) payloadDati.termine_file = tFile;
+                    if (tNick) payloadDati.nickname = tNick;
+                    if (tNome) payloadDati.filtro_nome = tNome;
+                    if (tCogn) payloadDati.cognome = tCogn;
+
                     try {
                         const response = await fetch(API_URL, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                azione: 'cerca_file_bacheca',
-                                nome: nomeBacheca,
-                                owner: owner,
-                                termine_file: filenameInput.value.trim(),
-                                nickname: nicknameInput.value.trim(),
-                                filtro_nome: nomeInput.value.trim(),
-                                cognome: cognomeInput.value.trim()
-                            })
+                            body: JSON.stringify(payloadDati)
                         });
                         const data = await response.json();
 
                         if (data.successo && data.files.length > 0) {
+                            const limitFile = 30; 
+                            const hasMore = data.files.length >= limitFile;
+
+                            if (hasMore) {
+                                countSpan.innerHTML = `Primi <strong>${limitFile}</strong> risultati (affina la ricerca):`;
+                            } else {
+                                countSpan.innerHTML = `Trovati <strong>${data.files.length}</strong> file disponibili:`;
+                            }
+
                             let html = '<div class="swal-radio-group">';
                             data.files.forEach(f => {
                                 html += `
@@ -420,9 +450,11 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
                             html += '</div>';
                             resultsDiv.innerHTML = html;
                         } else {
+                            countSpan.innerHTML = `Trovati <strong>0</strong> file:`;
                             resultsDiv.innerHTML = '<p class="swal-text-info">Nessun file disponibile o trovato per i criteri inseriti.</p>';
                         }
                     } catch (err) {
+                        countSpan.innerHTML = 'Errore';
                         resultsDiv.innerHTML = '<p class="swal-text-error-center">Errore di comunicazione col server.</p>';
                     }
                 };
