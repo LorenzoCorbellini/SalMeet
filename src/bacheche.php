@@ -92,7 +92,7 @@ function gestisciRoutingBacheche($pdo, $isAjax, $params)
 // =========================================================
 function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $owner)
 {
-    
+
     $entita = 'bacheche'; // Entità di default (Vista Generale)
     $parametriExtra = [];
 
@@ -176,8 +176,10 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
         $params[':cognome'] = '%' . $_GET['cognome'] . '%';
     }
     if (!empty($_GET['data_nascita'])) {
-        $whereSql .= " AND u.dataNascita >= :data_nascita";
-        $params[':data_nascita'] = $_GET['data_nascita'];
+        if (isDataValidaRange($_GET['data_nascita'])) {
+            $whereSql .= " AND u.dataNascita >= :data_nascita";
+            $params[':data_nascita'] = $_GET['data_nascita'];
+        }
     }
 
     $stmtCount = $pdo->prepare("SELECT COUNT(*) " . $baseSql . $whereSql);
@@ -449,8 +451,10 @@ function renderElencoBacheche($pdo, $isAjax)
         $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
     }
     if (!empty($_GET['data'])) {
-        $where[]         = "DATE(b.dataCreazione) >= :data";
-        $params[':data'] = $_GET['data'];
+        if (isDataValidaRange($_GET['data'])) {
+            $where[]         = "DATE(b.dataCreazione) >= :data";
+            $params[':data'] = $_GET['data'];
+        }
     }
 
     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([

@@ -1,20 +1,16 @@
 function controlloSliderMin(sliderMin, idMax) {
     const sliderMax = document.getElementById(idMax);
-    // Impedisce al minimo di superare il valore del massimo
     if (parseInt(sliderMin.value) > parseInt(sliderMax.value)) {
         sliderMin.value = sliderMax.value;
     }
-    // Aggiorna il testo a schermo
     document.getElementById('val_' + sliderMin.id).innerText = sliderMin.value;
 }
 
 function controlloSliderMax(sliderMax, idMin) {
     const sliderMin = document.getElementById(idMin);
-    // Impedisce al massimo di scendere sotto il valore del minimo
     if (parseInt(sliderMax.value) < parseInt(sliderMin.value)) {
         sliderMax.value = sliderMin.value;
     }
-    // Aggiorna il testo a schermo
     document.getElementById('val_' + sliderMax.id).innerText = sliderMax.value;
 }
 
@@ -28,27 +24,22 @@ function aggiornaDoppioSlider() {
 
     if (!inputMin || !inputMax || !container) return;
 
-    // Converte i valori correnti
     const minVal = parseFloat(inputMin.value);
     const maxVal = parseFloat(inputMax.value);
     const minAttr = parseFloat(inputMin.min) || 0;
     const maxAttr = parseFloat(inputMin.max) || 100;
 
-    // Impedisce ai cursori di superarsi a vicenda in modo errato
     if (minVal > maxVal) {
         if (this === inputMin) inputMin.value = maxVal;
         else inputMax.value = minVal;
     }
 
-    // Aggiorna i testi descrittivi dei MB
     if (txtMin) txtMin.innerText = inputMin.value;
     if (txtMax) txtMax.innerText = inputMax.value;
 
-    // Calcola le percentuali per il gradiente rosa
     const pctMin = ((inputMin.value - minAttr) / (maxAttr - minAttr)) * 100;
     const pctMax = ((inputMax.value - minAttr) / (maxAttr - minAttr)) * 100;
 
-    // Genera la traccia bicolore (Grigio -> Rosa SalMeet -> Grigio)
     container.style.background = `linear-gradient(
         to right, 
         #e5e7eb ${pctMin}%, 
@@ -58,24 +49,11 @@ function aggiornaDoppioSlider() {
     )`;
 }
 
-// Inizializzazione degli ascoltatori di eventi al caricamento del DOM
-document.addEventListener('DOMContentLoaded', () => {
-    const inputMin = document.getElementById('dimensione_min');
-    const inputMax = document.getElementById('dimensione_max');
-
-    if (inputMin && inputMax) {
-        inputMin.addEventListener('input', aggiornaDoppioSlider);
-        inputMax.addEventListener('input', aggiornaDoppioSlider);
-
-        // Sincronizza lo stato grafico subito all'avvio (es. se ci sono parametri nel $_GET)
-        aggiornaDoppioSlider();
-    }
-});
-
 // =========================================================
-// LOGICA DEI FILTRI ISTANTANEI
+// LOGICA DEI FILTRI ISTANTANEI E GESTIONE DOM UNIFICATA
 // =========================================================
 document.addEventListener('DOMContentLoaded', () => {
+
     // 1. Inizializzazione degli Slider grafici
     const inputMin = document.getElementById('dimensione_min');
     const inputMax = document.getElementById('dimensione_max');
@@ -92,40 +70,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let debounceTimer;
 
+    // Funzione di supporto aggiornata per gestire la digitazione fluida
+    function validaEAvvicinaData(input, forza = false) {
+        if (input && input.type === 'date' && input.value) {
+            const dataInserita = input.value; // Formato YYYY-MM-DD
+            const parti = dataInserita.split('-');
+            const anno = parseInt(parti[0], 10);
+
+            // Se l'utente sta ancora scrivendo (ha il focus) e l'anno è palesemente incompleto
+            // (es. sotto il 1000, tipo 0002 mentre scrive 2026), non sovrascriviamo per non bloccarlo.
+            if (!forza && document.activeElement === input && anno < 1000) {
+                return false;
+            }
+
+            // Calcola la data odierna dinamica
+            const oggi = new Date();
+            const yyyy = oggi.getFullYear();
+            const mm = String(oggi.getMonth() + 1).padStart(2, '0');
+            const dd = String(oggi.getDate()).padStart(2, '0');
+            const oggiStr = `${yyyy}-${mm}-${dd}`;
+
+            const limiteMin = '1950-01-01';
+
+            // Controllo e avvicinamento ai limiti correnti
+            if (dataInserita < limiteMin) {
+                input.value = limiteMin;
+            } else if (dataInserita > oggiStr) {
+                input.value = oggiStr;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // Aggiunge l'evento 'blur' (uscita dal campo) a tutti gli input data per forzare la correzione
+    filterForm.querySelectorAll('input[type="date"]').forEach(dateInput => {
+        dateInput.addEventListener('blur', function () {
+            validaEAvvicinaData(this, true); // forza = true
+            applicaFiltriAJAX(); // Aggiorna i dati dopo la correzione finale
+        });
+    });
+
     // Questa funzione crea un URL con i filtri e chiama direttamente l'AJAX
     function applicaFiltriAJAX() {
         const formData = new FormData(filterForm);
         const params = new URLSearchParams(formData);
-        
-        // Crea l'URL combinando la pagina corrente e i nuovi parametri
         const url = window.location.pathname + '?' + params.toString();
-        
-        // Usa la funzione definita in AJAXHandler.js
+
         if (typeof caricaPaginaAjax === 'function') {
             caricaPaginaAjax(url);
         }
     }
 
-    // Intercetta la scrittura del testo (con un ritardo di 400ms per non sovraccaricare)
+    // Intercetta la scrittura del testo e i movimenti degli slider
     filterForm.addEventListener('input', function (e) {
         if (e.target.type === 'text' || e.target.tagName === 'TEXTAREA') {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(applicaFiltriAJAX, 100); // 100ms di ritardo dopo l'ultimo input
+            debounceTimer = setTimeout(applicaFiltriAJAX, 250);
         } else if (e.target.type === 'range') {
-            applicaFiltriAJAX(); // Gli slider partono istantaneamente
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(applicaFiltriAJAX, 150);
         }
     });
 
-    // Intercetta menu a tendina, date e checkbox
+    // Intercetta menu a tendina, date, checkbox e rilascio slider
     filterForm.addEventListener('change', function (e) {
-        if (e.target.type !== 'text' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'range') {
+        if (e.target.type === 'date') {
+            // Esegue un controllo morbido durante la digitazione
+            validaEAvvicinaData(e.target, false);
+
+            // Se l'anno è temporaneamente incompleto (es. sotto 1900), evita di inviare 
+            // chiamate AJAX parziali e inutili al server per l'anno 0002
+            const parti = e.target.value.split('-');
+            if (parti[0] && parseInt(parti[0], 10) < 1900) {
+                return;
+            }
+        }
+
+        if (e.target.type !== 'text' && e.target.tagName !== 'TEXTAREA') {
+            clearTimeout(debounceTimer);
             applicaFiltriAJAX();
         }
     });
 
-    // Blocca il tasto "Invio" sulla tastiera per evitare che il form ricarichi la pagina
+    // Gestione del tasto "Invio"
     filterForm.addEventListener('submit', function (e) {
         e.preventDefault();
+
+        // Prima dell'invio definitivo, forza la validazione rigida di tutte le date
+        filterForm.querySelectorAll('input[type="date"]').forEach(el => validaEAvvicinaData(el, true));
+
+        clearTimeout(debounceTimer);
         applicaFiltriAJAX();
     });
 });

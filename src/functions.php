@@ -13,6 +13,39 @@ function formattaData(string $val): string
     return $d ? $d->format('d/m/Y') : htmlspecialchars($val);
 }
 
+/**
+ * Verifica che una data sia nel formato corretto e compresa 
+ * tra il 1 Gennaio 1950 e il giorno corrente (incluso).
+ *
+ * @param string $val La data in formato YYYY-MM-DD
+ * @return bool True se valida e nel range, False altrimenti.
+ */
+function isDataValidaRange(string $val): bool
+{
+    // 1. Controllo base sul formato (usa la tua Regex per assicurarsi che sia YYYY-MM-DD)
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $val)) {
+        return false;
+    }
+
+    try {
+        // 2. Crea gli oggetti DateTime per i confronti
+        $dataInserita = new DateTime($val);
+        $limiteMinimo = new DateTime('1950-01-01');
+        $limiteMassimo = new DateTime(); // Prende in automatico data e ora di oggi
+
+        // Imposta l'orario del limite massimo alle 23:59:59 di oggi
+        // per permettere inserimenti relativi alla giornata odierna
+        $limiteMassimo->setTime(23, 59, 59);
+
+        // 3. Verifica i range (>= 1 Gennaio 1950 E <= Oggi)
+        return ($dataInserita >= $limiteMinimo && $dataInserita <= $limiteMassimo);
+
+    } catch (Exception $e) {
+        // Se la data è un calendario impossibile (es: 2023-13-45), DateTime lancia eccezione
+        return false;
+    }
+}
+
 // Risultato query, titoli, titoli custom
 function stampaTabella(array $righe, array $htmlColumns = [], array $customHeaders = []): void
 {

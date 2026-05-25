@@ -38,13 +38,11 @@ if (!empty($reset_params)) {
                 <input type="hidden" name="<?= htmlspecialchars($name) ?>" value="<?= $value ?>">
 
             <?php elseif ($campo['tipo'] === 'multi-range'):
-                // Estraiamo i dati configurati per il doppio slider
                 $min = (int)($campo['min'] ?? 0);
                 $max = (int)($campo['max'] ?? 100);
                 $name_min = htmlspecialchars($campo['name_min']);
                 $name_max = htmlspecialchars($campo['name_max']);
 
-                // Legge i valori filtrati direttamente dall'URL se presenti
                 $val_min = isset($_GET[$campo['name_min']]) && $_GET[$campo['name_min']] !== '' ? (int)$_GET[$campo['name_min']] : (int)($campo['value_min'] ?? $min);
                 $val_max = isset($_GET[$campo['name_max']]) && $_GET[$campo['name_max']] !== '' ? (int)$_GET[$campo['name_max']] : (int)($campo['value_max'] ?? $max);
             ?>
@@ -75,7 +73,6 @@ if (!empty($reset_params)) {
                 </div>
 
             <?php elseif ($campo['tipo'] === 'range'):
-                // Manteniamo per retrocompatibilità il vecchio range singolo se usato altrove
                 $min = $campo['min'] ?? 0;
                 $max = $campo['max'] ?? 100;
                 $current_val = (isset($_GET[$name]) && $_GET[$name] !== '') ? htmlspecialchars($_GET[$name]) : ($campo['default'] ?? $max);
@@ -92,6 +89,17 @@ if (!empty($reset_params)) {
                     step="1"
                     style="width: 100%; accent-color: var(--primary); margin-bottom: 10px;"
                     oninput="document.getElementById('val_<?= $name ?>').innerText = this.value">
+
+            <?php elseif ($campo['tipo'] === 'date'):
+                $max_date = date('Y-m-d');
+            ?>
+                <label for="<?= $name ?>"><?= $label ?></label>
+                <input type="date"
+                    name="<?= $name ?>"
+                    id="<?= $name ?>"
+                    value="<?= $value ?>"
+                    min="1950-01-01"
+                    max="<?= $max_date ?>">
 
             <?php else: ?>
                 <label for="<?= $name ?>"><?= $label ?></label>

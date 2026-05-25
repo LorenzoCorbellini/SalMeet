@@ -59,6 +59,7 @@ async function aggiungiBacheca() {
         heightAuto: false,
         scrollbarPadding: false,
         showCancelButton: true,
+        reverseButtons: true,
         confirmButtonText: 'Avanti &rarr;',
         cancelButtonText: 'Annulla',
         inputValidator: (value) => {
@@ -115,10 +116,10 @@ async function rinominaBacheca(nomeBacheca, owner) {
     }
 }
 
-function eliminaBacheca(nomeBacheca, owner) {
+function eliminaBacheca(nomeBacheca, idOwner, nicknameOwner) {
     Swal.fire({
         title: 'Elimina Bacheca',
-        html: `Vuoi davvero eliminare la bacheca <b class="swal-text-bold">${nomeBacheca}</b>? L'azione è irreversibile.`,
+        html: `Vuoi davvero eliminare la bacheca <b class="swal-text-bold">${nomeBacheca}</b> di <b class="swal-text-bold">${nicknameOwner}</b>? L'azione è irreversibile.`,
         icon: 'warning',
         heightAuto: false,
         scrollbarPadding: false,
@@ -131,8 +132,8 @@ function eliminaBacheca(nomeBacheca, owner) {
             eseguiRichiesta({
                 azione: 'elimina',
                 nome: nomeBacheca,
-                owner: owner
-            }, `Bacheca <b class="swal-text-bold">${nomeBacheca}</b> eliminata con successo.`, 'bacheche.php');
+                owner: idOwner // Al server passi il codice numerico corretto
+            }, `Bacheca eliminata con successo.`, 'bacheche.php');
         }
     });
 }
@@ -306,7 +307,7 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
                 nome: nomeBacheca,
                 owner: owner,
                 utenteDaRimuovere: parseInt(utenteDaRimuovere, 10)
-            }, `Autorizzazione revocata a <b class="swal-text-bold">${nickname}</b> e file rimossi.`);
+            }, `Autorizzazione revocata e file rimossi.`);
         }
     });
 }
@@ -476,7 +477,7 @@ function rimuoviFile(nomeBacheca, owner, fileDaRimuovere, nomeFile, caricatoDa) 
         reverseButtons: true 
     }).then((result) => {
         if (result.isConfirmed) {
-            const messaggioSuccesso = `File <b class="swal-text-bold">${nomeFile}</b> di <b class="swal-text-bold">${caricatoDa}</b> rimosso con successo.`;
+            const messaggioSuccesso = `File rimosso con successo.`;
 
             eseguiRichiesta({
                 azione: 'rimuovi_file',
