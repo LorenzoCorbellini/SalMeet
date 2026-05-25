@@ -1,7 +1,7 @@
 const API_URL = 'bachecheAPI.php';
 
-// Funzione helper per le chiamate fetch standardizzate
-function eseguiRichiesta(bodyData, messaggioSuccesso) {
+// Funzione helper per le chiamate fetch standardizzate con REDIRECT
+function eseguiRichiesta(bodyData, messaggioSuccesso, urlRedirect = null) {
     fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -19,9 +19,14 @@ function eseguiRichiesta(bodyData, messaggioSuccesso) {
                         showConfirmButton: false,
                         heightAuto: false,
                         scrollbarPadding: false
-                    }).then(() => location.reload());
+                    }).then(() => {
+                        // Se è stato passato un URL, andiamo lì, altrimenti ricarichiamo la pagina
+                        if (urlRedirect) window.location.href = urlRedirect;
+                        else location.reload();
+                    });
                 } else {
-                    location.reload();
+                    if (urlRedirect) window.location.href = urlRedirect;
+                    else location.reload();
                 }
             } else {
                 Swal.fire({
@@ -334,12 +339,20 @@ async function rinominaBacheca(nomeBacheca, owner) {
     });
 
     if (nuovoNome && nuovoNome.trim() !== nomeBacheca) {
+        const nomePulito = nuovoNome.trim();
+
+        // Calcoliamo il nuovo URL in cui atterrare dopo la rinomina
+        const urlAttuale = new URL(window.location.href);
+        if (urlAttuale.searchParams.has('bacheca')) {
+            urlAttuale.searchParams.set('bacheca', nomePulito);
+        }
+
         eseguiRichiesta({
             azione: 'rinomina',
             nome: nomeBacheca,
             owner: owner,
-            nuovoNome: nuovoNome.trim()
-        }, 'Bacheca rinominata con successo.');
+            nuovoNome: nomePulito
+        }, 'Bacheca rinominata con successo.', urlAttuale.toString()); // Passiamo il nuovo URL!
     }
 }
 
@@ -359,7 +372,7 @@ function eliminaBacheca(nomeBacheca, owner, ownerNickname) {
                 azione: 'elimina',
                 nome: nomeBacheca,
                 owner: owner
-            }, 'Bacheca Basket eliminata con successo.');
+            }, 'Bacheca eliminata con successo.', 'bacheche.php'); // Passiamo l'URL generale!
         }
     });
 }
