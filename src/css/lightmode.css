@@ -28,7 +28,7 @@ body {
     color: var(--text-dark);
     font-family: "Elms Sans", sans-serif;
     font-size: var(--fs-body);
-    font-weight: 200;
+    font-weight: 400;
     margin: 0;
     padding: 0;
 
@@ -68,7 +68,7 @@ h1 {
     margin: 0;
     padding: clamp(10px, 2vh, 20px) 0;
     font-size: var(--fs-h1);
-    font-weight: 200;
+    font-weight: 600;
     letter-spacing: clamp(3px, 0.5vw, 8px);
     background: var(--primary);
     color: var(--text-light);
@@ -103,6 +103,7 @@ li a {
     text-decoration: none;
     transition: all 0.3s ease;
     border-left: 4px solid transparent;
+    font-weight: 600; 
 }
 
 li.navbar a:hover:not(.active) {
@@ -125,7 +126,7 @@ li.navbar a:hover:not(.active) {
 #filtro button,
 #filtro label {
     font-family: "Elms Sans", sans-serif;
-    font-weight: 200;
+    font-weight: 400;
 }
 
 #filtro {
@@ -141,7 +142,7 @@ li.navbar a:hover:not(.active) {
 #filtro h3 {
     margin: 0 0 clamp(8px, 1vh, 16px) 0;
     font-size: clamp(0.8rem, 1vw, 1rem);
-    font-weight: 600;
+    font-weight: 200; 
     text-transform: uppercase;
     letter-spacing: 1.5px;
     color: var(--primary-dark);
@@ -150,7 +151,7 @@ li.navbar a:hover:not(.active) {
 #filtro label {
     display: block;
     font-size: clamp(0.8rem, 0.9vw, 0.9375rem);
-    font-weight: 400;
+    font-weight: bold;
     color: var(--text-dark);
     margin-bottom: 4px;
     margin-top: clamp(8px, 1vh, 14px);
@@ -740,6 +741,28 @@ tbody tr:hover td:hover {
     border-radius: 6px !important;
     font-size: 0.95rem !important;
     font-weight: 500 !important;
+}
+
+/* --- LAYOUT SPLIT PER POPUP RICERCA (SWAL2) --- */
+.swal-wide-split {
+    width: 850px !important;
+    max-width: 95vw !important;
+}
+
+/* Annulla i margini esagerati di default di swal sugli input */
+div.swal2-container .swal-wide-split .swal2-input {
+    margin: 0 !important;
+    height: 38px !important;
+    font-size: 0.9rem !important;
+}
+
+/* Stile per le etichette dei campi nei filtri */
+.swal-filter-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-dark);
+    margin-bottom: 2px;
+    font-weight: 500;
 }
 
 /* --- ICONE DI STATO DI SWEETALERT2 --- */

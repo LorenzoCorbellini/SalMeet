@@ -20,7 +20,6 @@ function eseguiRichiesta(bodyData, messaggioSuccesso, urlRedirect = null) {
                         heightAuto: false,
                         scrollbarPadding: false
                     }).then(() => {
-                        // Se è stato passato un URL, andiamo lì, altrimenti ricarichiamo la pagina
                         if (urlRedirect) window.location.href = urlRedirect;
                         else location.reload();
                     });
@@ -51,7 +50,92 @@ function eseguiRichiesta(bodyData, messaggioSuccesso, urlRedirect = null) {
 }
 
 // =========================================================
-// ASTRAZIONE: FUNZIONE DI RICERCA UTENTE (Campi Separati)
+// BACHECHE: AGGIUNGI, RINOMINA, ELIMINA
+// =========================================================
+async function aggiungiBacheca() {
+    const { value: nomeBacheca } = await Swal.fire({
+        title: 'Nuova Bacheca',
+        input: 'text',
+        inputLabel: 'Inserisci il nome della nuova bacheca:',
+        heightAuto: false,
+        scrollbarPadding: false,
+        showCancelButton: true,
+        confirmButtonText: 'Avanti &rarr;',
+        cancelButtonText: 'Annulla',
+        inputValidator: (value) => {
+            if (!value || value.trim() === '') return 'Il nome della bacheca è obbligatorio.';
+        }
+    });
+
+    if (!nomeBacheca) return;
+
+    const ownerId = await cercaESelezionaUtente('Assegna un Proprietario');
+
+    if (ownerId) {
+        eseguiRichiesta({
+            azione: 'aggiungi',
+            nome: nomeBacheca.trim(),
+            owner: parseInt(ownerId, 10)
+        }, 'Bacheca creata con successo.');
+    }
+}
+
+async function rinominaBacheca(nomeBacheca, owner) {
+    const { value: nuovoNome } = await Swal.fire({
+        title: 'Rinomina Bacheca',
+        input: 'text',
+        inputLabel: 'Inserisci il nuovo nome:',
+        inputValue: nomeBacheca,
+        heightAuto: false,
+        scrollbarPadding: false,
+        showCancelButton: true,
+        confirmButtonText: 'Salva',
+        cancelButtonText: 'Annulla',
+        inputValidator: (value) => {
+            if (!value || value.trim() === '') return 'Il nome non può essere vuoto!';
+        }
+    });
+
+    if (nuovoNome && nuovoNome.trim() !== nomeBacheca) {
+        const nomePulito = nuovoNome.trim();
+        const urlAttuale = new URL(window.location.href);
+        
+        if (urlAttuale.searchParams.has('bacheca')) {
+            urlAttuale.searchParams.set('bacheca', nomePulito);
+        }
+
+        eseguiRichiesta({
+            azione: 'rinomina',
+            nome: nomeBacheca,
+            owner: owner,
+            nuovoNome: nomePulito
+        }, 'Bacheca rinominata con successo.', urlAttuale.toString());
+    }
+}
+
+function eliminaBacheca(nomeBacheca, owner) {
+    Swal.fire({
+        title: 'Elimina Bacheca',
+        html: `Vuoi davvero eliminare la bacheca <b style="font-weight: bold !important;">${nomeBacheca}</b>? L'azione è irreversibile.`,
+        icon: 'warning',
+        heightAuto: false,
+        scrollbarPadding: false,
+        showCancelButton: true,
+        confirmButtonText: 'Sì, elimina',
+        cancelButtonText: 'Annulla'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            eseguiRichiesta({
+                azione: 'elimina',
+                nome: nomeBacheca,
+                owner: owner
+            }, 'Bacheca eliminata con successo.', 'bacheche.php');
+        }
+    });
+}
+
+// =========================================================
+// GESTIONE UTENTI (Layout Split a due colonne)
 // =========================================================
 async function cercaESelezionaUtente(titoloPopup) {
     return new Promise((resolve) => {
@@ -59,28 +143,35 @@ async function cercaESelezionaUtente(titoloPopup) {
             title: titoloPopup,
             heightAuto: false,
             scrollbarPadding: false,
+            customClass: { popup: 'swal-wide-split' },
             html: `
-                <div style="text-align: left; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nickname:</label>
-                        <input id="swal-search-nickname" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. supermario">
+                <div style="display: flex; gap: 20px; text-align: left; align-items: stretch; min-height: 250px; margin-top: 15px;">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-soft); padding-right: 15px;">
+                        <div>
+                            <label class="swal-filter-label">Nickname:</label>
+                            <input id="swal-search-nickname" class="swal2-input" placeholder="Es. supermario">
+                        </div>
+                        <div>
+                            <label class="swal-filter-label">Nome:</label>
+                            <input id="swal-search-nome" class="swal2-input" placeholder="Es. Mario">
+                        </div>
+                        <div>
+                            <label class="swal-filter-label">Cognome:</label>
+                            <input id="swal-search-cognome" class="swal2-input" placeholder="Es. Rossi">
+                        </div>
+                        <div>
+                            <label class="swal-filter-label">Data di Nascita:</label>
+                            <input id="swal-search-date" type="date" class="swal2-input">
+                        </div>
+                        <button id="swal-search-btn" class="swal2-styled swal2-confirm" style="margin: 15px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important; padding: 0;">Cerca Utente</button>
                     </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome:</label>
-                        <input id="swal-search-nome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Mario">
+                    
+                    <div style="flex: 1.5; display: flex; flex-direction: column;">
+                        <span class="swal-filter-label" style="margin-bottom: 10px; color: var(--primary-dark); font-weight: 600;">Risultati della ricerca:</span>
+                        <div id="swal-search-results" style="flex: 1; overflow-y: auto; max-height: 280px; padding-right: 5px;">
+                            <p style="color: var(--text-muted); text-align: center; margin-top: 15px; font-size: 0.9rem;">Compila almeno un campo a sinistra per avviare la ricerca.</p>
+                        </div>
                     </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Cognome:</label>
-                        <input id="swal-search-cognome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Rossi">
-                    </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Data di Nascita:</label>
-                        <input id="swal-search-date" type="date" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;">
-                    </div>
-                    <button id="swal-search-btn" class="swal2-styled swal2-confirm" style="margin: 10px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important;">Cerca</button>
-                </div>
-                <div id="swal-search-results" style="max-height: 180px; overflow-y: auto; text-align: left; margin-top: 15px; border-top: 1px solid var(--border-soft); padding-top: 12px;">
-                    <p style="color: var(--text-muted); text-align: center; margin-top: 5px; font-size: 0.9rem;">Compila almeno un campo per avviare la ricerca.</p>
                 </div>
             `,
             showCancelButton: true,
@@ -132,15 +223,15 @@ async function cercaESelezionaUtente(titoloPopup) {
                         const data = await response.json();
 
                         if (data.successo && data.utenti.length > 0) {
-                            let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
+                            let html = '<div style="display:flex; flex-direction:column; gap:6px;">';
                             data.utenti.forEach(u => {
                                 const infoData = u.data_formattata ? ` | Nascita: ${u.data_formattata}` : '';
                                 html += `
-                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid var(--border-soft); border-radius:8px; transition: background 0.2s;">
-                                        <input type="radio" name="swal-user-radio" value="${u.codice}" style="margin:0; width: 18px; height: 18px; accent-color: var(--primary);">
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px 12px; border:1px solid var(--border-soft); border-radius:8px; transition: background 0.2s;">
+                                        <input type="radio" name="swal-user-radio" value="${u.codice}" style="margin:0; width: 16px; height: 16px; accent-color: var(--primary);">
                                         <span style="color: var(--text-dark); font-size: 0.95rem;">
                                             <strong>${u.nickname}</strong> 
-                                            <span style="color: var(--text-muted); font-size: 0.85em;">(${u.nome} ${u.cognome}${infoData})</span>
+                                            <span style="color: var(--text-muted); font-size: 0.85em; display:block; margin-top:2px;">${u.nome} ${u.cognome}${infoData}</span>
                                         </span>
                                     </label>
                                 `;
@@ -158,7 +249,7 @@ async function cercaESelezionaUtente(titoloPopup) {
             preConfirm: () => {
                 const selected = document.querySelector('input[name="swal-user-radio"]:checked');
                 if (!selected) {
-                    Swal.showValidationMessage('Seleziona un utente dalla lista prima di proseguire.');
+                    Swal.showValidationMessage('Seleziona un utente dalla lista a destra prima di proseguire.');
                     return false;
                 }
                 return selected.value;
@@ -170,8 +261,42 @@ async function cercaESelezionaUtente(titoloPopup) {
     });
 }
 
+async function aggiungiAutorizzato(nomeBacheca, owner) {
+    const utenteId = await cercaESelezionaUtente('Cerca Utente da Autorizzare');
+    if (utenteId) {
+        eseguiRichiesta({
+            azione: 'aggiungi_autorizzato',
+            nome: nomeBacheca,
+            owner: owner,
+            nuovoUtente: parseInt(utenteId, 10)
+        }, 'Utente autorizzato con successo.');
+    }
+}
+
+function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
+    Swal.fire({
+        title: 'Rimuovi Autorizzazione',
+        html: `Vuoi davvero revocare l'accesso a <b style="font-weight: 900 !important;">${nickname}</b>? Tutti i suoi file in questa bacheca verranno rimossi.`,
+        icon: 'warning',
+        heightAuto: false,
+        scrollbarPadding: false,
+        showCancelButton: true,
+        confirmButtonText: 'Sì, revoca',
+        cancelButtonText: 'Annulla'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            eseguiRichiesta({
+                azione: 'rimuovi_autorizzato',
+                nome: nomeBacheca,
+                owner: owner,
+                utenteDaRimuovere: parseInt(utenteDaRimuovere, 10)
+            }, 'Autorizzazione revocata e file rimossi.');
+        }
+    });
+}
+
 // ====================================================================
-// ASTRAZIONE: FUNZIONE DI RICERCA FILE DEGLI UTENTI AUTORIZZATI
+// GESTIONE FILE (Layout Split a due colonne)
 // ====================================================================
 async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
     return new Promise((resolve) => {
@@ -179,28 +304,37 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
             title: titoloPopup,
             heightAuto: false,
             scrollbarPadding: false,
+            customClass: { popup: 'swal-wide-split' },
             html: `
-                <div style="text-align: left; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome File:</label>
-                        <input id="swal-search-filename" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. foto.jpg">
+                <div style="display: flex; gap: 20px; text-align: left; align-items: stretch; min-height: 280px; margin-top: 15px;">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-soft); padding-right: 15px;">
+                        <div>
+                            <label class="swal-filter-label">Nome File:</label>
+                            <input id="swal-search-filename" class="swal2-input" placeholder="Es. foto.jpg">
+                        </div>
+                        <hr style="margin: 8px 0; border:0; border-top:1px dashed var(--border-soft);">
+                        <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold;">Filtra per Autore</span>
+                        <div>
+                            <label class="swal-filter-label">Nickname:</label>
+                            <input id="swal-search-file-nickname" class="swal2-input" placeholder="Es. supermario">
+                        </div>
+                        <div>
+                            <label class="swal-filter-label">Nome:</label>
+                            <input id="swal-search-file-nome" class="swal2-input" placeholder="Es. Mario">
+                        </div>
+                        <div>
+                            <label class="swal-filter-label">Cognome:</label>
+                            <input id="swal-search-file-cognome" class="swal2-input" placeholder="Es. Rossi">
+                        </div>
+                        <button id="swal-file-search-btn" class="swal2-styled swal2-confirm" style="margin: 15px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important; padding: 0;">Filtra Risultati</button>
                     </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nickname Utente:</label>
-                        <input id="swal-search-file-nickname" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. supermario">
+                    
+                    <div style="flex: 1.5; display: flex; flex-direction: column;">
+                        <span class="swal-filter-label" style="margin-bottom: 10px; color: var(--primary-dark); font-weight: 600;">File degli utenti autorizzati:</span>
+                        <div id="swal-file-search-results" style="flex: 1; overflow-y: auto; max-height: 310px; padding-right: 5px;">
+                            <p style="color: var(--text-muted); text-align: center; margin-top: 15px; font-size: 0.9rem;">Caricamento file disponibili...</p>
+                        </div>
                     </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome Utente:</label>
-                        <input id="swal-search-file-nome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Mario">
-                    </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Cognome Utente:</label>
-                        <input id="swal-search-file-cognome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Rossi">
-                    </div>
-                    <button id="swal-file-search-btn" class="swal2-styled swal2-confirm" style="margin: 10px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important;">Cerca</button>
-                </div>
-                <div id="swal-file-search-results" style="max-height: 180px; overflow-y: auto; text-align: left; margin-top: 15px; border-top: 1px solid var(--border-soft); padding-top: 12px;">
-                    <p style="color: var(--text-muted); text-align: center; margin-top: 5px; font-size: 0.9rem;">Caricamento file disponibili...</p>
                 </div>
             `,
             showCancelButton: true,
@@ -233,11 +367,11 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
                         const data = await response.json();
 
                         if (data.successo && data.files.length > 0) {
-                            let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
+                            let html = '<div style="display:flex; flex-direction:column; gap:6px;">';
                             data.files.forEach(f => {
                                 html += `
-                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid var(--border-soft); border-radius:8px; transition: background 0.2s;">
-                                        <input type="radio" name="swal-file-radio" value="${f.numero}" style="margin:0; width: 18px; height: 18px; accent-color: var(--primary);">
+                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px 12px; border:1px solid var(--border-soft); border-radius:8px; transition: background 0.2s;">
+                                        <input type="radio" name="swal-file-radio" value="${f.numero}" style="margin:0; width: 16px; height: 16px; accent-color: var(--primary);">
                                         <span style="color: var(--text-dark); font-size: 0.95rem;">
                                             <strong>${f.nome_file}</strong> 
                                             <span style="color: var(--text-muted); font-size: 0.85em; display:block; margin-top:2px;">Caricato da: <b>@${f.nickname}</b> (${f.utente_nome} ${f.utente_cognome})</span>
@@ -255,7 +389,6 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
                     }
                 };
 
-                // Consente l'invio rapido premendo Invio sui campi di testo
                 [filenameInput, nicknameInput, nomeInput, cognomeInput].forEach(input => {
                     input.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') {
@@ -270,13 +403,13 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
                     eseguiCercaFile();
                 });
 
-                // Avvio iniziale immediato all'apertura del popup per mostrare tutti i file autorizzati
+                // Cerca automaticamente tutti i file all'apertura
                 eseguiCercaFile();
             },
             preConfirm: () => {
                 const selected = document.querySelector('input[name="swal-file-radio"]:checked');
                 if (!selected) {
-                    Swal.showValidationMessage('Seleziona un file dalla lista prima di proseguire.');
+                    Swal.showValidationMessage('Seleziona un file dalla lista a destra prima di proseguire.');
                     return false;
                 }
                 return selected.value;
@@ -288,260 +421,8 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
     });
 }
 
-// =========================================================
-// GESTIONE BACHECHE
-// =========================================================
-
-async function aggiungiBacheca() {
-    const { value: nomeBacheca } = await Swal.fire({
-        title: 'Nuova Bacheca',
-        input: 'text',
-        inputLabel: 'Inserisci il nome della nuova bacheca:',
-        heightAuto: false,
-        scrollbarPadding: false,
-        showCancelButton: true,
-        confirmButtonText: 'Avanti &rarr;',
-        cancelButtonText: 'Annulla',
-        inputValidator: (value) => {
-            if (!value || value.trim() === '') return 'Il nome della bacheca è obbligatorio.';
-        }
-    });
-
-    if (!nomeBacheca) return;
-
-    const ownerId = await cercaESelezionaUtente('Assegna un Proprietario');
-
-    if (ownerId) {
-        eseguiRichiesta({
-            azione: 'aggiungi',
-            nome: nomeBacheca.trim(),
-            owner: parseInt(ownerId, 10)
-        }, 'Bacheca creata con successo.');
-    }
-}
-
-async function rinominaBacheca(nomeBacheca, owner) {
-    const { value: nuovoNome } = await Swal.fire({
-        title: 'Rinomina Bacheca',
-        input: 'text',
-        inputLabel: 'Inserisci il nuovo nome:',
-        inputValue: nomeBacheca,
-        heightAuto: false,
-        scrollbarPadding: false,
-        showCancelButton: true,
-        confirmButtonText: 'Salva',
-        cancelButtonText: 'Annulla',
-        inputValidator: (value) => {
-            if (!value || value.trim() === '') {
-                return 'Il nome non può essere vuoto!';
-            }
-        }
-    });
-
-    if (nuovoNome && nuovoNome.trim() !== nomeBacheca) {
-        const nomePulito = nuovoNome.trim();
-
-        // Calcoliamo il nuovo URL in cui atterrare dopo la rinomina
-        const urlAttuale = new URL(window.location.href);
-        if (urlAttuale.searchParams.has('bacheca')) {
-            urlAttuale.searchParams.set('bacheca', nomePulito);
-        }
-
-        eseguiRichiesta({
-            azione: 'rinomina',
-            nome: nomeBacheca,
-            owner: owner,
-            nuovoNome: nomePulito
-        }, 'Bacheca rinominata con successo.', urlAttuale.toString()); // Passiamo il nuovo URL!
-    }
-}
-
-function eliminaBacheca(nomeBacheca, owner, ownerNickname) {
-    Swal.fire({
-        title: 'Sei sicuro?',
-        text: `Vuoi davvero eliminare la bacheca "${nomeBacheca}" dell'utente "${ownerNickname}"? L'azione è irreversibile!`,
-        icon: 'warning',
-        heightAuto: false,
-        scrollbarPadding: false,
-        showCancelButton: true,
-        confirmButtonText: 'Sì, elimina!',
-        cancelButtonText: 'Annulla'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            eseguiRichiesta({
-                azione: 'elimina',
-                nome: nomeBacheca,
-                owner: owner
-            }, 'Bacheca eliminata con successo.', 'bacheche.php'); // Passiamo l'URL generale!
-        }
-    });
-}
-
-// =========================================================
-// GESTIONE UTENTI NELLA BACHECA
-// =========================================================
-
-async function aggiungiAutorizzato(nomeBacheca, owner) {
-    const utenteId = await cercaESelezionaUtente('Cerca Utente da Autorizzare');
-
-    if (utenteId) {
-        eseguiRichiesta({
-            azione: 'aggiungi_autorizzato',
-            nome: nomeBacheca,
-            owner: owner,
-            nuovoUtente: parseInt(utenteId, 10)
-        }, 'Utente autorizzato con successo.');
-    }
-}
-
-function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
-    Swal.fire({
-        title: 'Rimuovi Utente',
-        text: `Vuoi davvero revocare l'accesso all'utente "${nickname}" per questa bacheca? Verranno rimossi anche i suoi file pubblicati.`,
-        icon: 'warning',
-        heightAuto: false,
-        scrollbarPadding: false,
-        showCancelButton: true,
-        confirmButtonText: 'Sì, rimuovi',
-        cancelButtonText: 'Annulla'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            eseguiRichiesta({
-                azione: 'rimuovi_autorizzato',
-                nome: nomeBacheca,
-                owner: owner,
-                utenteDaRimuovere: utenteDaRimuovere
-            }, 'Utente rimosso con successo dalla bacheca.');
-        }
-    });
-}
-
-// =========================================================
-// GESTIONE FILE NELLA BACHECA
-// =========================================================
-
-// ====================================================================
-// ASTRAZIONE: FUNZIONE DI RICERCA FILE DEGLI UTENTI AUTORIZZATI
-// ====================================================================
-async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup) {
-    return new Promise((resolve) => {
-        Swal.fire({
-            title: titoloPopup,
-            heightAuto: false,
-            scrollbarPadding: false,
-            html: `
-                <div style="text-align: left; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome File:</label>
-                        <input id="swal-search-filename" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. foto.png">
-                    </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nickname Utente:</label>
-                        <input id="swal-search-file-nickname" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. supermario">
-                    </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Nome Utente:</label>
-                        <input id="swal-search-file-nome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Mario">
-                    </div>
-                    <div>
-                        <label class="swal2-input-label" style="display:block; margin-bottom: 2px; font-weight: normal; font-size: 0.9rem;">Cognome Utente:</label>
-                        <input id="swal-search-file-cognome" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px !important;" placeholder="Es. Rossi">
-                    </div>
-                    <button id="swal-file-search-btn" class="swal2-styled swal2-confirm" style="margin: 10px 0 0 0; width: 100%; height: 40px; font-size: 0.95rem !important;">Filtra Risultati</button>
-                </div>
-                <div id="swal-file-search-results" style="max-height: 180px; overflow-y: auto; text-align: left; margin-top: 15px; border-top: 1px solid #ddd; padding-top: 12px;">
-                    <p style="color: #666; text-align: center; margin-top: 5px; font-size: 0.9rem;">Caricamento iniziale dei file...</p>
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Seleziona',
-            cancelButtonText: 'Annulla',
-            didOpen: () => {
-                const searchBtn = document.getElementById('swal-file-search-btn');
-                const filenameInput = document.getElementById('swal-search-filename');
-                const nicknameInput = document.getElementById('swal-search-file-nickname');
-                const nomeInput = document.getElementById('swal-search-file-nome');
-                const cognomeInput = document.getElementById('swal-search-file-cognome');
-                const resultsDiv = document.getElementById('swal-file-search-results');
-
-                const eseguiCercaFile = async () => {
-                    resultsDiv.innerHTML = '<p style="color:#666; text-align:center; margin:15px 0;"><i>Ricerca in corso...</i></p>';
-                    try {
-                        const response = await fetch(API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                azione: 'cerca_file_bacheca',
-                                nome: nomeBacheca,
-                                owner: owner,
-                                termine_file: filenameInput.value.trim(),
-                                nickname: nicknameInput.value.trim(),
-                                filtro_nome: nomeInput.value.trim(),
-                                cognome: cognomeInput.value.trim()
-                            })
-                        });
-                        const data = await response.json();
-
-                        if (data.successo && data.files.length > 0) {
-                            let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
-                            data.files.forEach(f => {
-                                html += `
-                                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid #ddd; border-radius:8px; transition: background 0.2s;">
-                                        <input type="radio" name="swal-file-radio" value="${f.numero}" style="margin:0; width: 18px; height: 18px;">
-                                        <span style="color: #333; font-size: 0.95rem;">
-                                            <strong>${f.nome_file}</strong> 
-                                            <span style="color: #666; font-size: 0.85em; display:block; margin-top:2px;">Caricato da: <b>@${f.nickname}</b> (${f.utente_nome} ${f.utente_cognome})</span>
-                                        </span>
-                                    </label>
-                                `;
-                            });
-                            html += '</div>';
-                            resultsDiv.innerHTML = html;
-                        } else {
-                            resultsDiv.innerHTML = '<p style="color:#666; text-align:center; margin:15px 0;">Nessun file disponibile o trovato per i criteri inseriti.</p>';
-                        }
-                    } catch (err) {
-                        resultsDiv.innerHTML = '<p style="color:red; text-align:center; margin:15px 0;">Errore di comunicazione col server.</p>';
-                    }
-                };
-
-                // Consente l'invio rapido della ricerca premendo Invio sui campi di testo
-                [filenameInput, nicknameInput, nomeInput, cognomeInput].forEach(input => {
-                    input.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            eseguiCercaFile();
-                        }
-                    });
-                });
-
-                searchBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    eseguiCercaFile();
-                });
-
-                // AVVIO IMMEDIATO ALL'APERTURA: Carica subito tutti i file degli utenti autorizzati
-                eseguiCercaFile();
-            },
-            preConfirm: () => {
-                const selected = document.querySelector('input[name="swal-file-radio"]:checked');
-                if (!selected) {
-                    Swal.showValidationMessage('Seleziona un file dalla lista prima di proseguire.');
-                    return false;
-                }
-                return selected.value;
-            }
-        }).then((result) => {
-            if (result.isConfirmed) resolve(result.value);
-            else resolve(null);
-        });
-    });
-}
-
-// Aggiornamento della funzione standard di pubblicazione file
 async function aggiungiFile(nomeBacheca, owner) {
     const fileId = await cercaESelezionaFile(nomeBacheca, owner, 'Seleziona un File da Pubblicare');
-
     if (fileId) {
         eseguiRichiesta({
             azione: 'aggiungi_file',
@@ -555,7 +436,7 @@ async function aggiungiFile(nomeBacheca, owner) {
 function rimuoviFile(nomeBacheca, owner, fileDaRimuovere, nomeFile, caricatoDa) {
     Swal.fire({
         title: 'Rimuovi File',
-        text: `Vuoi davvero rimuovere il file "${nomeFile}" caricato da "${caricatoDa}" dalla bacheca?`,
+        html: `Vuoi davvero rimuovere il file <b style="font-weight: bold !important;">${nomeFile}</b> caricato da <b style="font-weight: bold !important;">${caricatoDa}</b> dalla bacheca?`,
         icon: 'warning',
         heightAuto: false,
         scrollbarPadding: false,
@@ -568,8 +449,8 @@ function rimuoviFile(nomeBacheca, owner, fileDaRimuovere, nomeFile, caricatoDa) 
                 azione: 'rimuovi_file',
                 nome: nomeBacheca,
                 owner: owner,
-                fileDaRimuovere: fileDaRimuovere
-            }, 'File rimosso con successo dalla bacheca.');
+                fileDaRimuovere: parseInt(fileDaRimuovere, 10)
+            }, 'File rimosso con successo.');
         }
     });
 }

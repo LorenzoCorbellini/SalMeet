@@ -153,7 +153,7 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
             'campi' => [
                 ['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome'],
                 ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario'],
-                ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dal'],
+                ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo'],
             ]
         ];
         include 'filter.php';
