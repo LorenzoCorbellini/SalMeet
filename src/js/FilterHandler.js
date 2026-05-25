@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dd = String(oggi.getDate()).padStart(2, '0');
             const oggiStr = `${yyyy}-${mm}-${dd}`;
 
-            const limiteMin = '1950-01-01';
+            const limiteMin = '1900-01-01';
 
             // Controllo e avvicinamento ai limiti correnti
             if (dataInserita < limiteMin) {
