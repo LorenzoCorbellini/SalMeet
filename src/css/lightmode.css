@@ -119,6 +119,13 @@ li.navbar a:hover:not(.active) {
     border-left: 4px solid var(--accent);
 }
 
+.navbar a.active {
+    background-color: var(--accent) !important; 
+    color: var(--text-light) !important;        
+    font-weight: 700;
+    border-radius: 6px;                        
+}
+
 /* --- FILTRO --- */
 #filtro,
 #filtro input,
