@@ -90,6 +90,7 @@ async function rinominaBacheca(nomeBacheca, owner) {
         showCancelButton: true,
         confirmButtonText: 'Salva',
         cancelButtonText: 'Annulla',
+        reverseButtons: true,
         inputValidator: (value) => {
             if (!value || value.trim() === '') return 'Il nome non può essere vuoto!';
         }
@@ -123,7 +124,8 @@ function eliminaBacheca(nomeBacheca, owner) {
         scrollbarPadding: false,
         showCancelButton: true,
         confirmButtonText: 'Sì, elimina',
-        cancelButtonText: 'Annulla'
+        cancelButtonText: 'Annulla',
+        reverseButtons: true 
     }).then((result) => {
         if (result.isConfirmed) {
             eseguiRichiesta({
@@ -178,6 +180,7 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
             showCancelButton: true,
             confirmButtonText: 'Seleziona',
             cancelButtonText: 'Annulla',
+            reverseButtons: true, 
             didOpen: () => {
                 const searchBtn = document.getElementById('swal-search-btn');
                 const nickInput = document.getElementById('swal-search-nickname');
@@ -294,7 +297,8 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
         scrollbarPadding: false,
         showCancelButton: true,
         confirmButtonText: 'Sì, revoca',
-        cancelButtonText: 'Annulla'
+        cancelButtonText: 'Annulla',
+        reverseButtons: true 
     }).then((result) => {
         if (result.isConfirmed) {
             eseguiRichiesta({
@@ -352,6 +356,7 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
             showCancelButton: true,
             confirmButtonText: 'Seleziona',
             cancelButtonText: 'Annulla',
+            reverseButtons: true, 
             didOpen: () => {
                 const searchBtn = document.getElementById('swal-file-search-btn');
                 const filenameInput = document.getElementById('swal-search-filename');
@@ -467,7 +472,8 @@ function rimuoviFile(nomeBacheca, owner, fileDaRimuovere, nomeFile, caricatoDa) 
         scrollbarPadding: false,
         showCancelButton: true,
         confirmButtonText: 'Sì, rimuovi',
-        cancelButtonText: 'Annulla'
+        cancelButtonText: 'Annulla',
+        reverseButtons: true 
     }).then((result) => {
         if (result.isConfirmed) {
             const messaggioSuccesso = `File <b class="swal-text-bold">${nomeFile}</b> di <b class="swal-text-bold">${caricatoDa}</b> rimosso con successo.`;
