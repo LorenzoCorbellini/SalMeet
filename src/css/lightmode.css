@@ -260,7 +260,7 @@ li.navbar a:hover:not(.active) {
 /* --- NAVIGAZIONE PAGINE --- */
 .pagination-container {
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-end;
     align-items: center;
     gap: 4px;
     margin-top: auto;
@@ -281,6 +281,10 @@ li.navbar a:hover:not(.active) {
     font-size: 14px;
     transition: background-color 0.25s ease, color 0.25s ease, transform 0.2s ease;
     border-color: #99999900;
+}
+
+.text-muted {
+    color: var(--text-muted);
 }
 
 /* Stile per la pagina attiva corrente*/
