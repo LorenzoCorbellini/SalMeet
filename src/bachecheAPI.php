@@ -100,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cognome      = isset($input['cognome']) ? trim($input['cognome']) : '';
 
         try {
-            // MODIFICA: Cerca solo i file di utenti che hanno autorizzato = 1
             $sql = "SELECT f.numero, f.titolo AS nome_file, u.nickname, u.nome AS utente_nome, u.cognome AS utente_cognome 
                     FROM FileMultimediale f
                     JOIN Utente u ON f.caricatoDa = u.codice
@@ -176,7 +175,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt1 = $pdo->prepare("INSERT INTO Bacheca (nome, codiceUtente, dataCreazione) VALUES (?, ?, ?)");
             $stmt1->execute([$nome, $owner, $dataOggi]);
 
-            // MODIFICA: Il proprietario è automaticamente autorizzato (autorizzato = 1)
             $stmt2 = $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato, autorizzato) VALUES (?, ?, ?, 1)");
             $stmt2->execute([$nome, $owner, $owner]);
 
@@ -215,7 +213,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         try {
-            // MODIFICA: L'aggiunta manuale assegna automaticamente autorizzato = 1
             $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato, autorizzato) VALUES (?, ?, ?, 1)")
                 ->execute([$nome, $owner, $nuovoUtente]);
             echo json_encode(['successo' => true]);
