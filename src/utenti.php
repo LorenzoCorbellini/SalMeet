@@ -7,52 +7,52 @@ $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED
 
 if (!$isAjax):
 ?>
-<!DOCTYPE html>
-<html lang="it">
+    <!DOCTYPE html>
+    <html lang="it">
 
-<head>
-    <title>SalMeet - Utenti</title>
-    <?php include 'head.html'; ?>
-    
-    <!-- Richiamo lo script AJAX esterno -->
-    <script src="js/AJAXHandler.js" defer></script>
-</head>
+    <head>
+        <title>SalMeet - Utenti</title>
+        <?php include 'head.html'; ?>
 
-<body>
-    <header>
-        <h1 id="hcod1">Utenti</h1>
-    </header>
+        <!-- Richiamo lo script AJAX esterno -->
+        <script src="js/AJAXHandler.js" defer></script>
+    </head>
 
-    <div class="main-container">
-        <aside class="sidebar">
-            <?php include 'nav.html'; ?>
+    <body>
+        <header>
+            <h1 id="hcod1">Utenti</h1>
+        </header>
 
-            <?php
-            // =========================================================
-            // CONFIGURAZIONE DINAMICA DEI FILTRI NELLA SIDEBAR
-            // =========================================================
-            if (empty($_GET['utente'])) {
-                // Filtri per la lista globale degli utenti
-                $filtro_config = [
-                    'campi' => [
-                        ['tipo'  => 'text', 'name' => 'nickname', 'label' => 'Nickname'],
-                        ['tipo'  => 'text', 'name' => 'nome',     'label' => 'Nome'],
-                        ['tipo'  => 'text', 'name' => 'cognome',  'label' => 'Cognome'],
-                        ['tipo'  => 'date', 'name' => 'data',     'label' => 'Data di Nascita (Da)'],
-                    ]
-                ];
-                include 'filter.php';
-            }
-            ?>
-        </aside>
+        <div class="main-container">
+            <aside class="sidebar">
+                <?php include 'nav.html'; ?>
 
-        <div id="content">
-<?php endif; ?>
+                <?php
+                // =========================================================
+                // CONFIGURAZIONE DINAMICA DEI FILTRI NELLA SIDEBAR
+                // =========================================================
+                if (empty($_GET['utente'])) {
+                    // Filtri per la lista globale degli utenti
+                    $filtro_config = [
+                        'campi' => [
+                            ['tipo'  => 'text', 'name' => 'nickname', 'label' => 'Nickname'],
+                            ['tipo'  => 'text', 'name' => 'nome',     'label' => 'Nome'],
+                            ['tipo'  => 'text', 'name' => 'cognome',  'label' => 'Cognome'],
+                            ['tipo'  => 'date', 'name' => 'data',     'label' => 'Data di Nascita (Da)'],
+                        ]
+                    ];
+                    include 'filter.php';
+                }
+                ?>
+            </aside>
+
+            <div id="content">
+            <?php endif; ?>
 
             <?php if (!$isAjax): ?>
-            <!-- Contenitore bersaglio per le risposte AJAX -->
-            <div id="ajax-results">
-            <?php endif; ?>
+                <!-- Contenitore bersaglio per le risposte AJAX -->
+                <div id="ajax-results">
+                <?php endif; ?>
 
                 <?php
                 // =========================================================
@@ -67,11 +67,13 @@ if (!$isAjax):
                     $infoUtente = $stmtUtente->fetch(PDO::FETCH_ASSOC);
 
                     if ($infoUtente) {
+                        $dataFormattata = !empty($infoUtente['dataNascita']) ? (function_exists('formattaData') ? formattaData($infoUtente['dataNascita']) : date('d/m/Y', strtotime($infoUtente['dataNascita']))) : "";
+
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
                         echo "<h2 class='h2utente'>Profilo di <b><i>" . htmlspecialchars($infoUtente['nickname']) . "</i></b></h2>";
                         echo "<p><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>";
                         echo "<p><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>";
-                        echo "<p><strong>Data di Nascita:</strong> " . formattaData($infoUtente['dataNascita']) . "</p>";
+                        echo "<p><strong>Data di Nascita:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
 
                         // ---------------------------------------------------------
                         // TABELLA 1: BACHECHE ASSOCIATE CON LINK INCROCIATI
@@ -224,8 +226,10 @@ if (!$isAjax):
                         $params[':cognome'] = '%' . $_GET['cognome'] . '%';
                     }
                     if (!empty($_GET['data'])) {
-                        $where[] = "DATE(dataNascita) >= :data";
-                        $params[':data'] = $_GET['data'];
+                        if (isDataValidaRange($_GET['data'])) {
+                            $where[] = "DATE(dataNascita) >= :data";
+                            $params[':data'] = $_GET['data'];
+                        }
                     }
 
                     // Parametri di Ordinamento Dinamico
@@ -275,7 +279,7 @@ if (!$isAjax):
                                 'Nickname'        => $htmlNickname,
                                 'Nome'            => $riga['Nome'],
                                 'Cognome'         => $riga['Cognome'],
-                                'Data di Nascita' => formattaData($riga['Data di Nascita'])
+                                'Data di Nascita' => $riga['Data di Nascita']
                             ];
                         }
 
@@ -297,16 +301,16 @@ if (!$isAjax):
                 }
                 ?>
 
-            <?php if (!$isAjax): ?>
-            </div> <!-- Fine ajax-results -->
+                <?php if (!$isAjax): ?>
+                </div> <!-- Fine ajax-results -->
             <?php endif; ?>
 
-<?php if (!$isAjax): ?>
+            <?php if (!$isAjax): ?>
+            </div>
         </div>
-    </div>
 
-    <?php include 'footer.html'; ?>
-</body>
+        <?php include 'footer.html'; ?>
+    </body>
 
-</html>
+    </html>
 <?php endif; ?>

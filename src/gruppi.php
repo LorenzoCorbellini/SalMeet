@@ -7,47 +7,47 @@ $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED
 
 if (!$isAjax):
 ?>
-<!DOCTYPE html>
-<html lang="it">
+	<!DOCTYPE html>
+	<html lang="it">
 
-<head>
-	<title>SalMeet - Gruppi</title>
-	<?php include 'head.html'; ?>
-	
-	<!-- Richiamo lo script AJAX esterno -->
-	<script src="js/AJAXHandler.js" defer></script>
-</head>
+	<head>
+		<title>SalMeet - Gruppi</title>
+		<?php include 'head.html'; ?>
 
-<body>
-	<header>
-		<h1 id="hcod1">Gruppi</h1>
-	</header>
+		<!-- Richiamo lo script AJAX esterno -->
+		<script src="js/AJAXHandler.js" defer></script>
+	</head>
 
-	<div class="main-container">
-		<aside class="sidebar">
-			<?php include 'nav.html'; ?>
+	<body>
+		<header>
+			<h1 id="hcod1">Gruppi</h1>
+		</header>
 
-			<?php
-			if (empty($_GET['gruppo'])) {
-				$filtro_config = [
-					'campi' => [
-						['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo'],
-						['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname)'],
-						['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Da)'],
-					]
-				];
-				include 'filter.php';
-			}
-			?>
-		</aside>
+		<div class="main-container">
+			<aside class="sidebar">
+				<?php include 'nav.html'; ?>
 
-		<div id="content">
-<?php endif; ?>
+				<?php
+				if (empty($_GET['gruppo'])) {
+					$filtro_config = [
+						'campi' => [
+							['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo'],
+							['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname)'],
+							['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Da)'],
+						]
+					];
+					include 'filter.php';
+				}
+				?>
+			</aside>
+
+			<div id="content">
+			<?php endif; ?>
 
 			<?php if (!$isAjax): ?>
-			<!-- Contenitore bersaglio per le risposte AJAX -->
-			<div id="ajax-results">
-			<?php endif; ?>
+				<!-- Contenitore bersaglio per le risposte AJAX -->
+				<div id="ajax-results">
+				<?php endif; ?>
 
 				<?php
 				// =========================================================
@@ -169,7 +169,7 @@ if (!$isAjax):
 					// =========================================================
 					// VISTA PRINCIPALE: LISTA DEI GRUPPI CON PAGINAZIONE AJAX
 					// =========================================================
-					
+
 					// Parametri di paginazione
 					$recordsPerPage = 20;
 					list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
@@ -186,8 +186,10 @@ if (!$isAjax):
 						$params[':proprietario'] = "%" . $_GET['proprietario'] . "%";
 					}
 					if (!empty($_GET['data'])) {
-						$where[] = "DATE(Gruppo.dataCreazione) >= :data";
-						$params[':data'] = $_GET['data'];
+						if (isDataValidaRange($_GET['data'])) {
+							$where[] = "DATE(Gruppo.dataCreazione) >= :data";
+							$params[':data'] = $_GET['data'];
+						}
 					}
 
 					// Parametri di Ordinamento Dinamico
@@ -205,7 +207,7 @@ if (!$isAjax):
 					$stmtConto = $pdo->prepare($sqlContatore);
 					$stmtConto->execute($params);
 					$totaleRisultati = $stmtConto->fetchColumn();
-					
+
 					// Calcolo numero di pagine
 					$numero_pagine = getNumberOfPages($totaleRisultati, $limit);
 
@@ -252,7 +254,7 @@ if (!$isAjax):
 							$datiGruppi[] = [
 								'Nome Gruppo'    => $htmlNomeGruppo,
 								'Proprietario'   => $htmlProprietario,
-								'Data Creazione' => formattaData($riga['Data Creazione'])
+								'Data Creazione' => $riga['Data Creazione']
 							];
 						}
 
@@ -266,7 +268,7 @@ if (!$isAjax):
 						echo '<div class="table-container">';
 						stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
 						echo '</div>';
-						
+
 						// Stampa i link della paginazione
 						echo getPagesNav($np, $numero_pagine, 1);
 					} else {
@@ -275,16 +277,16 @@ if (!$isAjax):
 				}
 				?>
 
-			<?php if (!$isAjax): ?>
-			</div> <!-- Fine ajax-results -->
+				<?php if (!$isAjax): ?>
+				</div> <!-- Fine ajax-results -->
 			<?php endif; ?>
 
-<?php if (!$isAjax): ?>
+			<?php if (!$isAjax): ?>
+			</div>
 		</div>
-	</div>
 
-	<?php include 'footer.html'; ?>
-</body>
+		<?php include 'footer.html'; ?>
+	</body>
 
-</html>
+	</html>
 <?php endif; ?>
