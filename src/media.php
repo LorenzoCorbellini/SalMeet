@@ -232,13 +232,14 @@ $numero_records = getNumberOfRecords($pdo, $table, $where, $params);
 $numero_pagine = getNumberOfPages($numero_records, $limit);
 
 /* PREPARAZIONE HTML DA STAMPARE */
-$output_html  = "<div id='results-and-page-nav'>";
-$output_html .= "<div id='results-number'>Trovati $numero_records risultati ($limit per pagina)</div>";
-$output_html .= getPagesNav($np, $numero_pagine, 1);
+$output_html .= "<div class='table-top-bar'>";
+$output_html .= "<p class='info-risultati zero-margin'>Trovate <strong>$numero_records</strong> bacheche (<strong>$limit</strong> per pagina)</p>";
 $output_html .= "</div>";
+
 $output_html .= "<div class='table-container'>";
 $output_html .= getTabella($righe, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
 $output_html .= "</div>";
+$output_html .= getPagesNav($np, $numero_pagine, 1);
 
 if (isAjaxRequest()) {
     echo $output_html;
