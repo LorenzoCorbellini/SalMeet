@@ -183,8 +183,9 @@ function getPagesNav(int $np,
 
     if ($np - 1 > 1) {
         $html .= "<a href='?pagina=$prev&$query' class='page-item arrow'>$leftArrowHTML</a>";
-        $html .= "<a href='?pagina=1&$query' class='page-item'>1</a>";
-        if ($np - 1 > 2) $html .= '<span class="page-dots">...</span>';
+        if ($np - 1 > 2) $html .= "<a href='?pagina=1&$query' class='page-item text-muted'>1</a>";
+        else $html .= "<a href='?pagina=1&$query' class='page-item'>1</a>";
+        // if ($np - 1 > 2) $html .= '<span class="page-dots">...</span>';
     }
     for ($i=$start; $i <= $end; $i++) {
         $active = "";
@@ -192,8 +193,9 @@ function getPagesNav(int $np,
         $html .= "<a href='?pagina=$i&$query' class='page-item $active'>$i</a>";
     }
     if ($pagine_totali - $np > 1) {
-        if ($pagine_totali - $np > 2) $html .= '<span class="page-dots">...</span>';
-        $html .= "<a href='?pagina=$pagine_totali&$query' class='page-item'>$pagine_totali</a>";
+        // if ($pagine_totali - $np > 2) $html .= '<span class="page-dots">...</span>';
+        if ($pagine_totali - $np > 2) $html .= "<a href='?pagina=$pagine_totali&$query' class='page-item text-muted'>$pagine_totali</a>";
+        else $html .= "<a href='?pagina=$pagine_totali&$query' class='page-item'>$pagine_totali</a>";
         $html .= "<a href='?pagina=$next&$query' class='page-item arrow'>$rightArrowHTML</a>";
     }
     
