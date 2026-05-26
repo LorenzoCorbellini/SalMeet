@@ -139,6 +139,42 @@ function eliminaBacheca(nomeBacheca, idOwner, nicknameOwner) {
 }
 
 // =========================================================
+// GESTIONE RICHIESTE PENDENTI (Accetta / Rifiuta)
+// =========================================================
+
+function accettaRichiesta(nomeBacheca, owner, utenteTarget, nickname) {
+    eseguiRichiesta({
+        azione: 'accetta_richiesta',
+        nome: nomeBacheca,
+        owner: owner,
+        utenteTarget: parseInt(utenteTarget, 10)
+    }, `La richiesta di accesso di <b class="swal-text-bold">${nickname}</b> è stata accettata.`);
+}
+
+function rifiutaRichiesta(nomeBacheca, owner, utenteTarget, nickname) {
+    Swal.fire({
+        title: 'Rifiuta Richiesta',
+        html: `Vuoi rifiutare e cancellare la richiesta di accesso di <b class="swal-text-bold">${nickname}</b>?`,
+        icon: 'warning',
+        heightAuto: false,
+        scrollbarPadding: false,
+        showCancelButton: true,
+        confirmButtonText: 'Sì, rifiuta',
+        cancelButtonText: 'Annulla',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            eseguiRichiesta({
+                azione: 'rifiuta_richiesta',
+                nome: nomeBacheca,
+                owner: owner,
+                utenteTarget: parseInt(utenteTarget, 10)
+            }, `Richiesta di <b class="swal-text-bold">${nickname}</b> rifiutata.`);
+        }
+    });
+}
+
+// =========================================================
 // GESTIONE UTENTI (Layout Split a due colonne)
 // =========================================================
 async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
@@ -248,7 +284,7 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                         const data = await response.json();
 
                         if (data.successo && data.utenti.length > 0) {
-                            const limitUtenti = 50; 
+                            const limitUtenti = 50;
                             const hasMore = data.utenti.length >= limitUtenti;
 
                             if (hasMore) {
@@ -426,7 +462,7 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
                         const data = await response.json();
 
                         if (data.successo && data.files.length > 0) {
-                            const limitFile = 30; 
+                            const limitFile = 30;
                             const hasMore = data.files.length >= limitFile;
 
                             if (hasMore) {

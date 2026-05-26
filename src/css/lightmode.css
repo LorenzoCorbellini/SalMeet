@@ -507,6 +507,7 @@ td.titolo {
     align-items: center;
     margin-top: 0px;
     margin-bottom: 4px;
+    min-height: 40px;
 }
 
 /* --- UTILITY --- */
