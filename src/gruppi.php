@@ -31,9 +31,9 @@ if (!$isAjax):
 				if (empty($_GET['gruppo'])) {
 					$filtro_config = [
 						'campi' => [
-							['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo'],
-							['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname)'],
-							['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Da)'],
+							['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:'],
+							['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname):'],
+							['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Creato dal):'],
 						]
 					];
 					include 'filter.php';
@@ -238,7 +238,7 @@ if (!$isAjax):
 					$stmt->execute();
 					$righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-					echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> gruppi <strong>($recordsPerPage per pagina)</strong>.</p>";
+					echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> gruppi (<strong>$recordsPerPage</strong> per pagina)</p>";
 
 					if (!empty($righe)) {
 						$datiGruppi = [];
