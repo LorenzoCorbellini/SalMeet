@@ -93,7 +93,7 @@ function gestisciRoutingBacheche($pdo, $isAjax, $params)
 function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $owner)
 {
 
-    $entita = 'bacheche'; 
+    $entita = 'bacheche';
     $parametriExtra = [];
 
     if ($vista_corrente === 'dettaglio') {
@@ -432,6 +432,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         $stmtBacheca = $pdo->prepare("
             SELECT b.dataCreazione, u.nickname,
                    (SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab WHERE uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente AND uab.autorizzato = 1) AS total_utenti,
+                   (SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab WHERE uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente AND uab.autorizzato = 0) AS total_richieste,
                    (SELECT COUNT(*) FROM FilePubblicatoBacheca fpb WHERE fpb.nomeBacheca = b.nome AND fpb.codUtente = b.codiceUtente) AS total_file
             FROM Bacheca b
             JOIN Utente u ON b.codiceUtente = u.codice
@@ -449,6 +450,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
                 echo "<p class='info-card-text'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
                 $linkOwner = "utenti.php?utente=" . urlencode($owner);
                 echo "<p class='info-card-text'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
+                echo "<p class='info-card-text'><strong>Richieste in attesa:</strong> <a href='{$urlRichieste}'>" . (int)$datiBachecaDb['total_richieste'] . "</a></p>";
                 echo "<p class='info-card-text'><strong>Utenti autorizzati:</strong> <a href='{$urlUtenti}'>" . (int)$datiBachecaDb['total_utenti'] . "</a></p>";
                 echo "<p class='info-card-text-last'><strong>File caricati:</strong> <a href='{$urlFile}'>" . (int)$datiBachecaDb['total_file'] . "</a></p>";
             }

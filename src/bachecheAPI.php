@@ -208,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $st = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ?");
         $st->execute([$nome, $owner, $nuovoUtente]);
         if ($st->fetchColumn() > 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Utente già presente o in attesa.']);
+            echo json_encode(['successo' => false, 'messaggio' => 'Utente già autorizzato o in attesa.']);
             exit;
         }
 
