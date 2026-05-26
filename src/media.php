@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/filterAPI.php';
 
 /**
  * Estrae i record dei file multimediali dal database applicando i filtri e l'ordinamento richiesti.
@@ -173,6 +174,28 @@ function isAjaxRequest(): bool {
 		strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 }
 
+function renderFiltroSidebar(PDO $pdo)
+{
+	$entita = 'file';
+
+	$stmtRange = $pdo->query("SELECT MIN(dimensione) AS min_dim, MAX(dimensione) AS max_dim FROM FileMultimediale");
+	$rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
+
+	$minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 1;
+	$maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
+	if ($minSize == $maxSize) {
+		$minSize = 0;
+	}
+
+	$parametriExtra = [
+		'min_size' => $minSize,
+		'max_size' => $maxSize
+	];
+
+	$filtro_config = getFiltroConfig($entita, $parametriExtra);
+	include 'filter.php';
+}
+
 /* PAGINAZIONE */
 list($limit, $np, $start_from) = getPaginationParams(50);
 
@@ -181,15 +204,25 @@ $where  = [];
 $params = [];
 
 // Filtro per nome del file
-if (!empty($_GET['filename'])) {
-	$where[]             = "fmm.titolo LIKE :filename";
-	$params[':filename'] = '%' . $_GET['filename'] . '%';
+if (!empty($_GET['file'])) {
+	$where[]             = "fmm.titolo LIKE :file";
+	$params[':file'] = '%' . $_GET['file'] . '%';
 }
 
 // Filtro per proprietario
-if (!empty($_GET['owner'])) {
-	$where[]             = "u.nickname LIKE :owner";
-	$params[':owner'] = '%' . $_GET['owner'] . '%';
+if (!empty($_GET['proprietario_file'])) {
+	$where[]             = "u.nickname LIKE :proprietario_file";
+	$params[':proprietario_file'] = '%' . $_GET['proprietario_file'] . '%';
+}
+
+if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
+	$where[] = "fmm.dimensione >= :dimensione_min";
+	$params[':dimensione_min'] = (float) $_GET['dimensione_min'];
+}
+
+if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
+	$where[] = "fmm.dimensione <= :dimensione_max";
+	$params[':dimensione_max'] = (float) $_GET['dimensione_max'];
 }
 
 // Filtro per tipo di file
@@ -225,15 +258,15 @@ $righe = prepareMediaTableRows(
 );
 
 $table = "FileMultimediale as fmm";
-if (!empty($_GET['owner'])) {
+if (!empty($_GET['proprietario_file'])) {
 	$table .= " LEFT JOIN Utente AS u ON fmm.caricatoDa = u.codice ";
 }
 $numero_records = getNumberOfRecords($pdo, $table, $where, $params);
 $numero_pagine = getNumberOfPages($numero_records, $limit);
 
 /* PREPARAZIONE HTML DA STAMPARE */
-$output_html .= "<div class='table-top-bar'>";
-$output_html .= "<p class='info-risultati zero-margin'>Trovate <strong>$numero_records</strong> bacheche (<strong>$limit</strong> per pagina)</p>";
+$output_html  = "<div class='table-top-bar'>";
+$output_html .= "<p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> file (<strong>$limit</strong> per pagina)</p>";
 $output_html .= "</div>";
 
 $output_html .= "<div class='table-container'>";
@@ -265,7 +298,7 @@ if (isAjaxRequest()) {
 	<div class="main-container">
 	<aside class="sidebar">
 		<?php include 'nav.html'; ?>
-		<?php initFilters(); ?>
+		<?php renderFiltroSidebar($pdo) ?>
 	</aside>
 		<div id="content">
 			<?php 

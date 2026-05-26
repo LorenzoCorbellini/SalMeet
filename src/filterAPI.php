@@ -49,6 +49,8 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'file',              'label' => 'Nome File'],
                     ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Nickname Proprietario'],
+                    ['tipo' => 'select', 'name' => 'filetype', 'label' => 'Tipo',
+                        'opzioni' => ['Immagini', 'Audio', 'Video']],
                     [
                         'tipo' => 'multi-range',
                         'name_min' => 'dimensione_min',
