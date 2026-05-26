@@ -35,10 +35,10 @@ if (!$isAjax):
                     // Filtri per la lista globale degli utenti
                     $filtro_config = [
                         'campi' => [
-                            ['tipo'  => 'text', 'name' => 'nickname', 'label' => 'Nickname'],
-                            ['tipo'  => 'text', 'name' => 'nome',     'label' => 'Nome'],
-                            ['tipo'  => 'text', 'name' => 'cognome',  'label' => 'Cognome'],
-                            ['tipo'  => 'date', 'name' => 'data',     'label' => 'Data di Nascita (Da)'],
+                            ['tipo'  => 'text', 'name' => 'nickname', 'label' => 'Nickname:'],
+                            ['tipo'  => 'text', 'name' => 'nome',     'label' => 'Nome:'],
+                            ['tipo'  => 'text', 'name' => 'cognome',  'label' => 'Cognome:'],
+                            ['tipo'  => 'date', 'name' => 'data',     'label' => 'Data di Nascita (Da):'],
                         ]
                     ];
                     include 'filter.php';
@@ -265,7 +265,7 @@ if (!$isAjax):
                     $stmt->execute();
                     $righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                    echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> utenti <strong>($recordsPerPage per pagina)</strong></p>";
+                    echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> utenti (<strong>$recordsPerPage</strong> per pagina)</p>";
 
                     if (!empty($righe)) {
                         $datiUtenti = [];
