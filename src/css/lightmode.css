@@ -1236,3 +1236,29 @@ div.swal2-container .swal-wide-split .swal2-input {
     background-color: var(--surface);
     transition: background-color 0.2s ease;
 }
+
+/* =========================================================
+     STATI VUOTI E SPAZIATORI
+   ========================================================= */
+
+.table-container-empty {
+    display: flex;
+    justify-content: flex-start;  
+    align-items: center;
+    box-shadow: none !important;   
+}
+
+.empty-message {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--text-muted);
+    margin: 14px 20px;           
+    text-align: left;
+}
+
+/* --- SEGNAPOSTO PAGINAZIONE --- */
+.pagination-spacer {
+    min-height: 45px;
+    width: 100%;
+    margin-top: auto;
+}

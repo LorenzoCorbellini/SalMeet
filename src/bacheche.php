@@ -485,9 +485,14 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             stampaTabella($datiRichieste, ['Nickname', 'Azioni'], $customHeaders_r);
             echo '</div>';
 
+            echo "<div class='pagination-spacer'>";
             echo getPagesNav($np, $numero_pagine, 1);
+            echo "</div>";
         } else {
-            echo "<p style='text-align:center; padding: 30px; color: #666; font-style: italic;'>Nessuna richiesta in sospeso trovata.</p>";
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessuna richiesta in sospeso trovata.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
         }
     } elseif ($activeTab === 'utenti') {
         $allowed_sorts_u = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data_nascita' => 'u.dataNascita'];
@@ -501,14 +506,23 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         echo getBottoneAggiungiUtente($bEnc, $owner);
         echo "</div>";
 
-        $_GET['tab'] = 'utenti';
-        $customHeaders_u = generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data Nascita' => 'data_nascita'], $sort_col_u, $sort_dir_u);
+        if ($countUtenti > 0) {
+            $_GET['tab'] = 'utenti';
+            $customHeaders_u = generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data Nascita' => 'data_nascita'], $sort_col_u, $sort_dir_u);
 
-        echo '<div class="table-container">';
-        stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
-        echo '</div>';
+            echo '<div class="table-container">';
+            stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
+            echo '</div>';
 
-        echo getPagesNav($np, $numero_pagine, 1);
+            echo "<div class='pagination-spacer'>";
+            echo getPagesNav($np, $numero_pagine, 1);
+            echo "</div>";
+        } else {
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessun utente autorizzato presente in questa bacheca.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
+        }
     } elseif ($activeTab === 'file') {
         $allowed_sorts_f = ['file' => 'fm.titolo', 'proprietario' => 'u.nickname', 'dimensione' => 'fm.dimensione'];
         list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'file', 'ASC');
@@ -521,13 +535,23 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         echo getBottoneAggiungiFile($bEnc, $owner);
         echo "</div>";
 
-        $_GET['tab'] = 'file';
-        $customHeaders_f = generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione' => 'dimensione'], $sort_col_f, $sort_dir_f);
-        echo '<div class="table-container">';
-        stampaTabella($datiFile, ['File', 'Proprietario', 'Dimensione', 'Azioni'], $customHeaders_f);
-        echo '</div>';
+        if ($countFile > 0) {
+            $_GET['tab'] = 'file';
+            $customHeaders_f = generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione' => 'dimensione'], $sort_col_f, $sort_dir_f);
 
-        echo getPagesNav($np, $numero_pagine, 1);
+            echo '<div class="table-container">';
+            stampaTabella($datiFile, ['File', 'Proprietario', 'Dimensione', 'Azioni'], $customHeaders_f);
+            echo '</div>';
+
+            echo "<div class='pagination-spacer'>";
+            echo getPagesNav($np, $numero_pagine, 1);
+            echo "</div>";
+        } else {
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessun file condiviso in questa bacheca.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
+        }
     }
 
     if (!$isAjax) {
@@ -646,7 +670,9 @@ function renderElencoBacheche($pdo, $isAjax)
     echo '</div>';
 
     if (!empty($righe)) {
+        echo "<div class='pagination-spacer'>";
         echo getPagesNav($np, $numero_pagine, 1);
+        echo "</div>";
     }
 
     if (!$isAjax) {
