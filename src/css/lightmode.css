@@ -1195,36 +1195,10 @@ div.swal2-container .swal-wide-split .swal2-input {
     font-size: var(--fs-h2);
 }
 
-.dashboard-wrapper table {
-    width: 100%;
-    border-collapse: collapse;
-    /* Rimuove i doppi bordi */
-    background-color: var(--text-light);
-    border: 1px solid var(--border-soft);
-    border-radius: 8px;
-    margin-bottom: 30px;
-    font-size: var(--fs-body);
-}
-
-.dashboard-wrapper th {
-    background-color: var(--primary-dark);
-    color: var(--text-light);
-    text-align: left;
-    padding: 16px 20px;
-    font-weight: 600;
-    border: 1px solid var(--border-soft);
-}
-
-.dashboard-wrapper td {
-    padding: 14px 20px;
-    color: var(--text-dark);
-    border-bottom: 1px solid var(--border-soft);
-}
-
-/* Colore neutro alternato per la riga al passaggio del mouse */
-.dashboard-wrapper tr:hover td {
-    background-color: var(--surface);
-    transition: background-color 0.2s ease;
+.dashboard-wrapper .table-container {
+    flex: none;
+    height: auto;
+    overflow: hidden;
 }
 
 /* =========================================================
