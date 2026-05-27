@@ -16,7 +16,7 @@ function getBottoneNuovaBacheca(): string
 function getBottoneRinominaBacheca($bEnc, $owner, $isIcona = false): string
 {
     if ($isIcona) {
-        return "<span title='Rinomina' class='btn-azione' onclick=\"rinominaBacheca('{$bEnc}', {$owner})\">
+        return "<span title='Rinomina bacheca' class='btn-azione' onclick=\"rinominaBacheca('{$bEnc}', {$owner})\">
                     <img src='images/edit.png' alt='Rinomina'>
                 </span>";
     }
@@ -29,7 +29,7 @@ function getBottoneEliminaBacheca($bEnc, $owner, $ownerNickname, $isIcona = fals
 {
     $ownerNicknameEnc = htmlspecialchars(addslashes($ownerNickname), ENT_QUOTES);
     if ($isIcona) {
-        return "<span title='Elimina' class='btn-azione' onclick=\"eliminaBacheca('{$bEnc}', {$owner}, '{$ownerNicknameEnc}')\">
+        return "<span title='Elimina bacheca' class='btn-azione' onclick=\"eliminaBacheca('{$bEnc}', {$owner}, '{$ownerNicknameEnc}')\">
                     <img src='images/trash.png' alt='Elimina'>
                 </span>";
     }
@@ -173,6 +173,7 @@ function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickn
     }
     if (!empty($_GET['data_nascita'])) {
         if (isDataValidaRange($_GET['data_nascita'])) {
+            //la data di nascita filtra le richieste mostrando solo quelle degli utenti nati a partire da quella data (inclusa)
             $whereSql .= " AND u.dataNascita >= :data_nascita";
             $params[':data_nascita'] = $_GET['data_nascita'];
         }
@@ -198,10 +199,10 @@ function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickn
         $nicknameJS = htmlspecialchars(addslashes($u['nickname']), ENT_QUOTES);
 
         $azioni = "<div class='actions-cell-nowrap' style='display:flex; gap:10px; justify-content:center;'>
-            <span title='Accetta' class='btn-azione' onclick=\"accettaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
+            <span title='Accetta richiesta' class='btn-azione' onclick=\"accettaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
                 <img src='images/accept.png' alt='Accetta'>
             </span>
-            <span title='Rifiuta' class='btn-azione' onclick=\"rifiutaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
+            <span title='Rifiuta richiesta' class='btn-azione' onclick=\"rifiutaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
                 <img src='images/reject.png' alt='Rifiuta'>
             </span>
         </div>";
@@ -280,7 +281,7 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 
         $azioni = !$isOwner
             ? "<div class='cell-center'>
-                <span title='Elimina' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
+                <span title='Revoca autorizzazione' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
                     <img src='images/trash.png' alt='Elimina'>
                 </span>
                </div>"
@@ -379,7 +380,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
 
         $azioni = "<div class='cell-center'>
-            <span title='Elimina' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']}, '{$titleJS}', '{$caricatoDaJS}')\">
+            <span title='Rimuovi da bacheca' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']}, '{$titleJS}', '{$caricatoDaJS}')\">
                 <img src='images/trash.png' alt='Elimina'>
             </span>
         </div>";
@@ -564,7 +565,7 @@ function renderElencoBacheche($pdo, $isAjax)
         'nome'         => 'b.nome',
         'data'         => 'b.dataCreazione',
         'proprietario' => 'u.nickname',
-    ], 'data', 'DESC');
+    ], 'nome', 'ASC');
 
     $tabella_count = "Bacheca b LEFT JOIN Utente u ON u.codice = b.codiceUtente";
     $totaleRisultati = getNumberOfRecords($pdo, $tabella_count, $where, $params);
