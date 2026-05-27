@@ -45,9 +45,9 @@ function getBottoneAggiungiUtentiMultipli($bEnc, $owner): string
     </a>";
 }
 
-function getBottoneAggiungiFile($bEnc, $owner): string
+function getBottoneAggiungiFileMultipli($bEnc, $owner): string
 {
-    return "<a onclick=\"aggiungiFile('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+    return "<a onclick=\"aggiungiFileMultipli('{$bEnc}', {$owner})\" class='btn-aggiungi'>
         <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi file</strong>
     </a>";
 }
@@ -532,7 +532,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
         echo "<div class='table-top-bar'>";
         echo "<p class='zero-margin'>File trovati nella bacheca: <strong>{$countFile}</strong></p>";
-        echo getBottoneAggiungiFile($bEnc, $owner);
+        echo getBottoneAggiungiFileMultipli($bEnc, $owner);
         echo "</div>";
 
         if ($countFile > 0) {

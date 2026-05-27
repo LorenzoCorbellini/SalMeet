@@ -97,12 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ABILITAZIONE MULTIPLA UTENTI NELLA BACHECA
     // ---------------------------------------------------------
     if ($azione === 'inserisci_utenti_multipli') {
-        $nomeBacheca = !empty($input['nomeBacheca']) ? trim($input['nomeBacheca']) : '';
-        $owner       = !empty($input['owner']) ? (int)$input['owner'] : 0;
-        $listaUtenti = !empty($input['listaUtenti']) && is_array($input['listaUtenti']) ? $input['listaUtenti'] : [];
+        $nBachecaUtenti = isset($input['nomeBacheca']) ? trim($input['nomeBacheca']) : (isset($input['nome']) ? trim($input['nome']) : '');
+        $idOwnerUtenti  = isset($input['owner']) ? (int)$input['owner'] : 0;
+        $listaUtenti    = !empty($input['listaUtenti']) && is_array($input['listaUtenti']) ? $input['listaUtenti'] : [];
 
-        if (empty($nomeBacheca) || empty($owner) || empty($listaUtenti)) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Parametri incompleti o lista utenti vuota.']);
+        if ($nBachecaUtenti === '' || $idOwnerUtenti <= 0 || empty($listaUtenti)) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Parametri incompleti per il salvataggio utenti.']);
             exit;
         }
 
@@ -110,38 +110,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->beginTransaction();
 
             $stmt = $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato, autorizzato) 
-                                   VALUES (:nomeBacheca, :owner, :utenteAutorizzato, 1)
+                                   VALUES (:nb, :ow, :ua, 1)
                                    ON DUPLICATE KEY UPDATE autorizzato = 1");
 
-            foreach ($listaUtenti as $idUtente) {
+            foreach ($listaUtenti as $idU) {
                 $stmt->execute([
-                    ':nomeBacheca'       => $nomeBacheca,
-                    ':owner'             => $owner,
-                    ':utenteAutorizzato' => (int)$idUtente
+                    ':nb' => $nBachecaUtenti,
+                    ':ow' => $idOwnerUtenti,
+                    ':ua' => (int)$idU
                 ]);
             }
 
             $pdo->commit();
             echo json_encode(['successo' => true]);
         } catch (Exception $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            echo json_encode(['successo' => false, 'messaggio' => 'Errore durante il salvataggio multiplo: ' . $e->getMessage()]);
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore durante il salvataggio utenti: ' . $e->getMessage()]);
         }
         exit;
     }
 
     // ---------------------------------------------------------
-    // CONTROLLO PARAMETRI PER TUTTE LE ALTRE AZIONI STANDARD
+    // PUBBLICAZIONE MULTIPLA FILE NELLA BACHECA
     // ---------------------------------------------------------
-    if (empty($input['nome']) || !isset($input['owner'])) {
-        echo json_encode(['successo' => false, 'messaggio' => 'Parametri mancanti.']);
+    if ($azione === 'inserisci_file_multipli') {
+        $nBachecaFiles = isset($input['nomeBacheca']) ? trim($input['nomeBacheca']) : (isset($input['nome']) ? trim($input['nome']) : '');
+        $idOwnerFiles  = isset($input['owner']) ? $input['owner'] : null;
+        $listaFiles    = !empty($input['listaFiles']) && is_array($input['listaFiles']) ? $input['listaFiles'] : [];
+
+        if ($nBachecaFiles === '' || $idOwnerFiles === null || count($listaFiles) === 0) {
+            $c = count($listaFiles);
+            $o = $idOwnerFiles !== null ? $idOwnerFiles : 'MANCANTE';
+            echo json_encode(['successo' => false, 'messaggio' => "Errore Parametri - Nome: '$nBachecaFiles', Owner: $o, File Ricevuti: $c"]);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // Usiamo ON DUPLICATE KEY UPDATE per evitare crash
+            $stmt = $pdo->prepare("INSERT INTO FilePubblicatoBacheca (nomeBacheca, codUtente, file) 
+                                   VALUES (:nb, :ow, :fi)
+                                   ON DUPLICATE KEY UPDATE file = file");
+
+            foreach ($listaFiles as $idF) {
+                $stmt->execute([
+                    ':nb' => $nBachecaFiles,
+                    ':ow' => (int)$idOwnerFiles,
+                    ':fi' => (int)$idF
+                ]);
+            }
+
+            $pdo->commit();
+            echo json_encode(['successo' => true]);
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore pubblicazione file: ' . $e->getMessage()]);
+        }
         exit;
     }
 
-    $nome   = trim($input['nome']);
-    $owner  = (int) $input['owner'];
+    // =========================================================
+    // CONTROLLO PARAMETRI PER LE AZIONI SINGOLE STANDARD
+    // =========================================================
+    if (empty($input['nome']) || !isset($input['owner'])) {
+        echo json_encode(['successo' => false, 'messaggio' => 'Parametri mancanti per azione standard.']);
+        exit;
+    }
+
+    $nome  = trim($input['nome']);
+    $owner = (int) $input['owner'];
 
     // ---------------------------------------------------------
     // CERCA FILE DEGLI UTENTI AUTORIZZATI 
@@ -276,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ---------------------------------------------------------
-    // ACCETTA RICHIESTA PENDENTE (Nuova Azione)
+    // ACCETTA RICHIESTA PENDENTE 
     // ---------------------------------------------------------
     if ($azione === 'accetta_richiesta') {
         $target = (int) ($input['utenteTarget'] ?? 0);
@@ -291,7 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ---------------------------------------------------------
-    // RIFIUTA RICHIESTA PENDENTE (Nuova Azione)
+    // RIFIUTA RICHIESTA PENDENTE 
     // ---------------------------------------------------------
     if ($azione === 'rifiuta_richiesta') {
         $target = (int) ($input['utenteTarget'] ?? 0);
@@ -340,52 +378,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->rollBack();
             }
             echo json_encode(['successo' => false, 'messaggio' => 'Errore durante la rimozione: ' . $e->getMessage()]);
-        }
-        exit;
-    }
-
-    // ---------------------------------------------------------
-    // AGGIUNGI FILE
-    // ---------------------------------------------------------
-    if ($azione === 'aggiungi_file') {
-        $nuovoFile = (int) ($input['nuovoFile'] ?? 0);
-
-        if ($nuovoFile <= 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'ID file non valido.']);
-            exit;
-        }
-
-        $stFile = $pdo->prepare("SELECT caricatoDa FROM FileMultimediale WHERE numero = ?");
-        $stFile->execute([$nuovoFile]);
-        $fileData = $stFile->fetch(PDO::FETCH_ASSOC);
-
-        if (!$fileData) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Il file non esiste.']);
-            exit;
-        }
-
-        $creatoreFile = (int) $fileData['caricatoDa'];
-
-        $stAuth = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ? AND autorizzato = 1");
-        $stAuth->execute([$nome, $owner, $creatoreFile]);
-        if ($stAuth->fetchColumn() == 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Utente non autorizzato per questa bacheca.']);
-            exit;
-        }
-
-        $st = $pdo->prepare("SELECT COUNT(*) FROM FilePubblicatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND file = ?");
-        $st->execute([$nome, $owner, $nuovoFile]);
-        if ($st->fetchColumn() > 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Il file è già stato pubblicato.']);
-            exit;
-        }
-
-        try {
-            $pdo->prepare("INSERT INTO FilePubblicatoBacheca (nomeBacheca, codUtente, file) VALUES (?, ?, ?)")
-                ->execute([$nome, $owner, $nuovoFile]);
-            echo json_encode(['successo' => true]);
-        } catch (Exception $e) {
-            echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
         }
         exit;
     }

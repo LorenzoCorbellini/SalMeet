@@ -584,176 +584,221 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
     });
 }
 
+
 // ====================================================================
-// GESTIONE FILE
+// GESTIONE FILE MULTIPLI
 // ====================================================================
-async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullObject = false) {
-    return new Promise((resolve) => {
-        Swal.fire({
-            title: titoloPopup,
-            width: '750px',
-            heightAuto: false,
-            scrollbarPadding: false,
-            html: `
-                <div class="swal-dual-grid">
-                    <div class="swal-multi-col-left">
-                        <h5 class="swal-multi-header swal-multi-header-blue">Ricerca File</h5>
-                        <div class="swal-multi-input-group">
-                            <label class="swal-multi-label">Nome File</label>
-                            <input id="swal-search-filename" class="swal2-input swal-multi-input" placeholder="Es. foto panorama">
-                        </div>
-                        <h5 class="swal-multi-header swal-multi-header-blue" style="margin-top:15px;">Filtra per Autore</h5>
-                        <div class="swal-multi-input-group">
-                            <label class="swal-multi-label">Nickname</label>
-                            <input id="swal-search-file-nickname" class="swal2-input swal-multi-input" placeholder="Es. supermario">
-                        </div>
-                        <div class="swal-multi-input-group">
-                            <label class="swal-multi-label">Nome</label>
-                            <input id="swal-search-file-nome" class="swal2-input swal-multi-input" placeholder="Es. Mario">
-                        </div>
-                        <div class="swal-multi-input-group-last">
-                            <label class="swal-multi-label">Cognome</label>
-                            <input id="swal-search-file-cognome" class="swal2-input swal-multi-input" placeholder="Es. Rossi">
-                        </div>
-                        <button id="swal-file-search-btn" class="swal2-styled swal2-confirm swal-multi-btn-search">Filtra file</button>
+async function aggiungiFileMultipli(nomeBacheca, owner) {
+    let fileSelezionati = new Map(); // key: idFile, value: { nomeFile, nickname }
+
+    const { value: arrayIdFiles } = await Swal.fire({
+        title: `Seleziona file da pubblicare`,
+        width: '1000px',
+        heightAuto: false,
+        scrollbarPadding: false,
+        html: `
+            <div class="swal-multi-grid">
+                
+                <div class="swal-multi-col-left">
+                    <h5 class="swal-multi-header swal-multi-header-blue">Filtri Cerca</h5>
+                    <div class="swal-multi-input-group">
+                        <label class="swal-multi-label">Nome File</label>
+                        <input id="swal-f-filename" class="swal2-input swal-multi-input" placeholder="Es. foto panorama">
                     </div>
-                    
-                    <div class="swal-multi-col-right">
-                        <h5 id="swal-file-count" class="swal-multi-header swal-multi-header-green">Risultati</h5>
-                        <div id="swal-file-search-results" class="swal-multi-list">
-                            <p class="swal-multi-msg-loading">Caricamento file disponibili...</p>
-                        </div>
+                    <div class="swal-multi-input-group">
+                        <label class="swal-multi-label">Autore (Nickname)</label>
+                        <input id="swal-f-nickname" class="swal2-input swal-multi-input" placeholder="Es. supermario">
+                    </div>
+                    <div class="swal-multi-input-group">
+                        <label class="swal-multi-label">Autore (Nome)</label>
+                        <input id="swal-f-nome" class="swal2-input swal-multi-input" placeholder="Es. Mario">
+                    </div>
+                    <div class="swal-multi-input-group-last">
+                        <label class="swal-multi-label">Autore (Cognome)</label>
+                        <input id="swal-f-cognome" class="swal2-input swal-multi-input" placeholder="Es. Rossi">
+                    </div>
+                    <button id="swal-f-search-btn" class="swal2-styled swal2-confirm swal-multi-btn-search">Filtra File</button>
+                </div>
+
+                <div class="swal-multi-col-center">
+                    <h5 id="swal-f-results-title" class="swal-multi-header swal-multi-header-green">File Disponibili</h5>
+                    <div id="swal-f-results" class="swal-multi-list">
+                        <p class="swal-multi-msg-loading">Caricamento file disponibili...</p>
                     </div>
                 </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Seleziona',
-            cancelButtonText: 'Annulla',
-            reverseButtons: true,
-            didOpen: () => {
-                const searchBtn = document.getElementById('swal-file-search-btn');
-                const filenameInput = document.getElementById('swal-search-filename');
-                const nicknameInput = document.getElementById('swal-search-file-nickname');
-                const nomeInput = document.getElementById('swal-search-file-nome');
-                const cognomeInput = document.getElementById('swal-search-file-cognome');
-                const resultsDiv = document.getElementById('swal-file-search-results');
-                const countSpan = document.getElementById('swal-file-count');
 
-                const eseguiCercaFile = async () => {
-                    resultsDiv.innerHTML = '<p class="swal-multi-msg-loading">Ricerca in corso...</p>';
-                    countSpan.innerHTML = 'Ricerca in corso...';
+                <div class="swal-multi-col-right">
+                    <h5 class="swal-multi-header swal-multi-header-orange">Da pubblicare (<span id="swal-f-count">0</span>)</h5>
+                    <div id="swal-f-selected" class="swal-multi-list">
+                        <p class="swal-multi-msg-empty">Nessun file selezionato.</p>
+                    </div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Pubblica file',
+        cancelButtonText: 'Annulla',
+        reverseButtons: true,
+        preConfirm: () => {
+            if (fileSelezionati.size === 0) {
+                Swal.showValidationMessage('Seleziona almeno un file dalla colonna centrale prima di pubblicare.');
+                return false;
+            }
+            // Ritorna l'array degli ID dei file
+            return Array.from(fileSelezionati.keys());
+        },
+        didOpen: () => {
+            const searchBtn = document.getElementById('swal-f-search-btn');
+            const fileIn = document.getElementById('swal-f-filename');
+            const nickIn = document.getElementById('swal-f-nickname');
+            const nomeIn = document.getElementById('swal-f-nome');
+            const cognomeIn = document.getElementById('swal-f-cognome');
 
-                    const tFile = filenameInput.value.trim();
-                    const tNick = nicknameInput.value.trim();
-                    const tNome = nomeInput.value.trim();
-                    const tCogn = cognomeInput.value.trim();
+            const resultsDiv = document.getElementById('swal-f-results');
+            const selectedDiv = document.getElementById('swal-f-selected');
+            const countSpan = document.getElementById('swal-f-count');
+            const resultsTitle = document.getElementById('swal-f-results-title');
 
-                    const payloadDati = {
-                        azione: 'cerca_file_bacheca',
-                        nome: nomeBacheca,
-                        owner: owner
-                    };
-                    if (tFile) payloadDati.termine_file = tFile;
-                    if (tNick) payloadDati.nickname = tNick;
-                    if (tNome) payloadDati.filtro_nome = tNome;
-                    if (tCogn) payloadDati.cognome = tCogn;
+            let cachedServerResults = [];
 
-                    try {
-                        const response = await fetch(API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payloadDati)
-                        });
-                        const data = await response.json();
+            const aggiornaColonnaSelezionati = () => {
+                countSpan.textContent = fileSelezionati.size;
+                if (fileSelezionati.size === 0) {
+                    selectedDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun file selezionato.</p>';
+                    return;
+                }
 
-                        if (data.successo && data.files.length > 0) {
-                            const limitFile = 30;
-                            const hasMore = data.files.length >= limitFile;
+                selectedDiv.innerHTML = '';
+                fileSelezionati.forEach((f, id) => {
+                    const row = document.createElement('div');
+                    row.className = 'swal-multi-row swal-multi-row-selected';
+                    row.innerHTML = `
+                        <div>
+                            <strong>${f.nomeFile}</strong>
+                            <div class="swal-multi-row-subtext">Di: @${f.nickname}</div>
+                        </div>
+                        <button type="button" class="swal-multi-btn-del" data-id="${id}">-</button>
+                    `;
+                    selectedDiv.appendChild(row);
+                });
 
-                            if (hasMore) {
-                                countSpan.innerHTML = `Risultati (Primi ${limitFile})`;
-                            } else {
-                                countSpan.innerHTML = `Risultati (${data.files.length})`;
-                            }
-
-                            // Generazione righe iniettate direttamente nel contenitore flessibile
-                            let html = '';
-                            data.files.forEach(f => {
-                                html += `
-                                    <label class="swal-multi-row" style="cursor: pointer; justify-content: flex-start; gap: 10px;">
-                                        <input type="radio" name="swal-file-radio" value="${f.numero}" data-nome="${f.nome_file}" data-owner="${f.nickname}" style="cursor: pointer; margin:0;">
-                                        <div>
-                                            <strong>${f.nome_file}</strong> 
-                                            <div class="swal-multi-row-subtext">Caricato da: <b>@${f.nickname}</b> (${f.utente_nome} ${f.utente_cognome})</div>
-                                        </div>
-                                    </label>
-                                `;
-                            });
-                            resultsDiv.innerHTML = html;
-                        } else {
-                            countSpan.innerHTML = `Risultati (0)`;
-                            resultsDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun file disponibile o trovato per i criteri inseriti.</p>';
-                        }
-                    } catch (err) {
-                        countSpan.innerHTML = 'Risultati (0)';
-                        resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Errore di comunicazione col server.</p>';
-                    }
-                };
-
-                [filenameInput, nicknameInput, nomeInput, cognomeInput].forEach(input => {
-                    input.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            eseguiCercaFile();
-                        }
+                // Gestore click per togliere file dai selezionati
+                selectedDiv.querySelectorAll('.swal-multi-btn-del').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idDaTogliere = btn.getAttribute('data-id');
+                        fileSelezionati.delete(idDaTogliere);
+                        aggiornaColonnaSelezionati();
+                        renderizzaRisultatiCentrali(cachedServerResults);
                     });
                 });
+            };
 
-                searchBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    eseguiCercaFile();
+            const renderizzaRisultatiCentrali = (files) => {
+                cachedServerResults = files;
+                resultsDiv.innerHTML = '';
+
+                // Mostriamo solo i file non ancora selezionati
+                const filtrati = files.filter(f => !fileSelezionati.has(String(f.numero)));
+
+                if (filtrati.length === 0) {
+                    resultsDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun file disponibile o tutti già selezionati.</p>';
+                    return;
+                }
+
+                filtrati.forEach(f => {
+                    const row = document.createElement('div');
+                    row.className = 'swal-multi-row';
+                    row.innerHTML = `
+                        <div>
+                            <strong>${f.nome_file}</strong>
+                            <div class="swal-multi-row-subtext">Di: @${f.nickname} (${f.utente_nome} ${f.utente_cognome})</div>
+                        </div>
+                        <button type="button" class="swal-multi-btn-add" data-id="${f.numero}" data-nomefile="${f.nome_file}" data-nick="${f.nickname}">+</button>
+                    `;
+                    resultsDiv.appendChild(row);
                 });
 
-                eseguiCercaFile();
-            },
-            preConfirm: () => {
-                const selected = document.querySelector('input[name="swal-file-radio"]:checked');
-                if (!selected) {
-                    Swal.showValidationMessage('Seleziona un file dalla lista a destra prima di proseguire.');
-                    return false;
-                }
-                return {
-                    id: selected.value,
-                    nome: selected.getAttribute('data-nome'),
-                    proprietario: selected.getAttribute('data-owner')
+                // Gestore click per spostare il file a destra
+                resultsDiv.querySelectorAll('.swal-multi-btn-add').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        fileSelezionati.set(id, {
+                            nomeFile: btn.getAttribute('data-nomefile'),
+                            nickname: btn.getAttribute('data-nick')
+                        });
+                        aggiornaColonnaSelezionati();
+                        renderizzaRisultatiCentrali(cachedServerResults);
+                    });
+                });
+            };
+
+            const eseguiCercaFile = async () => {
+                resultsDiv.innerHTML = '<p class="swal-multi-msg-loading">Ricerca in corso...</p>';
+                resultsTitle.textContent = 'Ricerca in corso...';
+
+                const payloadDati = {
+                    azione: 'cerca_file_bacheca',
+                    nome: nomeBacheca,
+                    owner: owner
                 };
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                if (returnFullObject) {
-                    resolve(result.value);
-                } else {
-                    resolve(result.value.id);
+
+                const tFile = fileIn.value.trim();
+                const tNick = nickIn.value.trim();
+                const tNome = nomeIn.value.trim();
+                const tCogn = cognomeIn.value.trim();
+
+                if (tFile) payloadDati.termine_file = tFile;
+                if (tNick) payloadDati.nickname = tNick;
+                if (tNome) payloadDati.filtro_nome = tNome;
+                if (tCogn) payloadDati.cognome = tCogn;
+
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payloadDati)
+                    });
+                    const data = await response.json();
+
+                    if (data.successo && data.files.length > 0) {
+                        resultsTitle.textContent = `Disponibili (${data.files.length})`;
+                        renderizzaRisultatiCentrali(data.files);
+                    } else {
+                        resultsTitle.textContent = 'Disponibili (0)';
+                        resultsDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun file disponibile per questa ricerca.</p>';
+                    }
+                } catch (err) {
+                    resultsTitle.textContent = 'Errore';
+                    resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Errore di comunicazione col server.</p>';
                 }
-            } else {
-                resolve(null);
-            }
-        });
+            };
+
+            // Eventi di ricerca
+            searchBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                eseguiCercaFile();
+            });
+
+            [fileIn, nickIn, nomeIn, cognomeIn].forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        eseguiCercaFile();
+                    }
+                });
+            });
+
+            eseguiCercaFile();
+        }
     });
-}
 
-async function aggiungiFile(nomeBacheca, owner) {
-    const fileScelto = await cercaESelezionaFile(nomeBacheca, owner, 'Seleziona un File da Pubblicare', true);
-
-    if (fileScelto) {
-        const messaggioConferma = `File <b class="swal-text-bold">${fileScelto.nome}</b> di <b class="swal-text-bold">${fileScelto.proprietario}</b> aggiunto con successo alla bacheca.`;
-
+    if (arrayIdFiles) {
         eseguiRichiesta({
-            azione: 'aggiungi_file',
-            nome: nomeBacheca,
+            azione: 'inserisci_file_multipli',
+            nomeBacheca: nomeBacheca,
             owner: owner,
-            nuovoFile: parseInt(fileScelto.id, 10)
-        }, messaggioConferma);
+            listaFiles: arrayIdFiles
+        }, 'Tutti i file selezionati sono stati pubblicati correttamente!');
     }
 }
 
