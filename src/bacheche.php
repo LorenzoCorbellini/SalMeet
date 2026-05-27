@@ -38,10 +38,10 @@ function getBottoneEliminaBacheca($bEnc, $owner, $ownerNickname, $isIcona = fals
     </a>";
 }
 
-function getBottoneAggiungiUtente($bEnc, $owner): string
+function getBottoneAggiungiUtentiMultipli($bEnc, $owner): string
 {
-    return "<a onclick=\"aggiungiAutorizzato('{$bEnc}', {$owner})\" class='btn-aggiungi'>
-        <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi utente</strong>
+    return "<a onclick=\"aggiungiUtentiMultipli('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+        <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi utenti</strong>
     </a>";
 }
 
@@ -503,7 +503,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
         echo "<div class='table-top-bar'>";
         echo "<p class='zero-margin'>Utenti trovati nella bacheca: <strong>{$countUtenti}</strong></p>";
-        echo getBottoneAggiungiUtente($bEnc, $owner);
+        echo getBottoneAggiungiUtentiMultipli($bEnc, $owner);
         echo "</div>";
 
         if ($countUtenti > 0) {

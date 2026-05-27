@@ -823,6 +823,208 @@ div.swal2-container .swal-wide-split .swal2-input {
     color: var(--accent) !important;
 }
 
+/* =========================================================
+   MODALE SELEZIONE MULTIPLA UTENTI E FILE (SweetAlert2)
+   ========================================================= */
+
+/* Layout Griglia a 3 Colonne (Rimane bloccata all'altezza impostata) */
+.swal-multi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    text-align: left;
+    height: 480px;
+    overflow: hidden;
+}
+
+/* Layout Griglia a 2 Colonne (Uniformata all'altezza della griglia a 3) */
+.swal-dual-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    text-align: left;
+    height: 480px;
+    overflow: hidden;
+}
+
+/* Stili delle Colonne (Trasformate in flex container verticali) */
+.swal-multi-col-left,
+.swal-multi-col-center,
+.swal-multi-col-right {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Bordi di separazione e padding mantenendo la flessibilità */
+.swal-multi-col-left {
+    border-right: 1px solid #ddd;
+    padding-right: 10px;
+}
+
+.swal-multi-col-center {
+    border-right: 1px solid #ddd;
+    padding-right: 10px;
+}
+
+.swal-multi-col-right {
+    padding-right: 2px;
+}
+
+/* Intestazioni delle colonne (Fisse in alto) */
+.swal-multi-header {
+    margin: 0 0 10px 0;
+    padding-bottom: 3px;
+    color: #333;
+    flex-shrink: 0;
+}
+
+.swal-multi-header-blue {
+    border-bottom: 2px solid #3498db;
+}
+
+.swal-multi-header-green {
+    border-bottom: 2px solid #2ecc71;
+}
+
+.swal-multi-header-orange {
+    border-bottom: 2px solid #e67e22;
+}
+
+/* Campi e contenitori di ricerca della Colonna Left (Fissi in alto) */
+.swal-multi-input-group {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.swal-multi-input-group-last {
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.swal-multi-label {
+    font-size: 11px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.swal-multi-input {
+    width: 100%;
+    height: 32px;
+    margin: 0;
+    font-size: 13px;
+}
+
+.swal-multi-btn-search {
+    width: 100%;
+    margin: 0;
+    padding: 8px;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+/* Le Liste Interne: sono le UNICHE aree autorizzate a scorrere verticalmente.
+   Prendono tutto lo spazio verticale residuo sotto i rispettivi titoli.
+*/
+.swal-multi-list {
+    overflow-y: auto;
+    flex-grow: 1;
+    font-size: 13px;
+    padding-right: 5px;
+    margin-top: 5px;
+}
+
+/* Scrollbar personalizzata per le liste interne (Sottile e discreta) */
+.swal-multi-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.swal-multi-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.swal-multi-list::-webkit-scrollbar-thumb {
+    background-color: var(--border-soft);
+    border-radius: 4px;
+}
+
+/* Contenuti statici all'interno delle liste scrollabili */
+.swal-multi-msg-empty {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    margin-top: 40px;
+}
+
+.swal-multi-msg-loading {
+    text-align: center;
+    margin-top: 40px;
+    font-style: italic;
+}
+
+.swal-multi-msg-error {
+    color: #e74c3c;
+    text-align: center;
+    margin-top: 40px;
+}
+
+/* Righe degli utenti (Risultati e Selezionati) */
+.swal-multi-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 4px;
+    box-sizing: border-box;
+}
+
+.swal-multi-row-selected {
+    background: #fafafa;
+    border-radius: 3px;
+}
+
+.swal-multi-row-subtext {
+    font-size: 11px;
+    color: #666;
+}
+
+/* Bottoni Più (+) e Meno (-) */
+.swal-multi-btn-add,
+.swal-multi-btn-del {
+    color: white;
+    border: none;
+    border-radius: 3px;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.swal-multi-btn-add {
+    background: #2ecc71;
+}
+
+.swal-multi-btn-add:hover {
+    background: #27ae60;
+}
+
+.swal-multi-btn-del {
+    background: #e74c3c;
+}
+
+.swal-multi-btn-del:hover {
+    background: #c0392b;
+}
+
 /* --- PAGINA MEDIA --- */
 #results-and-page-nav {
     display: flex;

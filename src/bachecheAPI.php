@@ -19,13 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $azione = $input['azione'];
 
     // ---------------------------------------------------------
-    // AZIONE ASTRATTA: CERCA UTENTE (Filtri puntuali Separati)
+    // CERCA UTENTE (Filtri puntuali Separati)
     // ---------------------------------------------------------
     if ($azione === 'cerca_utente') {
         $nickname     = !empty($input['nickname']) ? trim($input['nickname']) : '';
         $filtro_nome  = !empty($input['filtro_nome']) ? trim($input['filtro_nome']) : '';
         $cognome      = !empty($input['cognome']) ? trim($input['cognome']) : '';
         $data_nascita = !empty($input['data_nascita']) ? trim($input['data_nascita']) : null;
+
+        $nomeBachecaEsclusione = !empty($input['nomeBacheca']) ? trim($input['nomeBacheca']) : '';
+        $ownerEsclusione       = isset($input['owner']) ? (int)$input['owner'] : 0;
 
         try {
             $sql = "SELECT codice, nickname, nome, cognome, dataNascita FROM Utente WHERE 1=1";
@@ -56,6 +59,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
+            if ($nomeBachecaEsclusione !== '' && $ownerEsclusione > 0) {
+                $sql .= " AND codice NOT IN (
+                    SELECT utenteAutorizzato 
+                    FROM UtenteAutorizzatoBacheca 
+                    WHERE nomeBacheca = :nomeBachecaEx 
+                      AND codUtente = :ownerEx
+                )";
+                $params[':nomeBachecaEx'] = $nomeBachecaEsclusione;
+                $params[':ownerEx']       = $ownerEsclusione;
+            }
+
             $sql .= " ORDER BY nickname ASC LIMIT 50";
 
             $stmt = $pdo->prepare($sql);
@@ -75,6 +89,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['successo' => true, 'utenti' => $utenti]);
         } catch (Exception $e) {
             echo json_encode(['successo' => false, 'messaggio' => 'Errore nel server durante la ricerca.']);
+        }
+        exit;
+    }
+
+    // ---------------------------------------------------------
+    // ABILITAZIONE MULTIPLA UTENTI NELLA BACHECA
+    // ---------------------------------------------------------
+    if ($azione === 'inserisci_utenti_multipli') {
+        $nomeBacheca = !empty($input['nomeBacheca']) ? trim($input['nomeBacheca']) : '';
+        $owner       = !empty($input['owner']) ? (int)$input['owner'] : 0;
+        $listaUtenti = !empty($input['listaUtenti']) && is_array($input['listaUtenti']) ? $input['listaUtenti'] : [];
+
+        if (empty($nomeBacheca) || empty($owner) || empty($listaUtenti)) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Parametri incompleti o lista utenti vuota.']);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato, autorizzato) 
+                                   VALUES (:nomeBacheca, :owner, :utenteAutorizzato, 1)
+                                   ON DUPLICATE KEY UPDATE autorizzato = 1");
+
+            foreach ($listaUtenti as $idUtente) {
+                $stmt->execute([
+                    ':nomeBacheca'       => $nomeBacheca,
+                    ':owner'             => $owner,
+                    ':utenteAutorizzato' => (int)$idUtente
+                ]);
+            }
+
+            $pdo->commit();
+            echo json_encode(['successo' => true]);
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore durante il salvataggio multiplo: ' . $e->getMessage()]);
         }
         exit;
     }
@@ -388,7 +441,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            // Disabilita i controlli delle FK per permettere l'aggiornamento simultaneo delle tabelle collegate
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
 
             $pdo->prepare("UPDATE UtenteAutorizzatoBacheca SET nomeBacheca = :nuovoNome WHERE nomeBacheca = :vecchioNome AND codUtente = :owner")
@@ -400,14 +452,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE Bacheca SET nome = :nuovoNome WHERE nome = :vecchioNome AND codiceUtente = :owner")
                 ->execute([':nuovoNome' => $nuovoNome, ':vecchioNome' => $nome, ':owner' => $owner]);
 
-            // Riabilita i controlli prima di salvare definitivamente i dati
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
             $pdo->commit();
             echo json_encode(['successo' => true]);
         } catch (Exception $e) {
             if ($pdo->inTransaction()) {
-                // Riabilita i controlli anche in caso di fallimento prima di annullare la transazione
                 $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
                 $pdo->rollBack();
             }

@@ -69,7 +69,7 @@ async function aggiungiBacheca() {
 
     if (!nomeBacheca) return;
 
-    const ownerId = await cercaESelezionaUtente('Assegna un Proprietario');
+    const ownerId = await cercaESelezionaUtente('Assegna un proprietario');
 
     if (ownerId) {
         eseguiRichiesta({
@@ -175,9 +175,9 @@ function rifiutaRichiesta(nomeBacheca, owner, utenteTarget, nickname) {
 }
 
 // =========================================================
-// GESTIONE UTENTI (Layout Split a due colonne)
+// GESTIONE UTENTE PROPRIETARIO
 // =========================================================
-async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
+async function cercaESelezionaUtente(titoloPopup, returnFullObject = false, nomeBacheca = null, owner = null) {
     const oggi = new Date();
     const yyyy = oggi.getFullYear();
     const mm = String(oggi.getMonth() + 1).padStart(2, '0');
@@ -187,41 +187,44 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
     return new Promise((resolve) => {
         Swal.fire({
             title: titoloPopup,
+            width: '750px',
             heightAuto: false,
             scrollbarPadding: false,
-            customClass: { popup: 'swal-wide-split' },
             html: `
-                <div class="swal-split-container swal-user-split">
-                    <div class="swal-split-sidebar">
-                        <div class="swal-input-wrapper">
-                            <label class="swal-filter-label swal-input-label">Nickname</label>
-                            <input id="swal-search-nickname" class="swal2-input swal-custom-input" placeholder="Es. supermario">
+                <div class="swal-dual-grid">
+                    
+                    <div class="swal-multi-col-left">
+                        <h5 class="swal-multi-header swal-multi-header-blue">Filtri Cerca</h5>
+                        <div class="swal-multi-input-group">
+                            <label class="swal-multi-label">Nickname</label>
+                            <input id="swal-search-nickname" class="swal2-input swal-multi-input" placeholder="Es. supermario">
                         </div>
-                        <div class="swal-input-wrapper">
-                            <label class="swal-filter-label swal-input-label">Nome</label>
-                            <input id="swal-search-nome" class="swal2-input swal-custom-input" placeholder="Es. Mario">
+                        <div class="swal-multi-input-group">
+                            <label class="swal-multi-label">Nome</label>
+                            <input id="swal-search-nome" class="swal2-input swal-multi-input" placeholder="Es. Mario">
                         </div>
-                        <div class="swal-input-wrapper">
-                            <label class="swal-filter-label swal-input-label">Cognome</label>
-                            <input id="swal-search-cognome" class="swal2-input swal-custom-input" placeholder="Es. Rossi">
+                        <div class="swal-multi-input-group">
+                            <label class="swal-multi-label">Cognome</label>
+                            <input id="swal-search-cognome" class="swal2-input swal-multi-input" placeholder="Es. Rossi">
                         </div>
-                        <div class="swal-input-wrapper">
-                            <label class="swal-filter-label swal-input-label">Data di Nascita</label>
-                            <input id="swal-search-date" type="date" class="swal2-input swal-custom-input" min="1900-01-01" max="${oggiStringa}">
+                        <div class="swal-multi-input-group-last">
+                            <label class="swal-multi-label">Data Nascita</label>
+                            <input id="swal-search-date" type="date" class="swal2-input swal-multi-input" min="1900-01-01" max="${oggiStringa}">
                         </div>
-                        <button id="swal-search-btn" class="swal2-styled swal2-confirm swal-search-btn">Cerca Utente</button>
+                        <button id="swal-search-btn" class="swal2-styled swal2-confirm swal-multi-btn-search">Avvia Ricerca</button>
                     </div>
                     
-                    <div class="swal-split-main">
-                        <span id="swal-user-count" class="swal-filter-label swal-results-title"></span>
-                        <div id="swal-search-results" class="swal-results-container swal-results-user">
-                            <p class="swal-text-placeholder">Compila almeno un campo a sinistra per avviare la ricerca.</p>
+                    <div class="swal-multi-col-right">
+                        <h5 id="swal-user-count" class="swal-multi-header swal-multi-header-green">Risultati</h5>
+                        <div id="swal-search-results" class="swal-multi-list">
+                            <p class="swal-multi-msg-empty">Compila almeno un campo a sinistra per avviare la ricerca.</p>
                         </div>
                     </div>
+                    
                 </div>
             `,
             showCancelButton: true,
-            confirmButtonText: 'Seleziona',
+            confirmButtonText: 'Seleziona proprietario',
             cancelButtonText: 'Annulla',
             reverseButtons: true,
             didOpen: () => {
@@ -261,12 +264,12 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                     }
 
                     if (nicknameTerm.length === 0 && nomeTerm.length === 0 && cognomeTerm.length === 0 && !dateTerm) {
-                        resultsDiv.innerHTML = '<p class="swal-text-error">Inserisci almeno un criterio per la ricerca.</p>';
-                        countSpan.innerHTML = '';
+                        resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Inserisci almeno un criterio per la ricerca.</p>';
+                        countSpan.innerHTML = 'Risultati';
                         return;
                     }
 
-                    resultsDiv.innerHTML = '<p class="swal-text-info"><i>Ricerca in corso...</i></p>';
+                    resultsDiv.innerHTML = '<p class="swal-multi-msg-loading">Ricerca in corso...</p>';
                     countSpan.innerHTML = 'Ricerca in corso...';
 
                     const payloadDati = { azione: 'cerca_utente' };
@@ -274,6 +277,9 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                     if (nomeTerm) payloadDati.filtro_nome = nomeTerm;
                     if (cognomeTerm) payloadDati.cognome = cognomeTerm;
                     if (dateTerm) payloadDati.data_nascita = dateTerm;
+
+                    if (nomeBacheca) payloadDati.nomeBacheca = nomeBacheca;
+                    if (owner) payloadDati.owner = owner;
 
                     try {
                         const response = await fetch(API_URL, {
@@ -288,33 +294,33 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
                             const hasMore = data.utenti.length >= limitUtenti;
 
                             if (hasMore) {
-                                countSpan.innerHTML = `Primi <strong>${limitUtenti}</strong> risultati (affina la ricerca):`;
+                                countSpan.innerHTML = `Risultati (Primi ${limitUtenti})`;
                             } else {
-                                countSpan.innerHTML = `Trovati <strong>${data.utenti.length}</strong> risultati:`;
+                                countSpan.innerHTML = `Risultati (${data.utenti.length})`;
                             }
 
-                            let html = '<div class="swal-radio-group">';
+                            // Generazione righe iniettate direttamente nel contenitore flessibile
+                            let html = '';
                             data.utenti.forEach(u => {
                                 const infoData = u.data_formattata ? ` | Nascita: ${u.data_formattata}` : '';
                                 html += `
-                                    <label class="swal-radio-label">
-                                        <input type="radio" name="swal-user-radio" value="${u.codice}" data-nickname="${u.nickname}" class="swal-radio-input">
-                                        <span class="swal-user-info">
+                                    <label class="swal-multi-row" style="cursor: pointer; justify-content: flex-start; gap: 10px;">
+                                        <input type="radio" name="swal-user-radio" value="${u.codice}" data-nickname="${u.nickname}" style="cursor: pointer; margin:0;">
+                                        <div>
                                             <strong>${u.nickname}</strong> 
-                                            <span class="swal-user-subinfo">${u.nome} ${u.cognome}${infoData}</span>
-                                        </span>
+                                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome}${infoData}</div>
+                                        </div>
                                     </label>
                                 `;
                             });
-                            html += '</div>';
                             resultsDiv.innerHTML = html;
                         } else {
-                            countSpan.innerHTML = `Trovati <strong>0</strong> risultati:`;
-                            resultsDiv.innerHTML = '<p class="swal-text-info">Nessun utente trovato con questi criteri.</p>';
+                            countSpan.innerHTML = `Risultati (0)`;
+                            resultsDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun utente trovato con questi criteri.</p>';
                         }
                     } catch (err) {
-                        countSpan.innerHTML = 'Errore';
-                        resultsDiv.innerHTML = '<p class="swal-text-error-center">Errore di comunicazione col server.</p>';
+                        countSpan.innerHTML = 'Risultati (0)';
+                        resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Errore di comunicazione col server.</p>';
                     }
                 });
             },
@@ -343,8 +349,207 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false) {
     });
 }
 
+// =========================================================
+// AGGIUNGI PIÙ UTENTI ALLA VOLTA
+// =========================================================
+async function aggiungiUtentiMultipli(nomeBacheca, owner) {
+    const oggi = new Date();
+    const yyyy = oggi.getFullYear();
+    const mm = String(oggi.getMonth() + 1).padStart(2, '0');
+    const dd = String(oggi.getDate()).padStart(2, '0');
+    const oggiStringa = `${yyyy}-${mm}-${dd}`;
+
+    let utentiSelezionati = new Map();
+
+    const { value: arrayIdUtenti } = await Swal.fire({
+        title: `Seleziona utenti da autorizzare`,
+        width: '1000px',
+        heightAuto: false,
+        scrollbarPadding: false,
+        html: `
+            <div class="swal-multi-grid">
+                
+                <div class="swal-multi-col-left">
+                    <h5 class="swal-multi-header swal-multi-header-blue">Filtri Cerca</h5>
+                    <div class="swal-multi-input-group">
+                        <label class="swal-multi-label">Nickname</label>
+                        <input id="swal-m-nickname" class="swal2-input swal-multi-input" placeholder="Es. joker">
+                    </div>
+                    <div class="swal-multi-input-group">
+                        <label class="swal-multi-label">Nome</label>
+                        <input id="swal-m-nome" class="swal2-input swal-multi-input" placeholder="Es. Luca">
+                    </div>
+                    <div class="swal-multi-input-group">
+                        <label class="swal-multi-label">Cognome</label>
+                        <input id="swal-m-cognome" class="swal2-input swal-multi-input" placeholder="Es. Verdi">
+                    </div>
+                    <div class="swal-multi-input-group-last">
+                        <label class="swal-multi-label">Data Nascita</label>
+                        <input id="swal-m-date" type="date" class="swal2-input swal-multi-input" max="${oggiStringa}">
+                    </div>
+                    <button id="swal-m-search-btn" class="swal2-styled swal2-confirm swal-multi-btn-search">Avvia Ricerca</button>
+                </div>
+
+                <div class="swal-multi-col-center">
+                    <h5 id="swal-m-results-title" class="swal-multi-header swal-multi-header-green">Risultati</h5>
+                    <div id="swal-m-results" class="swal-multi-list">
+                        <p class="swal-multi-msg-empty">Esegui una ricerca per visualizzare gli utenti.</p>
+                    </div>
+                </div>
+
+                <div class="swal-multi-col-right">
+                    <h5 class="swal-multi-header swal-multi-header-orange">Selezionati (<span id="swal-m-count">0</span>)</h5>
+                    <div id="swal-m-selected" class="swal-multi-list">
+                        <p class="swal-multi-msg-empty">Nessun utente selezionato.</p>
+                    </div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Autorizza utenti',
+        cancelButtonText: 'Annulla',
+        reverseButtons: true,
+        preConfirm: () => {
+            if (utentiSelezionati.size === 0) {
+                Swal.showValidationMessage('Seleziona almeno un utente dalla colonna centrale prima di salvare.');
+                return false;
+            }
+            return Array.from(utentiSelezionati.keys());
+        },
+        didOpen: () => {
+            const searchBtn = document.getElementById('swal-m-search-btn');
+            const nickIn = document.getElementById('swal-m-nickname');
+            const nomeIn = document.getElementById('swal-m-nome');
+            const cognomeIn = document.getElementById('swal-m-cognome');
+            const dateIn = document.getElementById('swal-m-date');
+
+            const resultsDiv = document.getElementById('swal-m-results');
+            const selectedDiv = document.getElementById('swal-m-selected');
+            const countSpan = document.getElementById('swal-m-count');
+            const resultsTitle = document.getElementById('swal-m-results-title');
+
+            let cachedServerResults = [];
+
+            const aggiornaColonnaSelezionati = () => {
+                countSpan.textContent = utentiSelezionati.size;
+                if (utentiSelezionati.size === 0) {
+                    selectedDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun utente selezionato.</p>';
+                    return;
+                }
+
+                selectedDiv.innerHTML = '';
+                utentiSelezionati.forEach((u, id) => {
+                    const row = document.createElement('div');
+                    row.className = 'swal-multi-row swal-multi-row-selected';
+                    row.innerHTML = `
+                        <div>
+                            <strong>${u.nickname}</strong>
+                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome}</div>
+                        </div>
+                        <button type="button" class="swal-multi-btn-del" data-id="${id}">-</button>
+                    `;
+                    selectedDiv.appendChild(row);
+                });
+
+                selectedDiv.querySelectorAll('.swal-multi-btn-del').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idDaTogliere = btn.getAttribute('data-id');
+                        utentiSelezionati.delete(idDaTogliere);
+                        aggiornaColonnaSelezionati();
+                        renderizzaRisultatiCentrali(cachedServerResults);
+                    });
+                });
+            };
+
+            const renderizzaRisultatiCentrali = (utenti) => {
+                cachedServerResults = utenti;
+                resultsDiv.innerHTML = '';
+
+                const filtrati = utenti.filter(u => !utentiSelezionati.has(String(u.codice)));
+
+                if (filtrati.length === 0) {
+                    resultsDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun utente disponibile o tutti già selezionati.</p>';
+                    return;
+                }
+
+                filtrati.forEach(u => {
+                    const row = document.createElement('div');
+                    row.className = 'swal-multi-row';
+                    row.innerHTML = `
+                        <div>
+                            <strong>${u.nickname}</strong>
+                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome}</div>
+                        </div>
+                        <button type="button" class="swal-multi-btn-add" data-id="${u.codice}" data-nick="${u.nickname}" data-nome="${u.nome}" data-cognome="${u.cognome}">+</button>
+                    `;
+                    resultsDiv.appendChild(row);
+                });
+
+                resultsDiv.querySelectorAll('.swal-multi-btn-add').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        utentiSelezionati.set(id, {
+                            nickname: btn.getAttribute('data-nick'),
+                            nome: btn.getAttribute('data-nome'),
+                            cognome: btn.getAttribute('data-cognome')
+                        });
+                        aggiornaColonnaSelezionati();
+                        renderizzaRisultatiCentrali(cachedServerResults);
+                    });
+                });
+            };
+
+            searchBtn.addEventListener('click', async () => {
+                const payload = {
+                    azione: 'cerca_utente',
+                    nickname: nickIn.value.trim(),
+                    filtro_nome: nomeIn.value.trim(),
+                    cognome: cognomeIn.value.trim(),
+                    data_nascita: dateIn.value || null,
+                    nomeBacheca: nomeBacheca,
+                    owner: owner
+                };
+
+                resultsDiv.innerHTML = '<p class="swal-multi-msg-loading">Ricerca in corso...</p>';
+
+                try {
+                    const r = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await r.json();
+
+                    if (data.successo && data.utenti) {
+                        resultsTitle.textContent = `Risultati (${data.utenti.length})`;
+                        renderizzaRisultatiCentrali(data.utenti);
+                    } else {
+                        resultsTitle.textContent = 'Risultati (0)';
+                        resultsDiv.innerHTML = `<p class="swal-multi-msg-error">${data.messaggio || 'Nessun risultato.'}</p>`;
+                    }
+                } catch (err) {
+                    resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Errore server di ricerca.</p>';
+                }
+            });
+
+            [nickIn, nomeIn, cognomeIn, dateIn].forEach(input => {
+                input.addEventListener('keyup', (e) => { if (e.key === 'Enter') searchBtn.click(); });
+            });
+        }
+    });
+
+    if (arrayIdUtenti) {
+        eseguiRichiesta({
+            azione: 'inserisci_utenti_multipli',
+            nomeBacheca: nomeBacheca,
+            owner: owner,
+            listaUtenti: arrayIdUtenti
+        }, 'Tutti gli utenti selezionati sono stati abilitati correttamente nella bacheca!');
+    }
+}
+
 async function aggiungiAutorizzato(nomeBacheca, owner) {
-    const utenteScelto = await cercaESelezionaUtente('Cerca Utente da Autorizzare', true);
+    const utenteScelto = await cercaESelezionaUtente('Cerca Utente da Autorizzare', true, nomeBacheca, owner);
 
     if (utenteScelto) {
         eseguiRichiesta({
@@ -380,43 +585,43 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
 }
 
 // ====================================================================
-// GESTIONE FILE (Layout Split a due colonne)
+// GESTIONE FILE
 // ====================================================================
 async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullObject = false) {
     return new Promise((resolve) => {
         Swal.fire({
             title: titoloPopup,
+            width: '750px',
             heightAuto: false,
             scrollbarPadding: false,
-            customClass: { popup: 'swal-wide-split' },
             html: `
-                <div class="swal-split-container swal-file-split">
-                    <div class="swal-split-sidebar">
-                        <div class="swal-input-wrapper">
-                            <label class="swal-filter-label swal-input-label">Nome File</label>
-                            <input id="swal-search-filename" class="swal2-input swal-custom-input" placeholder="Es. foto panorama">
+                <div class="swal-dual-grid">
+                    <div class="swal-multi-col-left">
+                        <h5 class="swal-multi-header swal-multi-header-blue">Ricerca File</h5>
+                        <div class="swal-multi-input-group">
+                            <label class="swal-multi-label">Nome File</label>
+                            <input id="swal-search-filename" class="swal2-input swal-multi-input" placeholder="Es. foto panorama">
                         </div>
-                        <hr class="swal-divider">
-                        <span class="swal-section-header">Filtra per Autore</span>
-                        <div class="swal-input-wrapper">
-                            <label class="swal-filter-label swal-input-label">Nickname</label>
-                            <input id="swal-search-file-nickname" class="swal2-input swal-custom-input" placeholder="Es. supermario">
+                        <h5 class="swal-multi-header swal-multi-header-blue" style="margin-top:15px;">Filtra per Autore</h5>
+                        <div class="swal-multi-input-group">
+                            <label class="swal-multi-label">Nickname</label>
+                            <input id="swal-search-file-nickname" class="swal2-input swal-multi-input" placeholder="Es. supermario">
                         </div>
-                        <div class="swal-input-wrapper">
-                            <label class="swal-filter-label swal-input-label">Nome</label>
-                            <input id="swal-search-file-nome" class="swal2-input swal-custom-input" placeholder="Es. Mario">
+                        <div class="swal-multi-input-group">
+                            <label class="swal-multi-label">Nome</label>
+                            <input id="swal-search-file-nome" class="swal2-input swal-multi-input" placeholder="Es. Mario">
                         </div>
-                        <div class="swal-input-wrapper">
-                            <label class="swal-filter-label swal-input-label">Cognome</label>
-                            <input id="swal-search-file-cognome" class="swal2-input swal-custom-input" placeholder="Es. Rossi">
+                        <div class="swal-multi-input-group-last">
+                            <label class="swal-multi-label">Cognome</label>
+                            <input id="swal-search-file-cognome" class="swal2-input swal-multi-input" placeholder="Es. Rossi">
                         </div>
-                        <button id="swal-file-search-btn" class="swal2-styled swal2-confirm swal-search-btn">Filtra file</button>
+                        <button id="swal-file-search-btn" class="swal2-styled swal2-confirm swal-multi-btn-search">Filtra file</button>
                     </div>
                     
-                    <div class="swal-split-main">
-                        <span id="swal-file-count" class="swal-filter-label swal-results-title">Risultati trovati:</span>
-                        <div id="swal-file-search-results" class="swal-results-container swal-results-file">
-                            <p class="swal-text-placeholder">Caricamento file disponibili...</p>
+                    <div class="swal-multi-col-right">
+                        <h5 id="swal-file-count" class="swal-multi-header swal-multi-header-green">Risultati</h5>
+                        <div id="swal-file-search-results" class="swal-multi-list">
+                            <p class="swal-multi-msg-loading">Caricamento file disponibili...</p>
                         </div>
                     </div>
                 </div>
@@ -435,7 +640,7 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
                 const countSpan = document.getElementById('swal-file-count');
 
                 const eseguiCercaFile = async () => {
-                    resultsDiv.innerHTML = '<p class="swal-text-info"><i>Ricerca in corso...</i></p>';
+                    resultsDiv.innerHTML = '<p class="swal-multi-msg-loading">Ricerca in corso...</p>';
                     countSpan.innerHTML = 'Ricerca in corso...';
 
                     const tFile = filenameInput.value.trim();
@@ -466,32 +671,32 @@ async function cercaESelezionaFile(nomeBacheca, owner, titoloPopup, returnFullOb
                             const hasMore = data.files.length >= limitFile;
 
                             if (hasMore) {
-                                countSpan.innerHTML = `Primi <strong>${limitFile}</strong> risultati (affina la ricerca):`;
+                                countSpan.innerHTML = `Risultati (Primi ${limitFile})`;
                             } else {
-                                countSpan.innerHTML = `Trovati <strong>${data.files.length}</strong> file disponibili:`;
+                                countSpan.innerHTML = `Risultati (${data.files.length})`;
                             }
 
-                            let html = '<div class="swal-radio-group">';
+                            // Generazione righe iniettate direttamente nel contenitore flessibile
+                            let html = '';
                             data.files.forEach(f => {
                                 html += `
-                                    <label class="swal-radio-label">
-                                        <input type="radio" name="swal-file-radio" value="${f.numero}" data-nome="${f.nome_file}" data-owner="${f.nickname}" class="swal-radio-input">
-                                        <span class="swal-user-info">
+                                    <label class="swal-multi-row" style="cursor: pointer; justify-content: flex-start; gap: 10px;">
+                                        <input type="radio" name="swal-file-radio" value="${f.numero}" data-nome="${f.nome_file}" data-owner="${f.nickname}" style="cursor: pointer; margin:0;">
+                                        <div>
                                             <strong>${f.nome_file}</strong> 
-                                            <span class="swal-user-subinfo">Caricato da: <b>@${f.nickname}</b> (${f.utente_nome} ${f.utente_cognome})</span>
-                                        </span>
+                                            <div class="swal-multi-row-subtext">Caricato da: <b>@${f.nickname}</b> (${f.utente_nome} ${f.utente_cognome})</div>
+                                        </div>
                                     </label>
                                 `;
                             });
-                            html += '</div>';
                             resultsDiv.innerHTML = html;
                         } else {
-                            countSpan.innerHTML = `Trovati <strong>0</strong> file:`;
-                            resultsDiv.innerHTML = '<p class="swal-text-info">Nessun file disponibile o trovato per i criteri inseriti.</p>';
+                            countSpan.innerHTML = `Risultati (0)`;
+                            resultsDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun file disponibile o trovato per i criteri inseriti.</p>';
                         }
                     } catch (err) {
-                        countSpan.innerHTML = 'Errore';
-                        resultsDiv.innerHTML = '<p class="swal-text-error-center">Errore di comunicazione col server.</p>';
+                        countSpan.innerHTML = 'Risultati (0)';
+                        resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Errore di comunicazione col server.</p>';
                     }
                 };
 
