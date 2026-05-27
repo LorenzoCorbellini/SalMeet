@@ -387,6 +387,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             $pdo->beginTransaction();
+
+            // Disabilita i controlli delle FK per permettere l'aggiornamento simultaneo delle tabelle collegate
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+
             $pdo->prepare("UPDATE UtenteAutorizzatoBacheca SET nomeBacheca = :nuovoNome WHERE nomeBacheca = :vecchioNome AND codUtente = :owner")
                 ->execute([':nuovoNome' => $nuovoNome, ':vecchioNome' => $nome, ':owner' => $owner]);
 
@@ -396,10 +400,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE Bacheca SET nome = :nuovoNome WHERE nome = :vecchioNome AND codiceUtente = :owner")
                 ->execute([':nuovoNome' => $nuovoNome, ':vecchioNome' => $nome, ':owner' => $owner]);
 
+            // Riabilita i controlli prima di salvare definitivamente i dati
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
             $pdo->commit();
             echo json_encode(['successo' => true]);
         } catch (Exception $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                // Riabilita i controlli anche in caso di fallimento prima di annullare la transazione
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+                $pdo->rollBack();
+            }
             echo json_encode(['successo' => false, 'messaggio' => 'Errore durante la ridenominazione: ' . $e->getMessage()]);
         }
     } elseif ($azione === 'elimina') {
