@@ -143,7 +143,7 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
 }
 
 // =========================================================
-//  FUNZIONE PER RECUPERARE RICHIESTE PENDENTI (NUOVA)
+//  FUNZIONE PER RECUPERARE RICHIESTE PENDENTI
 // =========================================================
 function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $limit = 20, $start_from = 0)
 {
@@ -423,7 +423,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
     <div class='detail-tabs-header'>
         <div class='bacheca-tabs tabs-reset'>
             <a href='{$urlInfo}' class='" . ($activeTab === 'info' ? 'active' : '') . "'>Informazioni</a>
-            <a href='{$urlRichieste}' class='" . ($activeTab === 'richieste' ? 'active' : '') . "'>Richieste</a>
+            <a href='{$urlRichieste}' class='" . ($activeTab === 'richieste' ? 'active' : '') . "'>Richieste in attesa</a>
             <a href='{$urlUtenti}' class='" . ($activeTab === 'utenti' ? 'active' : '') . "'>Utenti Autorizzati</a>
             <a href='{$urlFile}' class='" . ($activeTab === 'file' ? 'active' : '') . "'>File Condivisi</a>
         </div>
@@ -453,7 +453,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
                 echo "<p class='info-card-text'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
                 echo "<p class='info-card-text'><strong>Richieste in attesa:</strong> <a href='{$urlRichieste}'>" . (int)$datiBachecaDb['total_richieste'] . "</a></p>";
                 echo "<p class='info-card-text'><strong>Utenti autorizzati:</strong> <a href='{$urlUtenti}'>" . (int)$datiBachecaDb['total_utenti'] . "</a></p>";
-                echo "<p class='info-card-text-last'><strong>File caricati:</strong> <a href='{$urlFile}'>" . (int)$datiBachecaDb['total_file'] . "</a></p>";
+                echo "<p class='info-card-text-last'><strong>File condivisi:</strong> <a href='{$urlFile}'>" . (int)$datiBachecaDb['total_file'] . "</a></p>";
             }
             echo "</div>";
 
