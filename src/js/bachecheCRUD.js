@@ -56,6 +56,9 @@ async function aggiungiBacheca() {
         title: 'Nuova Bacheca',
         input: 'text',
         inputLabel: 'Inserisci il nome della nuova bacheca:',
+        inputAttributes: {
+            maxlength: 40 // Impedisce la digitazione oltre i 40 caratteri
+        },
         heightAuto: false,
         scrollbarPadding: false,
         showCancelButton: true,
@@ -63,7 +66,12 @@ async function aggiungiBacheca() {
         confirmButtonText: 'Avanti &rarr;',
         cancelButtonText: 'Annulla',
         inputValidator: (value) => {
-            if (!value || value.trim() === '') return 'Il nome della bacheca è obbligatorio.';
+            if (!value || value.trim() === '') {
+                return 'Il nome della bacheca è obbligatorio.';
+            }
+            if (value.trim().length > 40) {
+                return 'Il nome della bacheca non può superare i 40 caratteri!';
+            }
         }
     });
 
@@ -86,6 +94,9 @@ async function rinominaBacheca(nomeBacheca, owner) {
         input: 'text',
         inputLabel: 'Inserisci il nuovo nome:',
         inputValue: nomeBacheca,
+        inputAttributes: {
+            maxlength: 40 // Impedisce la digitazione oltre i 40 caratteri
+        },
         heightAuto: false,
         scrollbarPadding: false,
         showCancelButton: true,
@@ -93,7 +104,12 @@ async function rinominaBacheca(nomeBacheca, owner) {
         cancelButtonText: 'Annulla',
         reverseButtons: true,
         inputValidator: (value) => {
-            if (!value || value.trim() === '') return 'Il nome non può essere vuoto!';
+            if (!value || value.trim() === '') {
+                return 'Il nome non può essere vuoto!';
+            }
+            if (value.trim().length > 40) {
+                return 'Il nome non può superare i 40 caratteri!';
+            }
         }
     });
 

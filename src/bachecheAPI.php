@@ -271,6 +271,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // AGGIUNGI BACHECA
     // ---------------------------------------------------------
     if ($azione === 'aggiungi') {
+        // Controllo di sicurezza "a prova di crash" sulla lunghezza del nome
+        $lunghezzaNome = function_exists('mb_strlen') ? mb_strlen($nome, 'UTF-8') : strlen($nome);
+        if ($lunghezzaNome > 40) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Il nome della bacheca non può superare i 40 caratteri.']);
+            exit;
+        }
+
         $st = $pdo->prepare("SELECT COUNT(*) FROM Utente WHERE codice = ?");
         $st->execute([$owner]);
         if ($st->fetchColumn() == 0) {
@@ -441,6 +448,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nuovoNome = trim($input['nuovoNome'] ?? '');
         if ($nuovoNome === '') {
             echo json_encode(['successo' => false, 'messaggio' => 'Nome non valido.']);
+            exit;
+        }
+
+        // Controllo di sicurezza "a prova di crash" sulla lunghezza del nuovo nome
+        $lunghezzaNuovoNome = function_exists('mb_strlen') ? mb_strlen($nuovoNome, 'UTF-8') : strlen($nuovoNome);
+        if ($lunghezzaNuovoNome > 40) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Il nuovo nome della bacheca non può superare i 40 caratteri.']);
             exit;
         }
 
