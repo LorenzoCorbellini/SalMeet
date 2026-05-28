@@ -135,7 +135,7 @@ if (!$isAjax):
 									<p class='info-card-text'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>
 									<p class='info-card-text'><strong>Data Creazione:</strong> " . formattaData($infoGruppo['dataCreazione']) . "</p>
 									<p class='info-card-text'><strong>Numero di membri del gruppo:</strong> " . $numMembri . "</p>
-									<p class='info-card-text-last'><strong>Numero di file totali caricati nel DB:</strong> " . $numFile . "</p>
+									<p class='info-card-text-last'><strong>Numero di file totali caricati nel gruppo:</strong> " . $numFile . "</p>
 								</div>";
 
 						} elseif ($tab_corrente === 'membri') {
@@ -375,7 +375,7 @@ if (!$isAjax):
 					$datiOriginale = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 					echo "<div class='table-top-bar'>";
-					echo "<p class='info-risultati zero-margin'>Gruppi trovati: <strong>{$totaleRisultati}</strong></p>";
+					echo "<p class='info-risultati zero-margin'>Trovati <strong>{$totaleRisultati}</strong> (<strong>$numero_pagine</strong> per pagina)</p>";
 					echo "</div>";
 
 					if ($datiOriginale) {

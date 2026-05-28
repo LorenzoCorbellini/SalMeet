@@ -429,7 +429,7 @@ if (!$isAjax):
                     $utenti = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     echo "<div class='table-top-bar'>";
-                    echo "<p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> utenti.</p>";
+                    echo "<p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> utenti". "(<strong>$numero_pagine</strong> per pagina)</p>";
                     echo "</div>";
 
                     if (count($utenti) > 0) {
