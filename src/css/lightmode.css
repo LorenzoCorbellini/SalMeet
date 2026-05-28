@@ -480,14 +480,10 @@ th a.filter__link {
 
 tr:nth-of-type(even) td {
     background-color: rgba(227, 203, 203, 0.25);
-    padding-bottom: 5px;
-    padding-top: 5px;
 }
 
 tr:nth-of-type(odd) td {
     background-color: var(--text-light);
-    padding-bottom: 5px;
-    padding-top: 5px;
 }
 
 td {
