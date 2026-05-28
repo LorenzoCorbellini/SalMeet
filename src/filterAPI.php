@@ -13,7 +13,7 @@
 function getFiltroConfig(string $entita, array $parametriExtra = []): array
 {
     $campiBase = [];
-    
+
     // Genera automaticamente i campi hidden strutturali passati dalla pagina corrente
     foreach ($parametriExtra as $name => $value) {
         $campiBase[] = ['tipo' => 'hidden', 'name' => $name, 'value' => $value, 'label' => ''];
@@ -24,13 +24,15 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'bacheche':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'titolo',       'label' => 'Nome'],
-                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario'],
-                    ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo'],
+                    ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca'],
+                    ['tipo' => 'text', 'name' => 'proprietario',         'label' => 'Nickname Proprietario'],
+                    ['tipo' => 'text', 'name' => 'proprietario_nome',    'label' => 'Nome Proprietario'],
+                    ['tipo' => 'text', 'name' => 'proprietario_cognome', 'label' => 'Cognome Proprietario'],
+                    ['tipo' => 'date', 'name' => 'data',                 'label' => 'Creata dopo'],
                 ])
             ];
-        
-        //filtro utenti
+
+            //filtro utenti
         case 'utenti':
             return [
                 'campi' => array_merge($campiBase, [
@@ -41,7 +43,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 ])
             ];
 
-        //filtro file
+            //filtro file
         case 'file':
             $minSize = $parametriExtra['min_size'] ?? 0;
             $maxSize = $parametriExtra['max_size'] ?? 100;
@@ -49,7 +51,10 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'file',              'label' => 'Nome File'],
                     ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Nickname Proprietario'],
-                    ['tipo' => 'checkbox-group', 'name' => 'filetype', 'label' => 'Tipo',
+                    [
+                        'tipo' => 'checkbox-group',
+                        'name' => 'filetype',
+                        'label' => 'Tipo',
                         'opzioni' => [
                             'immagine' => 'Immagini',
                             'audio' => 'Audio',
@@ -69,7 +74,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 ])
             ];
 
-        //filtro vuoto
+            //filtro vuoto
         default:
             return [
                 'vuoto' => true,
@@ -87,9 +92,11 @@ function getRegoleFiltroSQL(string $entita): array
 {
     $mappe = [
         'bacheche' => [
-            'titolo'        => ['colonna' => 'b.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
-            'proprietario'  => ['colonna' => 'u.nickname',      'operatore' => 'LIKE', 'formato' => '%val%'],
-            'data'          => ['colonna' => 'b.dataCreazione',  'operatore' => '>=',   'formato' => 'val'],
+            'titolo'               => ['colonna' => 'b.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
+            'proprietario'         => ['colonna' => 'u.nickname',      'operatore' => 'LIKE', 'formato' => '%val%'],
+            'proprietario_nome'    => ['colonna' => 'u.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
+            'proprietario_cognome' => ['colonna' => 'u.cognome',       'operatore' => 'LIKE', 'formato' => '%val%'],
+            'data'                 => ['colonna' => 'b.dataCreazione', 'operatore' => '>=',   'formato' => 'val'],
         ],
         'utenti' => [
             'utente'        => ['colonna' => 'u.nickname',      'operatore' => 'LIKE', 'formato' => '%val%'],
@@ -123,7 +130,7 @@ function applicaFiltriDinamici(array $inputs, string $entita): array
             $valore = trim($inputs[$chiaveInput]);
             $colonna = $regola['colonna'];
             $operatore = $regola['operatore'];
-            
+
             // Genera placeholder univoco per PDO (es. :dimensione_min)
             $placeholder = ":" . str_replace('.', '_', $chiaveInput);
 
