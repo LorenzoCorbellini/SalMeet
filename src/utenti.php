@@ -109,14 +109,13 @@ if (!$isAjax):
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
                         echo "<h3 class='info-card-title'>Profilo di <b><i>" . htmlspecialchars($infoUtente['nickname']) . "</i></b></h3>";
 
-                        echo " <div class='detail-tabs-header'>
-                                    <div class='bacheca-tabs tabs-reset'>";
+                        echo " <div class='detail-tabs-header'>";
 
                         echo '<a href="?utente=' . $idUtente . ($tab_corrente === 'info' ? 'active' : '') . '">Informazioni</a>';
                         echo '<a href="?utente=' . $idUtente . ($tab_corrente === 'gruppi' ? 'active' : '') . '">Gruppi</a>';
                         echo '<a href="?utente=' . $idUtente . ($tab_corrente === 'bacheche' ? 'active' : '') . '">Bacheche</a>';
                         echo '<a href="?utente=' . $idUtente . ($tab_corrente === 'file' ? 'active' : '') . '">File Condivisi</a>';
-                        echo '</div>';
+                       // echo '</div>';
                         echo '</div>';
 
                         if ($tab_corrente === 'info') {
