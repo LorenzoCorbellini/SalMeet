@@ -487,7 +487,7 @@ tr:nth-of-type(odd) td {
 }
 
 td {
-    padding: 24px 20px;
+    padding: 14px 20px;
     color: var(--text-dark);
     border-bottom: 1px solid rgba(179, 162, 159, 0.3);
     transition: background-color 0.2s ease;
@@ -532,8 +532,8 @@ table .btn-aggiungi {
 }
 
 table .btn-azione {
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     margin: 0 2px;
 }
 
