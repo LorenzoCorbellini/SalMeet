@@ -149,19 +149,15 @@ if (!$isAjax):
                                     <p class='info-card-text-last'><strong>Numero di file caricati:</strong> " . $numFile . "</p>
                                 </div>";
                         } elseif ($tab_corrente === 'gruppi') {
-                            $limit = 10;
-                            $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
-                            if ($np < 1) $np = 1;
-                            $start_from = ($np - 1) * $limit;
+                            $limit = 20;
+                            list($limit, $np, $start_from) = getPaginationParams($limit);
 
                             $allowed_sorts = [
                                 'nome' => 'g.nome',
                                 'proprietario' => 'u_owner.nickname',
                                 'data' => 'g.dataCreazione'
                             ];
-                            $sort_col = $_GET['sort'] ?? 'data';
-                            $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'ASC' ? 'ASC' : 'DESC';
-                            $sql_sort = $allowed_sorts[$sort_col] ?? 'g.dataCreazione';
+                            list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'data', 'DESC');
 
                             $whereSql = " WHERE uag.codUtente = :codice";
                             $params = [':codice' => $idUtente];
@@ -187,7 +183,7 @@ if (!$isAjax):
                             $stmtCount = $pdo->prepare($countSql);
                             $stmtCount->execute($params);
                             $numero_records = $stmtCount->fetchColumn();
-                            $numero_pagine = ceil($numero_records / $limit);
+                            $numero_pagine = getNumberOfPages($numero_records, $limit);
 
                             $sql = "SELECT g.codice AS id_gruppo, g.nome AS `Nome Gruppo`, u_owner.codice AS id_proprietario, u_owner.nickname AS `Proprietario`, g.dataCreazione AS `Data Creazione` 
                                     FROM UtenteAutorizzatoGruppo uag 
@@ -215,7 +211,7 @@ if (!$isAjax):
                                 ];
                             }
 
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> gruppi.</p></div>";
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> gruppi (<strong>$limit</strong> per pagina)</p></div>";
 
                             $customHeaders = generaIntestazioniOrdinabili([
                                 'Nome Gruppo' => 'nome',
@@ -228,19 +224,15 @@ if (!$isAjax):
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
                         } elseif ($tab_corrente === 'bacheche') {
-                            $limit = 10;
-                            $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
-                            if ($np < 1) $np = 1;
-                            $start_from = ($np - 1) * $limit;
+                            $limit = 20;
+                            list($limit, $np, $start_from) = getPaginationParams($limit);
 
                             $allowed_sorts = [
                                 'nome' => 'uab.nomeBacheca',
                                 'proprietario' => 'u_owner.nickname',
                                 'data' => 'b.dataCreazione'
                             ];
-                            $sort_col = $_GET['sort'] ?? 'data';
-                            $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'ASC' ? 'ASC' : 'DESC';
-                            $sql_sort = $allowed_sorts[$sort_col] ?? 'b.dataCreazione';
+                            list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'data', 'DESC');
 
                             $whereSql = " WHERE uab.utenteAutorizzato = :codice AND uab.autorizzato = 1";
                             $params = [':codice' => $idUtente];
@@ -266,7 +258,7 @@ if (!$isAjax):
                             $stmtCount = $pdo->prepare($countSql);
                             $stmtCount->execute($params);
                             $numero_records = $stmtCount->fetchColumn();
-                            $numero_pagine = ceil($numero_records / $limit);
+                            $numero_pagine = getNumberOfPages($numero_records, $limit);
 
                             $sql = "SELECT b.codiceUtente AS id_proprietario, uab.nomeBacheca AS `Nome Bacheca`, u_owner.nickname AS `Proprietario`, b.dataCreazione AS `Data Creazione` 
                                     FROM UtenteAutorizzatoBacheca uab 
@@ -294,7 +286,7 @@ if (!$isAjax):
                                 ];
                             }
 
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>$numero_records</strong> bacheche.</p></div>";
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>$numero_records</strong> bacheche (<strong>$limit</strong> per pagina)</p></div>";
 
                             $customHeaders = generaIntestazioniOrdinabili([
                                 'Nome Bacheca' => 'nome',
@@ -307,18 +299,14 @@ if (!$isAjax):
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
                         } elseif ($tab_corrente === 'file') {
-                            $limit = 10;
-                            $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
-                            if ($np < 1) $np = 1;
-                            $start_from = ($np - 1) * $limit;
+                            $limit = 20;
+                            list($limit, $np, $start_from) = getPaginationParams($limit);
 
                             $allowed_sorts = [
                                 'file' => 'titolo',
                                 'dimensione' => 'dimensione'
                             ];
-                            $sort_col = $_GET['sort'] ?? 'file';
-                            $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'ASC' ? 'ASC' : 'DESC';
-                            $sql_sort = $allowed_sorts[$sort_col] ?? 'titolo';
+                            list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'file', 'ASC');
 
                             $whereSql = " WHERE caricatoDa = :codice";
                             $params = [':codice' => $idUtente];
@@ -332,7 +320,7 @@ if (!$isAjax):
                             $stmtCount = $pdo->prepare($countSql);
                             $stmtCount->execute($params);
                             $numero_records = $stmtCount->fetchColumn();
-                            $numero_pagine = ceil($numero_records / $limit);
+                            $numero_pagine = getNumberOfPages($numero_records, $limit);
 
                             $sql = "SELECT url, tipo, titolo AS `File`, dimensione AS `Dimensione` 
             FROM FileMultimediale 
@@ -369,7 +357,7 @@ if (!$isAjax):
                                 ];
                             }
 
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> file condivisi.</p></div>";
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> file condivisi (<strong>$limit</strong> per pagina)</p></div>";
 
                             $customHeaders = generaIntestazioniOrdinabili([
                                 'File' => 'file',
@@ -388,10 +376,8 @@ if (!$isAjax):
                     }
                 } else {
                     // 2. Elenco generale utenti
-                    $limit = 15;
-                    $np = isset($_GET['np']) ? (int) $_GET['np'] : 1;
-                    if ($np < 1) $np = 1;
-                    $start_from = ($np - 1) * $limit;
+                    $limit = 20;
+                    list($limit, $np, $start_from) = getPaginationParams($limit);
 
                     $allowed_sorts = [
                         'nickname' => 'nickname',
@@ -400,9 +386,7 @@ if (!$isAjax):
                         'data'     => 'dataNascita'
                     ];
 
-                    $sort_col = $_GET['sort'] ?? 'nickname';
-                    $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'DESC' ? 'DESC' : 'ASC';
-                    $sql_sort = $allowed_sorts[$sort_col] ?? 'nickname';
+                    list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nickname', 'ASC');
 
                     $whereSql = "WHERE 1=1";
                     $params = [];
@@ -430,7 +414,7 @@ if (!$isAjax):
                     $stmtCount = $pdo->prepare($countSql);
                     $stmtCount->execute($params);
                     $numero_records = $stmtCount->fetchColumn();
-                    $numero_pagine = ceil($numero_records / $limit);
+                    $numero_pagine = getNumberOfPages($numero_records, $limit);
 
                     $sql = "SELECT codice, nickname, nome AS Nome, cognome AS Cognome, dataNascita AS `Data di Nascita` 
                             FROM Utente 
@@ -443,7 +427,7 @@ if (!$isAjax):
                     $utenti = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     echo "<div class='table-top-bar'>";
-                    echo "<p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> utenti". " (<strong>$limit</strong> per pagina)</p>";
+                    echo "<p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> utenti (<strong>$limit</strong> per pagina)</p>";
                     echo "</div>";
 
                     if (count($utenti) > 0) {

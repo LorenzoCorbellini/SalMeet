@@ -182,7 +182,7 @@ if (!$isAjax):
                             $stmtMembri->execute($params);
                             $membriRaw = $stmtMembri->fetchAll(PDO::FETCH_ASSOC);
 
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Membri trovati: <strong>{$totale}</strong></p></div>";
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>{$totale}</strong> membri (<strong>{$limit}</strong> per pagina)</p></div>";
 
                             if (!empty($membriRaw)) {
                                 $datiMembri = [];
@@ -261,7 +261,7 @@ if (!$isAjax):
                             $stmtFile->execute($params);
                             $filesRaw = $stmtFile->fetchAll(PDO::FETCH_ASSOC);
 
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>File condivisi trovati: <strong>{$totale}</strong></p></div>";
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>{$totale}</strong> file condivisi (<strong>{$limit}</strong> per pagina)</p></div>";
 
                             if (!empty($filesRaw)) {
                                 $datiFiles = [];
@@ -375,7 +375,7 @@ if (!$isAjax):
                     $datiOriginale = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     echo "<div class='table-top-bar'>";
-                    echo "<p class='info-risultati zero-margin'>Trovati <strong>{$totaleRisultati}</strong> (<strong>$limit</strong> per pagina)</p>";
+                    echo "<p class='info-risultati zero-margin'>Trovati <strong>{$totaleRisultati}</strong> gruppi (<strong>{$limit}</strong> per pagina)</p>";
                     echo "</div>";
 
                     if ($datiOriginale) {
