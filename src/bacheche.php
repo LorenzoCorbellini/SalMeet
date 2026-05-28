@@ -16,7 +16,7 @@ function getBottoneNuovaBacheca(): string
 function getBottoneRinominaBacheca($bEnc, $owner, $isIcona = false): string
 {
     if ($isIcona) {
-        return "<span title='Rinomina' class='btn-azione' onclick=\"rinominaBacheca('{$bEnc}', {$owner})\">
+        return "<span title='Rinomina bacheca' class='btn-azione' onclick=\"rinominaBacheca('{$bEnc}', {$owner})\">
                     <img src='images/edit.png' alt='Rinomina'>
                 </span>";
     }
@@ -29,7 +29,7 @@ function getBottoneEliminaBacheca($bEnc, $owner, $ownerNickname, $isIcona = fals
 {
     $ownerNicknameEnc = htmlspecialchars(addslashes($ownerNickname), ENT_QUOTES);
     if ($isIcona) {
-        return "<span title='Elimina' class='btn-azione' onclick=\"eliminaBacheca('{$bEnc}', {$owner}, '{$ownerNicknameEnc}')\">
+        return "<span title='Elimina bacheca' class='btn-azione' onclick=\"eliminaBacheca('{$bEnc}', {$owner}, '{$ownerNicknameEnc}')\">
                     <img src='images/trash.png' alt='Elimina'>
                 </span>";
     }
@@ -38,16 +38,16 @@ function getBottoneEliminaBacheca($bEnc, $owner, $ownerNickname, $isIcona = fals
     </a>";
 }
 
-function getBottoneAggiungiUtente($bEnc, $owner): string
+function getBottoneAggiungiUtentiMultipli($bEnc, $owner): string
 {
-    return "<a onclick=\"aggiungiAutorizzato('{$bEnc}', {$owner})\" class='btn-aggiungi'>
-        <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi utente</strong>
+    return "<a onclick=\"aggiungiUtentiMultipli('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+        <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi utenti</strong>
     </a>";
 }
 
-function getBottoneAggiungiFile($bEnc, $owner): string
+function getBottoneAggiungiFileMultipli($bEnc, $owner): string
 {
-    return "<a onclick=\"aggiungiFile('{$bEnc}', {$owner})\" class='btn-aggiungi'>
+    return "<a onclick=\"aggiungiFileMultipli('{$bEnc}', {$owner})\" class='btn-aggiungi'>
         <img src='images/add.png' alt='Aggiungi' class='btn-img-align'> <strong>Aggiungi file</strong>
     </a>";
 }
@@ -93,11 +93,10 @@ function gestisciRoutingBacheche($pdo, $isAjax, $params)
 function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $owner)
 {
 
-    $entita = 'bacheche'; // Entità di default (Vista Generale)
+    $entita = 'bacheche';
     $parametriExtra = [];
 
     if ($vista_corrente === 'dettaglio') {
-        // Salviamo lo stato strutturale corrente come campi hidden per i tab della bacheca
         $parametriExtra = [
             'vista'   => 'dettaglio',
             'bacheca' => $bacheca,
@@ -105,12 +104,11 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
             'tab'     => $tab_corrente
         ];
 
-        if ($tab_corrente === 'utenti') {
+        if ($tab_corrente === 'utenti' || $tab_corrente === 'richieste') {
             $entita = 'utenti';
         } elseif ($tab_corrente === 'file') {
             $entita = 'file';
 
-            // Calcolo dinamico del range di dimensioni per la bacheca corrente
             $stmtRange = $pdo->prepare("
                 SELECT MIN(fm.dimensione) as min_dim, MAX(fm.dimensione) as max_dim 
                 FROM FilePubblicatoBacheca fb
@@ -126,7 +124,6 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
                 $minSize = 0;
             }
 
-            // Aggiungiamo i limiti calcolati ai parametri per l'interfaccia grafica
             $parametriExtra['min_size'] = $minSize;
             $parametriExtra['max_size'] = $maxSize;
         } else {
@@ -134,10 +131,8 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
         }
     }
 
-    // Estraiamo la configurazione unificata basandoci sull'entità e i metadati passati
     $filtro_config = getFiltroConfig($entita, $parametriExtra);
 
-    // Renderizzazione visiva del box dei filtri
     if (isset($filtro_config['vuoto']) && $filtro_config['vuoto'] === true) {
         echo '<div id="filtro" class="filter-empty">';
         echo '    <p>' . htmlspecialchars($filtro_config['messaggio']) . '</p>';
@@ -146,6 +141,87 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
         include 'filter.php';
     }
 }
+
+// =========================================================
+//  FUNZIONE PER RECUPERARE RICHIESTE PENDENTI
+// =========================================================
+function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname', $sort_dir = 'ASC', $limit = 20, $start_from = 0)
+{
+    $baseSql = "
+        FROM UtenteAutorizzatoBacheca uab
+        JOIN Utente u ON u.codice = uab.utenteAutorizzato
+        WHERE uab.nomeBacheca = :bacheca AND uab.codUtente = :owner AND uab.autorizzato = 0
+    ";
+
+    $params = [
+        ':bacheca' => $bacheca,
+        ':owner' => $owner
+    ];
+
+    $whereSql = "";
+    if (!empty($_GET['utente'])) {
+        $whereSql .= " AND u.nickname LIKE :utente";
+        $params[':utente'] = '%' . $_GET['utente'] . '%';
+    }
+    if (!empty($_GET['nome'])) {
+        $whereSql .= " AND u.nome LIKE :nome";
+        $params[':nome'] = '%' . $_GET['nome'] . '%';
+    }
+    if (!empty($_GET['cognome'])) {
+        $whereSql .= " AND u.cognome LIKE :cognome";
+        $params[':cognome'] = '%' . $_GET['cognome'] . '%';
+    }
+    if (!empty($_GET['data_nascita'])) {
+        if (isDataValidaRange($_GET['data_nascita'])) {
+            //la data di nascita filtra le richieste mostrando solo quelle degli utenti nati a partire da quella data (inclusa)
+            $whereSql .= " AND u.dataNascita >= :data_nascita";
+            $params[':data_nascita'] = $_GET['data_nascita'];
+        }
+    }
+
+    $stmtCount = $pdo->prepare("SELECT COUNT(*) " . $baseSql . $whereSql);
+    $stmtCount->execute($params);
+    $totale = $stmtCount->fetchColumn();
+
+    $sql = "SELECT u.codice, u.nickname, u.nome, u.cognome, u.dataNascita " . $baseSql . $whereSql;
+    $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+
+    if ($limit > 0) {
+        $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$start_from;
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $utenti = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $datiRichieste = [];
+    foreach ($utenti as $u) {
+        $nicknameJS = htmlspecialchars(addslashes($u['nickname']), ENT_QUOTES);
+
+        $azioni = "<div class='actions-cell-nowrap' style='display:flex; gap:10px; justify-content:center;'>
+            <span title='Accetta richiesta' class='btn-azione' onclick=\"accettaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
+                <img src='images/accept.png' alt='Accetta'>
+            </span>
+            <span title='Rifiuta richiesta' class='btn-azione' onclick=\"rifiutaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
+                <img src='images/reject.png' alt='Rifiuta'>
+            </span>
+        </div>";
+
+        $user_link = "utenti.php?utente=" . urlencode($u['codice']);
+        $htmlNickname = "<a href='" . htmlspecialchars($user_link) .  "'>" . htmlspecialchars($u['nickname']) . "</a>";
+
+        $datiRichieste[] = [
+            'Nickname' => $htmlNickname,
+            'Nome' => $u['nome'],
+            'Cognome' => $u['cognome'],
+            'Data Nascita' => $u['dataNascita'],
+            'Azioni' => $azioni
+        ];
+    }
+    return [$datiRichieste, $totale];
+}
+
+
 // =========================================================
 //  FUNZIONE PER RECUPERARE UTENTI 
 // =========================================================
@@ -154,7 +230,7 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
     $baseSql = "
         FROM UtenteAutorizzatoBacheca uab
         JOIN Utente u ON u.codice = uab.utenteAutorizzato
-        WHERE uab.nomeBacheca = :bacheca AND uab.codUtente = :owner
+        WHERE uab.nomeBacheca = :bacheca AND uab.codUtente = :owner AND uab.autorizzato = 1
     ";
 
     $params = [
@@ -205,7 +281,7 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
 
         $azioni = !$isOwner
             ? "<div class='cell-center'>
-                <span title='Elimina' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
+                <span title='Revoca autorizzazione' class='btn-azione' onclick=\"rimuoviAutorizzato('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
                     <img src='images/trash.png' alt='Elimina'>
                 </span>
                </div>"
@@ -304,7 +380,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
 
         $azioni = "<div class='cell-center'>
-            <span title='Elimina' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']}, '{$titleJS}', '{$caricatoDaJS}')\">
+            <span title='Rimuovi da bacheca' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']}, '{$titleJS}', '{$caricatoDaJS}')\">
                 <img src='images/trash.png' alt='Elimina'>
             </span>
         </div>";
@@ -325,13 +401,14 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
 function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 {
     $activeTab = $_GET['tab'] ?? 'info';
-    $validTabs = ['info', 'utenti', 'file'];
+    $validTabs = ['info', 'richieste', 'utenti', 'file'];
     if (!in_array($activeTab, $validTabs)) $activeTab = 'info';
 
     $baseParams = ['vista' => 'dettaglio', 'bacheca' => $bacheca, 'owner' => $owner];
-    $urlInfo   = '?' . http_build_query(array_merge($baseParams, ['tab' => 'info']));
-    $urlUtenti = '?' . http_build_query(array_merge($baseParams, ['tab' => 'utenti']));
-    $urlFile   = '?' . http_build_query(array_merge($baseParams, ['tab' => 'file']));
+    $urlInfo      = '?' . http_build_query(array_merge($baseParams, ['tab' => 'info']));
+    $urlRichieste = '?' . http_build_query(array_merge($baseParams, ['tab' => 'richieste']));
+    $urlUtenti    = '?' . http_build_query(array_merge($baseParams, ['tab' => 'utenti']));
+    $urlFile      = '?' . http_build_query(array_merge($baseParams, ['tab' => 'file']));
 
     $recordsPerPage = 20;
     list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
@@ -346,15 +423,17 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
     <div class='detail-tabs-header'>
         <div class='bacheca-tabs tabs-reset'>
             <a href='{$urlInfo}' class='" . ($activeTab === 'info' ? 'active' : '') . "'>Informazioni</a>
-            <a href='{$urlUtenti}' class='" . ($activeTab === 'utenti' ? 'active' : '') . "'>Dettaglio Utenti</a>
-            <a href='{$urlFile}' class='" . ($activeTab === 'file' ? 'active' : '') . "'>Dettaglio File</a>
+            <a href='{$urlRichieste}' class='" . ($activeTab === 'richieste' ? 'active' : '') . "'>Richieste in attesa</a>
+            <a href='{$urlUtenti}' class='" . ($activeTab === 'utenti' ? 'active' : '') . "'>Utenti Autorizzati</a>
+            <a href='{$urlFile}' class='" . ($activeTab === 'file' ? 'active' : '') . "'>File Condivisi</a>
         </div>
     </div>";
 
     if ($activeTab === 'info') {
         $stmtBacheca = $pdo->prepare("
             SELECT b.dataCreazione, u.nickname,
-                   (SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab WHERE uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente) AS total_utenti,
+                   (SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab WHERE uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente AND uab.autorizzato = 1) AS total_utenti,
+                   (SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab WHERE uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente AND uab.autorizzato = 0) AS total_richieste,
                    (SELECT COUNT(*) FROM FilePubblicatoBacheca fpb WHERE fpb.nomeBacheca = b.nome AND fpb.codUtente = b.codiceUtente) AS total_file
             FROM Bacheca b
             JOIN Utente u ON b.codiceUtente = u.codice
@@ -372,8 +451,9 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
                 echo "<p class='info-card-text'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
                 $linkOwner = "utenti.php?utente=" . urlencode($owner);
                 echo "<p class='info-card-text'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($datiBachecaDb['nickname']) . "</a></p>";
+                echo "<p class='info-card-text'><strong>Richieste in attesa:</strong> <a href='{$urlRichieste}'>" . (int)$datiBachecaDb['total_richieste'] . "</a></p>";
                 echo "<p class='info-card-text'><strong>Utenti autorizzati:</strong> <a href='{$urlUtenti}'>" . (int)$datiBachecaDb['total_utenti'] . "</a></p>";
-                echo "<p class='info-card-text-last'><strong>File caricati:</strong> <a href='{$urlFile}'>" . (int)$datiBachecaDb['total_file'] . "</a></p>";
+                echo "<p class='info-card-text-last'><strong>File condivisi:</strong> <a href='{$urlFile}'>" . (int)$datiBachecaDb['total_file'] . "</a></p>";
             }
             echo "</div>";
 
@@ -385,6 +465,35 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
                     {$btnElimina}
                   </div>";
         }
+    } elseif ($activeTab === 'richieste') {
+
+        $allowed_sorts_r = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data_nascita' => 'u.dataNascita'];
+        list($sort_col_r, $sort_dir_r, $sql_sort_r) = getParametriOrdinamento($allowed_sorts_r, 'nickname', 'ASC');
+
+        list($datiRichieste, $countRichieste) = getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_r, $sort_dir_r, $limit, $start_from);
+        $numero_pagine = getNumberOfPages($countRichieste, $limit);
+
+        echo "<div class='table-top-bar'>";
+        echo "<p class='zero-margin'>Richieste in attesa: <strong>{$countRichieste}</strong></p>";
+        echo "</div>";
+
+        if ($countRichieste > 0) {
+            $_GET['tab'] = 'richieste';
+            $customHeaders_r = generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data Nascita' => 'data_nascita'], $sort_col_r, $sort_dir_r);
+
+            echo '<div class="table-container">';
+            stampaTabella($datiRichieste, ['Nickname', 'Azioni'], $customHeaders_r);
+            echo '</div>';
+
+            echo "<div class='pagination-spacer'>";
+            echo getPagesNav($np, $numero_pagine, 1);
+            echo "</div>";
+        } else {
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessuna richiesta in sospeso trovata.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
+        }
     } elseif ($activeTab === 'utenti') {
         $allowed_sorts_u = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data_nascita' => 'u.dataNascita'];
         list($sort_col_u, $sort_dir_u, $sql_sort_u) = getParametriOrdinamento($allowed_sorts_u, 'nickname', 'ASC');
@@ -394,17 +503,26 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
         echo "<div class='table-top-bar'>";
         echo "<p class='zero-margin'>Utenti trovati nella bacheca: <strong>{$countUtenti}</strong></p>";
-        echo getBottoneAggiungiUtente($bEnc, $owner);
+        echo getBottoneAggiungiUtentiMultipli($bEnc, $owner);
         echo "</div>";
 
-        $_GET['tab'] = 'utenti';
-        $customHeaders_u = generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data Nascita' => 'data_nascita'], $sort_col_u, $sort_dir_u);
+        if ($countUtenti > 0) {
+            $_GET['tab'] = 'utenti';
+            $customHeaders_u = generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data Nascita' => 'data_nascita'], $sort_col_u, $sort_dir_u);
 
-        echo '<div class="table-container">';
-        stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
-        echo '</div>';
+            echo '<div class="table-container">';
+            stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
+            echo '</div>';
 
-        echo getPagesNav($np, $numero_pagine, 1);
+            echo "<div class='pagination-spacer'>";
+            echo getPagesNav($np, $numero_pagine, 1);
+            echo "</div>";
+        } else {
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessun utente autorizzato presente in questa bacheca.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
+        }
     } elseif ($activeTab === 'file') {
         $allowed_sorts_f = ['file' => 'fm.titolo', 'proprietario' => 'u.nickname', 'dimensione' => 'fm.dimensione'];
         list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'file', 'ASC');
@@ -414,16 +532,26 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
 
         echo "<div class='table-top-bar'>";
         echo "<p class='zero-margin'>File trovati nella bacheca: <strong>{$countFile}</strong></p>";
-        echo getBottoneAggiungiFile($bEnc, $owner);
+        echo getBottoneAggiungiFileMultipli($bEnc, $owner);
         echo "</div>";
 
-        $_GET['tab'] = 'file';
-        $customHeaders_f = generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione' => 'dimensione'], $sort_col_f, $sort_dir_f);
-        echo '<div class="table-container">';
-        stampaTabella($datiFile, ['File', 'Proprietario', 'Dimensione', 'Azioni'], $customHeaders_f);
-        echo '</div>';
+        if ($countFile > 0) {
+            $_GET['tab'] = 'file';
+            $customHeaders_f = generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione' => 'dimensione'], $sort_col_f, $sort_dir_f);
 
-        echo getPagesNav($np, $numero_pagine, 1);
+            echo '<div class="table-container">';
+            stampaTabella($datiFile, ['File', 'Proprietario', 'Dimensione', 'Azioni'], $customHeaders_f);
+            echo '</div>';
+
+            echo "<div class='pagination-spacer'>";
+            echo getPagesNav($np, $numero_pagine, 1);
+            echo "</div>";
+        } else {
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessun file condiviso in questa bacheca.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
+        }
     }
 
     if (!$isAjax) {
@@ -461,7 +589,7 @@ function renderElencoBacheche($pdo, $isAjax)
         'nome'         => 'b.nome',
         'data'         => 'b.dataCreazione',
         'proprietario' => 'u.nickname',
-    ], 'data', 'DESC');
+    ], 'nome', 'ASC');
 
     $tabella_count = "Bacheca b LEFT JOIN Utente u ON u.codice = b.codiceUtente";
     $totaleRisultati = getNumberOfRecords($pdo, $tabella_count, $where, $params);
@@ -474,7 +602,7 @@ function renderElencoBacheche($pdo, $isAjax)
             u.nickname AS 'Proprietario',
             b.dataCreazione AS 'Data Creazione'
         FROM Bacheca b
-        LEFT JOIN UtenteAutorizzatoBacheca uab ON uab.codUtente = b.codiceUtente AND uab.nomeBacheca = b.nome
+        LEFT JOIN UtenteAutorizzatoBacheca uab ON uab.codUtente = b.codiceUtente AND uab.nomeBacheca = b.nome AND uab.autorizzato = 1
         LEFT JOIN FilePubblicatoBacheca f ON f.codUtente = b.codiceUtente AND f.nomeBacheca = b.nome
         LEFT JOIN Utente u ON u.codice = b.codiceUtente
     ";
@@ -542,7 +670,9 @@ function renderElencoBacheche($pdo, $isAjax)
     echo '</div>';
 
     if (!empty($righe)) {
+        echo "<div class='pagination-spacer'>";
         echo getPagesNav($np, $numero_pagine, 1);
+        echo "</div>";
     }
 
     if (!$isAjax) {

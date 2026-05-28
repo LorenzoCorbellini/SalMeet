@@ -2,7 +2,6 @@
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
 
-
 // =========================================================
 // CRUD
 // =========================================================
@@ -20,14 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $azione = $input['azione'];
 
     // ---------------------------------------------------------
-    // AZIONE ASTRATTA: CERCA UTENTE (Filtri puntuali Separati)
+    // CERCA UTENTE (Filtri puntuali Separati)
     // ---------------------------------------------------------
     if ($azione === 'cerca_utente') {
-        // CORREZIONE: Uso di !empty e trim per evitare che stringhe vuote "" o falsi positivi passino il controllo
         $nickname     = !empty($input['nickname']) ? trim($input['nickname']) : '';
         $filtro_nome  = !empty($input['filtro_nome']) ? trim($input['filtro_nome']) : '';
         $cognome      = !empty($input['cognome']) ? trim($input['cognome']) : '';
         $data_nascita = !empty($input['data_nascita']) ? trim($input['data_nascita']) : null;
+
+        $nomeBachecaEsclusione = !empty($input['nomeBacheca']) ? trim($input['nomeBacheca']) : '';
+        $ownerEsclusione       = isset($input['owner']) ? (int)$input['owner'] : 0;
 
         try {
             $sql = "SELECT codice, nickname, nome, cognome, dataNascita FROM Utente WHERE 1=1";
@@ -48,7 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $params[':cognome'] = '%' . $cognome . '%';
             }
 
-            //deve cercare i nati dopo la data inserita
             if ($data_nascita !== null) {
                 $sql .= " AND dataNascita >= :data_nascita";
                 $params[':data_nascita'] = $data_nascita;
@@ -57,6 +57,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($params)) {
                 echo json_encode(['successo' => true, 'utenti' => []]);
                 exit;
+            }
+
+            // Esclude chi è già autorizzato alla bacheca
+            if ($nomeBachecaEsclusione !== '' && $ownerEsclusione > 0) {
+                $sql .= " AND codice NOT IN (
+                    SELECT utenteAutorizzato 
+                    FROM UtenteAutorizzatoBacheca 
+                    WHERE nomeBacheca = :nomeBachecaEx 
+                      AND codUtente = :ownerEx
+                )";
+                $params[':nomeBachecaEx'] = $nomeBachecaEsclusione;
+                $params[':ownerEx']       = $ownerEsclusione;
+            }
+
+            // ESCLUSIONE DINAMICA DEGLI UTENTI GIÀ NEL CARRELLO DEL POPUP
+            $utenti_esclusi = !empty($input['utenti_esclusi']) && is_array($input['utenti_esclusi']) ? $input['utenti_esclusi'] : [];
+            if (!empty($utenti_esclusi)) {
+                $inParams = [];
+                foreach ($utenti_esclusi as $i => $id) {
+                    $pName = ':ex_u_' . $i;
+                    $inParams[] = $pName;
+                    $params[$pName] = (int)$id;
+                }
+                $sql .= " AND codice NOT IN (" . implode(',', $inParams) . ")";
             }
 
             $sql .= " ORDER BY nickname ASC LIMIT 50";
@@ -83,15 +107,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ---------------------------------------------------------
-    // CONTROLLO PARAMETRI PER TUTTE LE ALTRE AZIONI STANDARD
+    // ABILITAZIONE MULTIPLA UTENTI NELLA BACHECA
     // ---------------------------------------------------------
-    if (empty($input['nome']) || !isset($input['owner'])) {
-        echo json_encode(['successo' => false, 'messaggio' => 'Parametri mancanti.']);
+    if ($azione === 'inserisci_utenti_multipli') {
+        $nBachecaUtenti = isset($input['nomeBacheca']) ? trim($input['nomeBacheca']) : (isset($input['nome']) ? trim($input['nome']) : '');
+        $idOwnerUtenti  = isset($input['owner']) ? (int)$input['owner'] : 0;
+        $listaUtenti    = !empty($input['listaUtenti']) && is_array($input['listaUtenti']) ? $input['listaUtenti'] : [];
+
+        if ($nBachecaUtenti === '' || $idOwnerUtenti <= 0 || empty($listaUtenti)) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Parametri incompleti per il salvataggio utenti.']);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato, autorizzato) 
+                                   VALUES (:nb, :ow, :ua, 1)
+                                   ON DUPLICATE KEY UPDATE autorizzato = 1");
+
+            foreach ($listaUtenti as $idU) {
+                $stmt->execute([
+                    ':nb' => $nBachecaUtenti,
+                    ':ow' => $idOwnerUtenti,
+                    ':ua' => (int)$idU
+                ]);
+            }
+
+            $pdo->commit();
+            echo json_encode(['successo' => true]);
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore durante il salvataggio utenti: ' . $e->getMessage()]);
+        }
         exit;
     }
 
-    $nome   = trim($input['nome']);
-    $owner  = (int) $input['owner'];
+    // ---------------------------------------------------------
+    // PUBBLICAZIONE MULTIPLA FILE NELLA BACHECA
+    // ---------------------------------------------------------
+    if ($azione === 'inserisci_file_multipli') {
+        $nBachecaFiles = isset($input['nomeBacheca']) ? trim($input['nomeBacheca']) : (isset($input['nome']) ? trim($input['nome']) : '');
+        $idOwnerFiles  = isset($input['owner']) ? $input['owner'] : null;
+        $listaFiles    = !empty($input['listaFiles']) && is_array($input['listaFiles']) ? $input['listaFiles'] : [];
+
+        if ($nBachecaFiles === '' || $idOwnerFiles === null || count($listaFiles) === 0) {
+            $c = count($listaFiles);
+            $o = $idOwnerFiles !== null ? $idOwnerFiles : 'MANCANTE';
+            echo json_encode(['successo' => false, 'messaggio' => "Errore Parametri - Nome: '$nBachecaFiles', Owner: $o, File Ricevuti: $c"]);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // Usiamo ON DUPLICATE KEY UPDATE per evitare crash
+            $stmt = $pdo->prepare("INSERT INTO FilePubblicatoBacheca (nomeBacheca, codUtente, file) 
+                                   VALUES (:nb, :ow, :fi)
+                                   ON DUPLICATE KEY UPDATE file = file");
+
+            foreach ($listaFiles as $idF) {
+                $stmt->execute([
+                    ':nb' => $nBachecaFiles,
+                    ':ow' => (int)$idOwnerFiles,
+                    ':fi' => (int)$idF
+                ]);
+            }
+
+            $pdo->commit();
+            echo json_encode(['successo' => true]);
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore pubblicazione file: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // =========================================================
+    // CONTROLLO PARAMETRI PER LE AZIONI SINGOLE STANDARD
+    // =========================================================
+    if (empty($input['nome']) || !isset($input['owner'])) {
+        echo json_encode(['successo' => false, 'messaggio' => 'Parametri mancanti per azione standard.']);
+        exit;
+    }
+
+    $nome  = trim($input['nome']);
+    $owner = (int) $input['owner'];
 
     // ---------------------------------------------------------
     // CERCA FILE DEGLI UTENTI AUTORIZZATI 
@@ -103,14 +204,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cognome      = isset($input['cognome']) ? trim($input['cognome']) : '';
 
         try {
-            // Seleziona inizialmente TUTTI i file caricati dagli utenti autorizzati alla bacheca
             $sql = "SELECT f.numero, f.titolo AS nome_file, u.nickname, u.nome AS utente_nome, u.cognome AS utente_cognome 
                     FROM FileMultimediale f
                     JOIN Utente u ON f.caricatoDa = u.codice
                     WHERE f.caricatoDa IN (
                         SELECT utenteAutorizzato 
                         FROM UtenteAutorizzatoBacheca 
-                        WHERE nomeBacheca = :nomeBacheca AND codUtente = :ownerBacheca
+                        WHERE nomeBacheca = :nomeBacheca AND codUtente = :ownerBacheca AND autorizzato = 1
                     )";
 
             $params = [
@@ -118,14 +218,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':ownerBacheca' => $owner
             ];
 
-            // Escludiamo i file già pubblicati in questa bacheca per evitare duplicati
+            // Esclude i file già pubblicati in bacheca
             $sql .= " AND f.numero NOT IN (
                 SELECT file 
                 FROM FilePubblicatoBacheca 
                 WHERE nomeBacheca = :nomeBacheca AND codUtente = :ownerBacheca
             )";
 
-            // Applica i filtri di ricerca in cascata SOLO se sono stati compilati
             if ($termine_file !== '') {
                 $sql .= " AND f.titolo LIKE :termine_file";
                 $params[':termine_file'] = '%' . $termine_file . '%';
@@ -141,6 +240,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($cognome !== '') {
                 $sql .= " AND u.cognome LIKE :cognome";
                 $params[':cognome'] = '%' . $cognome . '%';
+            }
+
+            // ESCLUSIONE DINAMICA DEI FILE GIÀ NEL CARRELLO DEL POPUP
+            $file_esclusi = !empty($input['file_esclusi']) && is_array($input['file_esclusi']) ? $input['file_esclusi'] : [];
+            if (!empty($file_esclusi)) {
+                $inParams = [];
+                foreach ($file_esclusi as $i => $id) {
+                    $pName = ':ex_f_' . $i;
+                    $inParams[] = $pName;
+                    $params[$pName] = (int)$id;
+                }
+                $sql .= " AND f.numero NOT IN (" . implode(',', $inParams) . ")";
             }
 
             $sql .= " ORDER BY f.numero DESC LIMIT 30";
@@ -160,6 +271,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // AGGIUNGI BACHECA
     // ---------------------------------------------------------
     if ($azione === 'aggiungi') {
+        // Controllo di sicurezza "a prova di crash" sulla lunghezza del nome
+        $lunghezzaNome = function_exists('mb_strlen') ? mb_strlen($nome, 'UTF-8') : strlen($nome);
+        if ($lunghezzaNome > 40) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Il nome della bacheca non può superare i 40 caratteri.']);
+            exit;
+        }
+
         $st = $pdo->prepare("SELECT COUNT(*) FROM Utente WHERE codice = ?");
         $st->execute([$owner]);
         if ($st->fetchColumn() == 0) {
@@ -181,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt1 = $pdo->prepare("INSERT INTO Bacheca (nome, codiceUtente, dataCreazione) VALUES (?, ?, ?)");
             $stmt1->execute([$nome, $owner, $dataOggi]);
 
-            $stmt2 = $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato) VALUES (?, ?, ?)");
+            $stmt2 = $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato, autorizzato) VALUES (?, ?, ?, 1)");
             $stmt2->execute([$nome, $owner, $owner]);
 
             $pdo->commit();
@@ -194,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ---------------------------------------------------------
-    // AGGIUNGI UTENTE AUTORIZZATO
+    // AGGIUNGI UTENTE AUTORIZZATO (Dal Proprietario)
     // ---------------------------------------------------------
     if ($azione === 'aggiungi_autorizzato') {
         $nuovoUtente = (int) ($input['nuovoUtente'] ?? 0);
@@ -214,13 +332,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $st = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ?");
         $st->execute([$nome, $owner, $nuovoUtente]);
         if ($st->fetchColumn() > 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Utente già autorizzato.']);
+            echo json_encode(['successo' => false, 'messaggio' => 'Utente già autorizzato o in attesa.']);
             exit;
         }
 
         try {
-            $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato) VALUES (?, ?, ?)")
+            $pdo->prepare("INSERT INTO UtenteAutorizzatoBacheca (nomeBacheca, codUtente, utenteAutorizzato, autorizzato) VALUES (?, ?, ?, 1)")
                 ->execute([$nome, $owner, $nuovoUtente]);
+            echo json_encode(['successo' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // ---------------------------------------------------------
+    // ACCETTA RICHIESTA PENDENTE 
+    // ---------------------------------------------------------
+    if ($azione === 'accetta_richiesta') {
+        $target = (int) ($input['utenteTarget'] ?? 0);
+        try {
+            $pdo->prepare("UPDATE UtenteAutorizzatoBacheca SET autorizzato = 1 WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ?")
+                ->execute([$nome, $owner, $target]);
+            echo json_encode(['successo' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // ---------------------------------------------------------
+    // RIFIUTA RICHIESTA PENDENTE 
+    // ---------------------------------------------------------
+    if ($azione === 'rifiuta_richiesta') {
+        $target = (int) ($input['utenteTarget'] ?? 0);
+        try {
+            $pdo->prepare("DELETE FROM UtenteAutorizzatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ? AND autorizzato = 0")
+                ->execute([$nome, $owner, $target]);
             echo json_encode(['successo' => true]);
         } catch (Exception $e) {
             echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
@@ -268,52 +416,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ---------------------------------------------------------
-    // AGGIUNGI FILE
-    // ---------------------------------------------------------
-    if ($azione === 'aggiungi_file') {
-        $nuovoFile = (int) ($input['nuovoFile'] ?? 0);
-
-        if ($nuovoFile <= 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'ID file non valido.']);
-            exit;
-        }
-
-        $stFile = $pdo->prepare("SELECT caricatoDa FROM FileMultimediale WHERE numero = ?");
-        $stFile->execute([$nuovoFile]);
-        $fileData = $stFile->fetch(PDO::FETCH_ASSOC);
-
-        if (!$fileData) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Il file non esiste.']);
-            exit;
-        }
-
-        $creatoreFile = (int) $fileData['caricatoDa'];
-
-        $stAuth = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND utenteAutorizzato = ?");
-        $stAuth->execute([$nome, $owner, $creatoreFile]);
-        if ($stAuth->fetchColumn() == 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Utente non autorizzato per questa bacheca.']);
-            exit;
-        }
-
-        $st = $pdo->prepare("SELECT COUNT(*) FROM FilePubblicatoBacheca WHERE nomeBacheca = ? AND codUtente = ? AND file = ?");
-        $st->execute([$nome, $owner, $nuovoFile]);
-        if ($st->fetchColumn() > 0) {
-            echo json_encode(['successo' => false, 'messaggio' => 'Il file è già stato pubblicato.']);
-            exit;
-        }
-
-        try {
-            $pdo->prepare("INSERT INTO FilePubblicatoBacheca (nomeBacheca, codUtente, file) VALUES (?, ?, ?)")
-                ->execute([$nome, $owner, $nuovoFile]);
-            echo json_encode(['successo' => true]);
-        } catch (Exception $e) {
-            echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
-        }
-        exit;
-    }
-
-    // ---------------------------------------------------------
     // RIMUOVI FILE
     // ---------------------------------------------------------
     if ($azione === 'rimuovi_file') {
@@ -349,6 +451,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        // Controllo di sicurezza "a prova di crash" sulla lunghezza del nuovo nome
+        $lunghezzaNuovoNome = function_exists('mb_strlen') ? mb_strlen($nuovoNome, 'UTF-8') : strlen($nuovoNome);
+        if ($lunghezzaNuovoNome > 40) {
+            echo json_encode(['successo' => false, 'messaggio' => 'Il nuovo nome della bacheca non può superare i 40 caratteri.']);
+            exit;
+        }
+
         $checkDup = $pdo->prepare("SELECT COUNT(*) FROM Bacheca WHERE nome = :nuovoNome AND codiceUtente = :owner AND nome != :vecchioNome");
         $checkDup->execute([
             ':nuovoNome'   => $nuovoNome,
@@ -363,13 +472,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             $pdo->beginTransaction();
-            $pdo->prepare("UPDATE Bacheca SET nome = :nuovoNome WHERE nome = :nome AND codiceUtente = :owner")
-                ->execute([':nuovoNome' => $nuovoNome, ':nome' => $nome, ':owner' => $owner]);
+
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+
+            $pdo->prepare("UPDATE UtenteAutorizzatoBacheca SET nomeBacheca = :nuovoNome WHERE nomeBacheca = :vecchioNome AND codUtente = :owner")
+                ->execute([':nuovoNome' => $nuovoNome, ':vecchioNome' => $nome, ':owner' => $owner]);
+
+            $pdo->prepare("UPDATE FilePubblicatoBacheca SET nomeBacheca = :nuovoNome WHERE nomeBacheca = :vecchioNome AND codUtente = :owner")
+                ->execute([':nuovoNome' => $nuovoNome, ':vecchioNome' => $nome, ':owner' => $owner]);
+
+            $pdo->prepare("UPDATE Bacheca SET nome = :nuovoNome WHERE nome = :vecchioNome AND codiceUtente = :owner")
+                ->execute([':nuovoNome' => $nuovoNome, ':vecchioNome' => $nome, ':owner' => $owner]);
+
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
             $pdo->commit();
             echo json_encode(['successo' => true]);
         } catch (Exception $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            echo json_encode(['successo' => false, 'messaggio' => $e->getMessage()]);
+            if ($pdo->inTransaction()) {
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+                $pdo->rollBack();
+            }
+            echo json_encode(['successo' => false, 'messaggio' => 'Errore durante la ridenominazione: ' . $e->getMessage()]);
         }
     } elseif ($azione === 'elimina') {
         try {

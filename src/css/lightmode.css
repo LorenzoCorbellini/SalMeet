@@ -507,6 +507,30 @@ td.titolo {
     align-items: center;
     margin-top: 0px;
     margin-bottom: 4px;
+    min-height: 40px;
+}
+
+table .btn-aggiungi {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    font-size: 0.9rem;
+    border-width: 1px !important;
+    line-height: 1.2;
+}
+
+table .btn-azione {
+    width: 28px;
+    height: 28px;
+    margin: 0 2px;
+}
+
+table .btn-azione img,
+table .btn-aggiungi img {
+    width: 16px;
+    height: 16px;
+    margin: 0;
 }
 
 /* --- UTILITY --- */
@@ -797,6 +821,227 @@ div.swal2-container .swal-wide-split .swal2-input {
 .swal2-icon.swal2-warning {
     border-color: var(--accent) !important;
     color: var(--accent) !important;
+}
+
+/* =========================================================
+   MODALE SELEZIONE MULTIPLA UTENTI E FILE (SweetAlert2)
+   ========================================================= */
+
+/* Layout Griglia a 3 Colonne (Rimane bloccata all'altezza impostata) */
+.swal-multi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    text-align: left;
+    height: 480px;
+    overflow: hidden;
+}
+
+/* Layout Griglia a 2 Colonne (Uniformata all'altezza della griglia a 3) */
+.swal-dual-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    text-align: left;
+    height: 480px;
+    overflow: hidden;
+}
+
+/* Stili delle Colonne (Trasformate in flex container verticali) */
+.swal-multi-col-left,
+.swal-multi-col-center,
+.swal-multi-col-right {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Bordi di separazione e padding mantenendo la flessibilità */
+.swal-multi-col-left {
+    border-right: 1px solid #ddd;
+    padding-right: 10px;
+}
+
+.swal-multi-col-center {
+    border-right: 1px solid #ddd;
+    padding-right: 10px;
+}
+
+.swal-multi-col-right {
+    padding-right: 2px;
+}
+
+/* Intestazioni delle colonne (Fisse in alto) */
+.swal-multi-header {
+    margin: 0 0 12px 0;
+    padding-bottom: 5px;
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.swal-multi-header-blue {
+    border-bottom: 2px solid #3498db;
+}
+
+.swal-multi-header-green {
+    border-bottom: 2px solid #2ecc71;
+}
+
+.swal-multi-header-orange {
+    border-bottom: 2px solid #e67e22;
+}
+
+/* Campi e contenitori di ricerca della Colonna Left (Fissi in alto) */
+.swal-multi-input-group {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.swal-multi-input-group-last {
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.swal-multi-label {
+    font-size: 13px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-dark);
+}
+
+.swal-multi-input {
+    width: 100%;
+    height: 38px;
+    margin: 0;
+    font-size: 14px;
+    padding: 0 10px;
+}
+
+.swal-multi-btn-search {
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+    font-size: 14.5px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* Le Liste Interne: sono le UNICHE aree autorizzate a scorrere verticalmente.
+   Prendono tutto lo spazio verticale residuo sotto i rispettivi titoli.
+*/
+.swal-multi-list {
+    overflow-y: auto;
+    flex-grow: 1;
+    font-size: 14.5px;
+    padding-right: 5px;
+    margin-top: 5px;
+}
+
+/* Scrollbar personalizzata per le liste interne (Sottile e discreta) */
+.swal-multi-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.swal-multi-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.swal-multi-list::-webkit-scrollbar-thumb {
+    background-color: var(--border-soft);
+    border-radius: 4px;
+}
+
+/* Contenuti statici all'interno delle liste scrollabili */
+.swal-multi-msg-empty,
+.swal-multi-msg-loading,
+.swal-multi-msg-error {
+    font-size: 14.5px;
+    text-align: center;
+    margin-top: 40px;
+}
+
+.swal-multi-msg-empty {
+    color: #777;
+    font-style: italic;
+}
+
+.swal-multi-msg-loading {
+    color: #555;
+    font-style: italic;
+}
+
+.swal-multi-msg-error {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+/* Righe degli utenti (Risultati e Selezionati) */
+.swal-multi-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 4px;
+    box-sizing: border-box;
+}
+
+.swal-multi-row-selected {
+    background: #fafafa;
+    border-radius: 3px;
+}
+
+.swal-multi-row strong {
+    font-size: 15px;
+    color: var(--text-dark);
+    display: block;
+    margin-bottom: 2px;
+}
+
+.swal-multi-row-subtext {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #555;
+    line-height: 1.3;
+}
+
+/* Bottoni Più (+) e Meno (-) */
+.swal-multi-btn-add,
+.swal-multi-btn-del {
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.swal-multi-btn-add {
+    background: #2ecc71;
+}
+
+.swal-multi-btn-add:hover {
+    background: #27ae60;
+}
+
+.swal-multi-btn-del {
+    background: #e74c3c;
+}
+
+.swal-multi-btn-del:hover {
+    background: #c0392b;
 }
 
 /* --- PAGINA MEDIA --- */
@@ -1129,21 +1374,16 @@ div.swal2-container .swal-wide-split .swal2-input {
    DASHBOARD AMMINISTRATORE (Home)
    ========================================================= */
 
-/* Permette lo scorrimento della dashboard senza rompere il flexbox di #content */
+/* Gestione layout e scroll della dashboard */
 .dashboard-wrapper {
     flex: 1;
     overflow-y: auto;
     padding-right: 15px;
-    /* Lascia un po' di spazio per la barra di scorrimento */
     display: flex;
     flex-direction: column;
 }
 
-.dashboard-header {
-    margin-bottom: 25px;
-}
-
-/* Griglia per le statistiche che si allarga in automatico */
+/* Griglia per i box delle statistiche */
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1153,7 +1393,6 @@ div.swal2-container .swal-wide-split .swal2-input {
 
 .dashboard-card {
     background-color: var(--text-light);
-    /* Usa un fondo bianco pulito per contrastare il rosa */
     border: 1px solid var(--border-soft);
     border-radius: 8px;
     padding: 20px;
@@ -1200,38 +1439,34 @@ div.swal2-container .swal-wide-split .swal2-input {
     font-size: var(--fs-h2);
 }
 
-/* * Ottimizzazione della tabella della dashboard: 
- * Sfruttando l'ereditarietà del CSS, sovrascriviamo l'attributo border="1" del PHP
- * senza usare alcun '!important'.
- */
-.dashboard-wrapper table {
-    width: 100%;
-    border-collapse: collapse;
-    /* Rimuove i doppi bordi */
-    background-color: var(--text-light);
-    border: 1px solid var(--border-soft);
-    border-radius: 8px;
-    margin-bottom: 30px;
-    font-size: var(--fs-body);
+.dashboard-wrapper .table-container {
+    flex: none;
+    height: auto;
+    overflow: hidden;
 }
 
-.dashboard-wrapper th {
-    background-color: var(--primary-dark);
-    color: var(--text-light);
+/* =========================================================
+     STATI VUOTI E SPAZIATORI
+   ========================================================= */
+
+.table-container-empty {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    box-shadow: none !important;
+}
+
+.empty-message {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--text-muted);
+    margin: 14px 20px;
     text-align: left;
-    padding: 16px 20px;
-    font-weight: 600;
-    border: 1px solid var(--border-soft);
 }
 
-.dashboard-wrapper td {
-    padding: 14px 20px;
-    color: var(--text-dark);
-    border-bottom: 1px solid var(--border-soft);
-}
-
-/* Colore neutro alternato per la riga al passaggio del mouse */
-.dashboard-wrapper tr:hover td {
-    background-color: var(--surface);
-    transition: background-color 0.2s ease;
+/* --- SEGNAPOSTO PAGINAZIONE --- */
+.pagination-spacer {
+    min-height: 45px;
+    width: 100%;
+    margin-top: auto;
 }
