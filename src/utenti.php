@@ -173,7 +173,8 @@ if (!$isAjax):
                             $numero_records = $stmtCount->fetchColumn();
                             $numero_pagine = ceil($numero_records / $limit);
 
-                            $sql = "SELECT g.nome AS `Nome Gruppo`, u_owner.nickname AS `Proprietario`, g.dataCreazione AS `Data Creazione` 
+                            // Modifica della Query per estrarre anche gli ID da linkare
+                            $sql = "SELECT g.codice AS id_gruppo, g.nome AS `Nome Gruppo`, u_owner.codice AS id_proprietario, u_owner.nickname AS `Proprietario`, g.dataCreazione AS `Data Creazione` 
                                     FROM UtenteAutorizzatoGruppo uag 
                                     JOIN Gruppo g ON uag.codGruppo = g.codice 
                                     JOIN Utente u_owner ON g.creatoDa = u_owner.codice 
@@ -184,6 +185,16 @@ if (!$isAjax):
                             $stmt->execute($params);
                             $gruppi = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                            // Formattazione dati con link
+                            $gruppiFormattati = [];
+                            foreach ($gruppi as $g) {
+                                $gruppiFormattati[] = [
+                                    'Nome Gruppo' => "<a href='gruppi.php?gruppo=" . urlencode($g['id_gruppo']) . "'><strong>" . htmlspecialchars($g['Nome Gruppo']) . "</strong></a>",
+                                    'Proprietario' => "<a href='utenti.php?utente=" . urlencode($g['id_proprietario']) . "'>" . htmlspecialchars($g['Proprietario']) . "</a>",
+                                    'Data Creazione' => htmlspecialchars($g['Data Creazione'] ?? '')
+                                ];
+                            }
+
                             echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> gruppi.</p></div>";
                             
                             $customHeaders = generaIntestazioniOrdinabili([
@@ -193,7 +204,7 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            stampaTabella($gruppi, [], $customHeaders);
+                            stampaTabella($gruppiFormattati, [], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
 
@@ -232,7 +243,8 @@ if (!$isAjax):
                             $numero_records = $stmtCount->fetchColumn();
                             $numero_pagine = ceil($numero_records / $limit);
 
-                            $sql = "SELECT uab.nomeBacheca AS `Nome Bacheca`, u_owner.nickname AS `Proprietario`, b.dataCreazione AS `Data Creazione` 
+                            // Modifica della Query per estrarre anche gli ID da linkare
+                            $sql = "SELECT b.codiceUtente AS id_proprietario, uab.nomeBacheca AS `Nome Bacheca`, u_owner.nickname AS `Proprietario`, b.dataCreazione AS `Data Creazione` 
                                     FROM UtenteAutorizzatoBacheca uab 
                                     JOIN Bacheca b ON uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente
                                     JOIN Utente u_owner ON b.codiceUtente = u_owner.codice 
@@ -243,6 +255,16 @@ if (!$isAjax):
                             $stmt->execute($params);
                             $bacheche = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                            // Formattazione dati con link
+                            $bachecheFormattate = [];
+                            foreach ($bacheche as $b) {
+                                $bachecheFormattate[] = [
+                                    'Nome Bacheca' => "<a href='bacheche.php?bacheca=" . urlencode($b['Nome Bacheca']) . "&owner=" . urlencode($b['id_proprietario']) . "'><strong>" . htmlspecialchars($b['Nome Bacheca']) . "</strong></a>",
+                                    'Proprietario' => "<a href='utenti.php?utente=" . urlencode($b['id_proprietario']) . "'>" . htmlspecialchars($b['Proprietario']) . "</a>",
+                                    'Data Creazione' => htmlspecialchars($b['Data Creazione'] ?? '')
+                                ];
+                            }
+
                             echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>$numero_records</strong> bacheche.</p></div>";
                             
                             $customHeaders = generaIntestazioniOrdinabili([
@@ -252,7 +274,7 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            stampaTabella($bacheche, [], $customHeaders);
+                            stampaTabella($bachecheFormattate, [], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
 
@@ -284,7 +306,8 @@ if (!$isAjax):
                             $numero_records = $stmtCount->fetchColumn();
                             $numero_pagine = ceil($numero_records / $limit);
 
-                            $sql = "SELECT titolo AS `File`, dimensione AS `Dimensione` 
+                            // Modifica per estrarre estensione/tipo e l'url per costruire icone e link
+                            $sql = "SELECT url, tipo, titolo AS `File`, dimensione AS `Dimensione` 
                                     FROM FileMultimediale 
                                     $whereSql 
                                     ORDER BY $sql_sort $sort_dir 
@@ -293,8 +316,32 @@ if (!$isAjax):
                             $stmt->execute($params);
                             $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                            foreach ($files as &$fileRow) {
-                                $fileRow['Dimensione'] .= " MB";
+                            // Formattazione file con icone cliccabili e link
+                            $filesFormattati = [];
+                            foreach ($files as $f) {
+                                $mime = strtolower($f['tipo']);
+                                $icona = "images/file.png";
+                                
+                                if (strpos($mime, 'image/') !== false) {
+                                    $icona = "images/image.png";
+                                } elseif (strpos($mime, 'pdf') !== false) {
+                                    $icona = "images/pdf.png";
+                                } elseif (strpos($mime, 'video/') !== false) {
+                                    $icona = "images/video.png";
+                                } elseif (strpos($mime, 'audio/') !== false) {
+                                    $icona = "images/audio.png";
+                                } elseif (strpos($mime, 'text/') !== false || strpos($mime, 'php') !== false || strpos($mime, 'sql') !== false) {
+                                    $icona = "images/text.png";
+                                }
+
+                                $link_file = htmlspecialchars($f['url']);
+                                $titolo_html = "<img src='{$icona}' alt='Icona File' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" . 
+                                               "<a href='{$link_file}' target='_blank'><strong>" . htmlspecialchars($f['File']) . "</strong></a>";
+
+                                $filesFormattati[] = [
+                                    'File' => $titolo_html,
+                                    'Dimensione' => htmlspecialchars($f['Dimensione']) . " MB"
+                                ];
                             }
 
                             echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> file condivisi.</p></div>";
@@ -305,7 +352,7 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            stampaTabella($files, [], $customHeaders);
+                            stampaTabella($filesFormattati, [], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
                         }
