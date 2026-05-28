@@ -135,7 +135,7 @@ if (!$isAjax):
                             echo "<p class='info-card-text'><strong>Data di Nascita:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
                             echo "<p class='info-card-text'><strong>Numero di file caricati:</strong> " . $numFile . "</p>";
                             echo "<p class='info-card-text'<strong>Numero di gruppi a cui appartiene:</strong> " . $numGruppi . "</p>";
-                            echo "<p> class='info-card-text-last'<strong>Numero di bacheche a cui appartiene:</strong> " . $numBacheche . "</p>";
+                            echo "<p class='info-card-text-last'><strong>Numero di bacheche a cui appartiene:</strong> " . $numBacheche . "</p>";
                             echo "</div>";
                         } elseif ($tab_corrente === 'gruppi') {
                             $limit = 10;
