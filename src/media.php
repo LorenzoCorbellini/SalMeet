@@ -174,7 +174,7 @@ function isAjaxRequest(): bool {
 		strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 }
 
-function renderFiltroSidebar(PDO $pdo)
+function setupFiltroConfig(PDO $pdo)
 {
 	$entita = 'file';
 
@@ -298,7 +298,7 @@ if (isAjaxRequest()) {
 	<div class="main-container">
 	<aside class="sidebar">
 		<?php include 'nav.html'; ?>
-		<?php renderFiltroSidebar($pdo) ?>
+		<?php setupFiltroConfig($pdo) ?>
 	</aside>
 		<div id="content">
 			<?php 
