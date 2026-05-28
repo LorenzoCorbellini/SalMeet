@@ -107,16 +107,17 @@ if (!$isAjax):
                         $dataFormattata = !empty($infoUtente['dataNascita']) ? (function_exists('formattaData') ? formattaData($infoUtente['dataNascita']) : date('d/m/Y', strtotime($infoUtente['dataNascita']))) : "";
 
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
-                        echo "<h3 class='info-card-title'>Profilo di <b><i>" . htmlspecialchars($infoUtente['nickname']) . "</i></b></h3>";
+                        echo "<h2>Profilo di <b><i>" . htmlspecialchars($infoUtente['nickname']) . "</i></b></h2>";
 
                         echo " <div class='detail-tabs-header'>
                                     <div class='bacheca-tabs tabs-reset'>";
 
                         // Esempio corretto per ogni link:
-echo '<a href="?utente=' . $idUtente . '&tab=info" class="tab ' . ($tab_corrente === 'info' ? 'active' : '') . '">Informazioni</a>';
-echo '<a href="?utente=' . $idUtente . '&tab=gruppi" class="tab ' . ($tab_corrente === 'gruppi' ? 'active' : '') . '">Gruppi</a>';
-echo '<a href="?utente=' . $idUtente . '&tab=bacheche" class="tab ' . ($tab_corrente === 'bacheche' ? 'active' : '') . '">Bacheche</a>';
-echo '<a href="?utente=' . $idUtente . '&tab=file" class="tab ' . ($tab_corrente === 'file' ? 'active' : '') . '">File Condivisi</a>';echo '</div>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=info" class="tab ' . ($tab_corrente === 'info' ? 'active' : '') . '">Informazioni</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=gruppi" class="tab ' . ($tab_corrente === 'gruppi' ? 'active' : '') . '">Gruppi</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=bacheche" class="tab ' . ($tab_corrente === 'bacheche' ? 'active' : '') . '">Bacheche</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=file" class="tab ' . ($tab_corrente === 'file' ? 'active' : '') . '">File Condivisi</a>';
+                        echo '</div>';
                         echo '</div>';
 
                         if ($tab_corrente === 'info') {
