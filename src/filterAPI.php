@@ -25,10 +25,10 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
             return [
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca'],
+                    ['tipo' => 'date', 'name' => 'data',                 'label' => 'Creata dopo'],
                     ['tipo' => 'text', 'name' => 'proprietario',         'label' => 'Nickname Proprietario'],
                     ['tipo' => 'text', 'name' => 'proprietario_nome',    'label' => 'Nome Proprietario'],
                     ['tipo' => 'text', 'name' => 'proprietario_cognome', 'label' => 'Cognome Proprietario'],
-                    ['tipo' => 'date', 'name' => 'data',                 'label' => 'Creata dopo'],
                 ])
             ];
 
@@ -36,10 +36,10 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'utenti':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname'],
-                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome'],
-                    ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome'],
-                    ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nati dal'],
+                    ['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname Utente'],
+                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Utente'],
+                    ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome Utente'],
+                    ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nato dopo'],
                 ])
             ];
 
