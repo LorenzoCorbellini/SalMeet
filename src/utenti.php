@@ -201,7 +201,7 @@ if (!$isAjax):
                                 $iconaCorona = ((int)$g['id_proprietario'] === $idUtente) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                 $gruppiFormattati[] = [
-                                    'Nome Gruppo' => "<a href='{$link_gruppo}' class='row-link'><strong>" . htmlspecialchars($g['Nome Gruppo']) . "</strong></a>" . $iconaCorona,
+                                    'Nome Gruppo' => "<a href='{$link_gruppo}' class='row-link'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>" . $iconaCorona,
                                     'Proprietario' => "<a href='{$link_proprietario}' class='row-link'>" . htmlspecialchars($g['Proprietario']) . "</a>",
                                     'Data Creazione' => htmlspecialchars($g['Data Creazione'] ?? '')
                                 ];
@@ -274,7 +274,7 @@ if (!$isAjax):
                                 $iconaCorona = ((int)$b['id_proprietario'] === $idUtente) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                 $bachecheFormattate[] = [
-                                    'Nome Bacheca' => "<a href='{$link_bacheca}' class='row-link'><strong>" . htmlspecialchars($b['Nome Bacheca']) . "</strong></a>" . $iconaCorona,
+                                    'Nome Bacheca' => "<a href='{$link_bacheca}' class='row-link'>" . htmlspecialchars($b['Nome Bacheca']) . "</a>" . $iconaCorona,
                                     'Proprietario' => "<a href='{$link_proprietario}' class='row-link'>" . htmlspecialchars($b['Proprietario']) . "</a>",
                                     'Data Creazione' => htmlspecialchars($b['Data Creazione'] ?? '')
                                 ];
@@ -346,7 +346,7 @@ if (!$isAjax):
                                 // Uso della classe .file-link definita nel CSS per il colore rosa
                                 $titolo_html = "<a href='{$link_file}' target='_blank' class='file-link'>" .
                                     "<img src='{$icon_path}' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
-                                    "<strong>" . htmlspecialchars($f['File']) . "</strong></a>";
+                                    htmlspecialchars($f['File']). "</a>";
 
                                 // Uso della classe .text-right per allineare la dimensione a destra
                                 $filesFormattati[] = [
