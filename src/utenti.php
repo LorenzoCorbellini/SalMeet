@@ -107,17 +107,13 @@ if (!$isAjax):
                         $dataFormattata = !empty($infoUtente['dataNascita']) ? (function_exists('formattaData') ? formattaData($infoUtente['dataNascita']) : date('d/m/Y', strtotime($infoUtente['dataNascita']))) : "";
 
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
+                        echo "<h2 class='h2utente'>Profilo di <b><i>" . htmlspecialchars($infoUtente['nickname']) . "</i></b></h2>";
 
-                        echo '<div class="tab-info-card">';
-                        echo "<h3 class='info-card-title'>Profilo di <b><i>" . htmlspecialchars($infoUtente['nickname']) . "</i></b></h3>";
-
-                        // Nota: ho aggiunto una parola di testo ("Visualizza") dentro il tag <a>, 
-                        // altrimenti il link sarebbe invisibile/non cliccabile.
-                        echo '<p class="info-card-text"><strong>Informazioni</strong> <a href="?utente=' . $idUtente . '&tab=info" class="tab ' . ($tab_corrente === 'info' ? 'active' : '') . '">Visualizza</a></p>';
-                        echo '<p class="info-card-text"><strong>Gruppi</strong> <a href="?utente=' . $idUtente . '&tab=gruppi" class="tab ' . ($tab_corrente === 'gruppi' ? 'active' : '') . '">Visualizza</a></p>';
-                        echo '<p class="info-card-text"><strong>Bacheche</strong> <a href="?utente=' . $idUtente . '&tab=bacheche" class="tab ' . ($tab_corrente === 'bacheche' ? 'active' : '') . '">Visualizza</a></p>';
-                        echo '<p class="info-card-text"><strong>File Condivisi</strong> <a href="?utente=' . $idUtente . '&tab=file" class="tab ' . ($tab_corrente === 'file' ? 'active' : '') . '">Visualizza</a></p>';
-
+                        echo '<div class="detail-tabs-header">';
+                        echo '<a href="?utente=' . $idUtente . '&tab=info" class="tab ' . ($tab_corrente === 'info' ? 'active' : '') . '">Informazioni</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=gruppi" class="tab ' . ($tab_corrente === 'gruppi' ? 'active' : '') . '">Gruppi</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=bacheche" class="tab ' . ($tab_corrente === 'bacheche' ? 'active' : '') . '">Bacheche</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=file" class="tab ' . ($tab_corrente === 'file' ? 'active' : '') . '">File Condivisi</a>';
                         echo '</div>';
 
                         if ($tab_corrente === 'info') {
@@ -133,7 +129,7 @@ if (!$isAjax):
                             $stmtBacheche->execute([':codice' => $idUtente]);
                             $numBacheche = $stmtBacheche->fetchColumn();
 
-                            echo "<div class='info-dettaglio' style='margin-top: 20px;'>";
+                            echo "<div class='tab-info-card'>";
                             echo "<p><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>";
                             echo "<p><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>";
                             echo "<p><strong>Data di Nascita:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
@@ -197,7 +193,7 @@ if (!$isAjax):
                             }
 
                             echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> gruppi.</p></div>";
-
+                            
                             $customHeaders = generaIntestazioniOrdinabili([
                                 'Nome Gruppo' => 'nome',
                                 'Proprietario' => 'proprietario',
@@ -208,6 +204,7 @@ if (!$isAjax):
                             stampaTabella($gruppiFormattati, [], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
+
                         } elseif ($tab_corrente === 'bacheche') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -264,7 +261,7 @@ if (!$isAjax):
                             }
 
                             echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>$numero_records</strong> bacheche.</p></div>";
-
+                            
                             $customHeaders = generaIntestazioniOrdinabili([
                                 'Nome Bacheca' => 'nome',
                                 'Proprietario' => 'proprietario',
@@ -275,6 +272,7 @@ if (!$isAjax):
                             stampaTabella($bachecheFormattate, [], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
+
                         } elseif ($tab_corrente === 'file') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -316,7 +314,7 @@ if (!$isAjax):
                             foreach ($files as $f) {
                                 $mime = strtolower($f['tipo']);
                                 $icona = "images/file.png";
-
+                                
                                 if (strpos($mime, 'image/') !== false) {
                                     $icona = "images/image.png";
                                 } elseif (strpos($mime, 'pdf') !== false) {
@@ -330,8 +328,8 @@ if (!$isAjax):
                                 }
 
                                 $link_file = htmlspecialchars($f['url']);
-                                $titolo_html = "<img src='{$icona}' alt='Icona File' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
-                                    "<a href='{$link_file}' target='_blank'><strong>" . htmlspecialchars($f['File']) . "</strong></a>";
+                                $titolo_html = "<img src='{$icona}' alt='Icona File' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" . 
+                                               "<a href='{$link_file}' target='_blank'><strong>" . htmlspecialchars($f['File']) . "</strong></a>";
 
                                 $filesFormattati[] = [
                                     'File' => $titolo_html,
@@ -340,7 +338,7 @@ if (!$isAjax):
                             }
 
                             echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> file condivisi.</p></div>";
-
+                            
                             $customHeaders = generaIntestazioniOrdinabili([
                                 'File' => 'file',
                                 'Dimensione' => 'dimensione'
@@ -351,6 +349,7 @@ if (!$isAjax):
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
                         }
+
                     } else {
                         echo "<p class='info-risultati'>Utente non trovato.</p>";
                     }
