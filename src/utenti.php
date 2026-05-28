@@ -112,11 +112,11 @@ if (!$isAjax):
                         echo " <div class='detail-tabs-header'>
                                     <div class='bacheca-tabs tabs-reset'>";
 
-                        echo '<a href="?utente=' . $idUtente . ($tab_corrente === 'info' ? 'active' : '') . '">Informazioni</a>';
-                        echo '<a href="?utente=' . $idUtente . ($tab_corrente === 'gruppi' ? 'active' : '') . '">Gruppi</a>';
-                        echo '<a href="?utente=' . $idUtente . ($tab_corrente === 'bacheche' ? 'active' : '') . '">Bacheche</a>';
-                        echo '<a href="?utente=' . $idUtente . ($tab_corrente === 'file' ? 'active' : '') . '">File Condivisi</a>';
-                        echo '</div>';
+                        echo '<a href="?utente=' . $idUtente . ' class=' ($tab_corrente === 'info' ? 'active' : '') . '">Informazioni</a>';
+                        echo '<a href="?utente=' . $idUtente . ' class='($tab_corrente === 'gruppi' ? 'active' : '') . '">Gruppi</a>';
+                        echo '<a href="?utente=' . $idUtente . ' class='($tab_corrente === 'bacheche' ? 'active' : '') . '">Bacheche</a>';
+                        echo '<a href="?utente=' . $idUtente . ' class='($tab_corrente === 'file' ? 'active' : '') . '">File Condivisi</a>';
+                       // echo '</div>';
                         echo '</div>';
 
                         if ($tab_corrente === 'info') {
