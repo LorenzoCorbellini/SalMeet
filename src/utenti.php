@@ -19,7 +19,7 @@ if (!$isAjax):
 
     <body>
         <header>
-            <h1 id="hcod1">Utenti</h1>
+            <h1 id=\"hcod1\">Utenti</h1>
         </header>
 
         <div class="main-container">
@@ -109,7 +109,7 @@ if (!$isAjax):
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
                         echo "<h2>Profilo di <b><i>" . htmlspecialchars($infoUtente['cognome']) . " " . htmlspecialchars($infoUtente['nome']) . "</i></b></h2>";
 
-                        // Costruzione dinamica degli URL per le tab (Stile bacheche.php)
+                        // Costruzione dinamica degli URL per le tab
                         $urlInfo     = "?utente=" . urlencode($idUtente) . "&tab=info";
                         $urlGruppi   = "?utente=" . urlencode($idUtente) . "&tab=gruppi";
                         $urlBacheche = "?utente=" . urlencode($idUtente) . "&tab=bacheche";
@@ -195,12 +195,14 @@ if (!$isAjax):
 
                             $gruppiFormattati = [];
                             foreach ($gruppi as $g) {
-                                // Link strutturati per i gruppi e per i proprietari
                                 $link_gruppo = "gruppi.php?codice=" . urlencode($g['id_gruppo']);
                                 $link_proprietario = "utenti.php?utente=" . urlencode($g['id_proprietario']);
 
+                                // Controllo corona: se il proprietario del gruppo è l'utente corrente visualizzato
+                                $iconaCorona = ((int)$g['id_proprietario'] === $idUtente) ? " <img src='images/crow.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+
                                 $gruppiFormattati[] = [
-                                    'Nome Gruppo' => "<a href='{$link_gruppo}' class='row-link'><strong>" . htmlspecialchars($g['Nome Gruppo']) . "</strong></a>",
+                                    'Nome Gruppo' => "<a href='{$link_gruppo}' class='row-link'><strong>" . htmlspecialchars($g['Nome Gruppo']) . "</strong></a>" . $iconaCorona,
                                     'Proprietario' => "<a href='{$link_proprietario}' class='row-link'>" . htmlspecialchars($g['Proprietario']) . "</a>",
                                     'Data Creazione' => htmlspecialchars($g['Data Creazione'] ?? '')
                                 ];
@@ -215,7 +217,8 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            stampaTabella($gruppiFormattati, [], $customHeaders);
+                            // CORREZIONE: Inserite le chiavi HTML nei campi sicuri (secondo parametro)
+                            stampaTabella($gruppiFormattati, ['Nome Gruppo', 'Proprietario'], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
 
@@ -267,12 +270,14 @@ if (!$isAjax):
 
                             $bachecheFormattate = [];
                             foreach ($bacheche as $b) {
-                                // Link strutturati per le bacheche
                                 $link_bacheca = "bacheche.php?bacheca=" . urlencode($b['Nome Bacheca']) . "&owner=" . urlencode($b['id_proprietario']);
                                 $link_proprietario = "utenti.php?utente=" . urlencode($b['id_proprietario']);
 
+                                // Controllo corona: se il proprietario della bacheca è l'utente corrente visualizzato
+                                $iconaCorona = ((int)$b['id_proprietario'] === $idUtente) ? " <img src='images/crow.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+
                                 $bachecheFormattate[] = [
-                                    'Nome Bacheca' => "<a href='{$link_bacheca}' class='row-link'><strong>" . htmlspecialchars($b['Nome Bacheca']) . "</strong></a>",
+                                    'Nome Bacheca' => "<a href='{$link_bacheca}' class='row-link'><strong>" . htmlspecialchars($b['Nome Bacheca']) . "</strong></a>" . $iconaCorona,
                                     'Proprietario' => "<a href='{$link_proprietario}' class='row-link'>" . htmlspecialchars($b['Proprietario']) . "</a>",
                                     'Data Creazione' => htmlspecialchars($b['Data Creazione'] ?? '')
                                 ];
@@ -287,7 +292,8 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            stampaTabella($bachecheFormattate, [], $customHeaders);
+                            // CORREZIONE: Inserite le chiavi HTML nei campi sicuri (secondo parametro)
+                            stampaTabella($bachecheFormattate, ['Nome Bacheca', 'Proprietario'], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
 
@@ -345,10 +351,9 @@ if (!$isAjax):
                                     $icona = "images/text.png";
                                 }
 
-                                // Link strutturati e unificati per i file (apertura in nuova scheda)
                                 $link_file = htmlspecialchars($f['url']);
                                 $titolo_html = "<a href='{$link_file}' target='_blank' class='row-link' style='text-decoration:none; color:inherit;'>" .
-                                               "<img src='{$icona}' alt='Icona File' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
+                                               "<img src='{$icona}' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
                                                "<strong>" . htmlspecialchars($f['File']) . "</strong></a>";
 
                                 $filesFormattati[] = [
@@ -365,7 +370,8 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            stampaTabella($filesFormattati, [], $customHeaders);
+                            // CORREZIONE: Inserita la chiave HTML nel campo sicuro (secondo parametro)
+                            stampaTabella($filesFormattati, ['File'], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
                         }
@@ -464,7 +470,8 @@ if (!$isAjax):
                 ?>
 
                 <?php if (!$isAjax): ?>
-                </div> <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
             <?php if (!$isAjax): ?>
             </div>
