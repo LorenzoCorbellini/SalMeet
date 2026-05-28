@@ -57,7 +57,7 @@ async function aggiungiBacheca() {
         input: 'text',
         inputLabel: 'Inserisci il nome della nuova bacheca:',
         inputAttributes: {
-            maxlength: 40 // Impedisce la digitazione oltre i 40 caratteri
+            maxlength: 45 // Impedisce la digitazione oltre i 45 caratteri
         },
         heightAuto: false,
         scrollbarPadding: false,
@@ -69,8 +69,8 @@ async function aggiungiBacheca() {
             if (!value || value.trim() === '') {
                 return 'Il nome della bacheca è obbligatorio.';
             }
-            if (value.trim().length > 40) {
-                return 'Il nome della bacheca non può superare i 40 caratteri!';
+            if (value.trim().length > 45) {
+                return 'Il nome della bacheca non può superare i 45 caratteri!';
             }
         }
     });
@@ -95,7 +95,7 @@ async function rinominaBacheca(nomeBacheca, owner) {
         inputLabel: 'Inserisci il nuovo nome:',
         inputValue: nomeBacheca,
         inputAttributes: {
-            maxlength: 40 // Impedisce la digitazione oltre i 40 caratteri
+            maxlength: 45 // Impedisce la digitazione oltre i 45 caratteri
         },
         heightAuto: false,
         scrollbarPadding: false,
@@ -107,8 +107,8 @@ async function rinominaBacheca(nomeBacheca, owner) {
             if (!value || value.trim() === '') {
                 return 'Il nome non può essere vuoto!';
             }
-            if (value.trim().length > 40) {
-                return 'Il nome non può superare i 40 caratteri!';
+            if (value.trim().length > 45) {
+                return 'Il nome non può superare i 45 caratteri!';
             }
         }
     });
