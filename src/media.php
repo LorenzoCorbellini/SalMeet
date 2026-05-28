@@ -162,8 +162,13 @@ function initFilters(): void {
 		'campi' => [
 			['tipo'  => 'text',  'name' => 'filename', 'label' => 'File'],
 			['tipo'  => 'text',  'name' => 'owner', 'label' => 'Proprietario'],
-			['tipo'  => 'select',  'name' => 'filetype', 'label' => 'Tipo',
-				'opzioni' => ['Immagini', 'Audio', 'Video']]
+			['tipo'  => 'checkbox-group',  'name' => 'filetype', 'label' => 'Tipo',
+				'opzioni' => [
+					'immagine' => 'Immagini',
+					'audio' => 'Audio',
+					'video' => 'Video'
+				]
+			]
 		]
 	];
 	include 'filter.php';
@@ -197,7 +202,7 @@ function setupFiltroConfig(PDO $pdo)
 }
 
 /* PAGINAZIONE */
-list($limit, $np, $start_from) = getPaginationParams(50);
+list($limit, $np, $start_from) = getPaginationParams(20);
 
 /* FILTRI */
 $where  = [];
@@ -227,15 +232,25 @@ if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
 
 // Filtro per tipo di file
 $filetypes = [
-	'Immagini' => 'immagine',
-	'Audio' => 'audio',
-	'Video' => 'video'
+	'immagine' => 'Immagini',
+	'audio' => 'Audio',
+	'video' => 'Video'
 ];
 
 if (!empty($_GET['filetype'])) {
-	$filetype = $filetypes[$_GET['filetype']];
-	$where[]             = "fmm.tipo = :filetype";
-	$params[':filetype'] =  $filetype;
+	$selectedTypes = array_filter((array) $_GET['filetype'], function ($type) use ($filetypes) {
+		return isset($filetypes[$type]);
+	});
+
+	if (!empty($selectedTypes)) {
+		$placeholders = [];
+		foreach (array_values($selectedTypes) as $index => $type) {
+			$placeholder = ':filetype_' . $index;
+			$placeholders[] = $placeholder;
+			$params[$placeholder] = $type;
+		}
+		$where[] = 'fmm.tipo IN (' . implode(', ', $placeholders) . ')';
+	}
 }
 
 /* SETUP NOMI DELLE COLONNE */
