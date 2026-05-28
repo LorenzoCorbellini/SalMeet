@@ -623,7 +623,8 @@ function renderElencoBacheche($pdo, $isAjax)
     }
 
     echo "<div class='table-top-bar'>";
-    echo "<p class='info-risultati zero-margin'>Trovate <strong>$totaleRisultati</strong> bacheche (<strong>$recordsPerPage</strong> per pagina)</p>";
+    $testoPerPagina = ($totaleRisultati > $recordsPerPage) ? " (<strong>$recordsPerPage</strong> per pagina)" : "";
+    echo "<p class='info-risultati zero-margin'>Trovate <strong>$totaleRisultati</strong> bacheche{$testoPerPagina}</p>";
     echo getBottoneNuovaBacheca();
     echo "</div>";
 
