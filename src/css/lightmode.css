@@ -487,11 +487,12 @@ tr:nth-of-type(odd) td {
 }
 
 td {
-    padding: 14px 20px;
+    padding: 20px 20px;
     color: var(--text-dark);
     border-bottom: 1px solid rgba(179, 162, 159, 0.3);
     transition: background-color 0.2s ease;
     position: relative;
+    vertical-align: middle;
 }
 
 tr:last-child td {
