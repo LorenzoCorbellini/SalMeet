@@ -126,7 +126,8 @@ function generaIntestazioniOrdinabili(array $colonneOrdinabili, string $sort_col
 
         $params['dir'] = ($sort_col === $chiaveSort && $sort_dir === 'ASC') ? 'DESC' : 'ASC';
 
-        $url = "?" . http_build_query($params);
+        // Build query string preserving array parameters as key[] instead of key[0]
+        $url = "?" . build_query_preserve_brackets($params);
         $icona = "<img src='images/bi-directional-arrow.png' alt='Ordina' class='icona-ordinamento'>";
         $customHeaders[$titoloVisibile] = "
             <a href='{$url}' style='text-decoration: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 100%; height: 100%;'>
@@ -136,6 +137,25 @@ function generaIntestazioniOrdinabili(array $colonneOrdinabili, string $sort_col
     }
 
     return $customHeaders;
+}
+
+
+/**
+ * Costruisce una query string da un array di parametri preservando i parametri array
+ * come `key[]=` (ripetuti) invece di `key[0]=` con indici numerici.
+ */
+function build_query_preserve_brackets(array $params): string {
+    $parts = [];
+    foreach ($params as $k => $v) {
+        if (is_array($v)) {
+            foreach ($v as $val) {
+                $parts[] = rawurlencode($k) . '[]=' . rawurlencode((string)$val);
+            }
+        } else {
+            $parts[] = rawurlencode($k) . '=' . rawurlencode((string)$v);
+        }
+    }
+    return implode('&', $parts);
 }
 
 /**

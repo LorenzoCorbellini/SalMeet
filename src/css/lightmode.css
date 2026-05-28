@@ -327,6 +327,16 @@ a.page-item.active:hover {
     margin-right: 8px;
 }
 
+.checkbox-group {
+    margin-top: 6px;
+}
+
+#filtro label.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* --- BOTTONI FILTRO --- */
 #filtro button {
     width: 90%;
