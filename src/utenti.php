@@ -14,7 +14,6 @@ if (!$isAjax):
         <title>SalMeet - Utenti</title>
         <?php include 'head.html'; ?>
 
-        <!-- Richiamo lo script AJAX esterno -->
         <script src="js/AJAXHandler.js" defer></script>
     </head>
 
@@ -42,6 +41,44 @@ if (!$isAjax):
                         ]
                     ];
                     include 'filter.php';
+                } else {
+                    $tab_corrente = $_GET['tab'] ?? 'info';
+                    $idUtente = (int)$_GET['utente'];
+
+                    if ($tab_corrente === 'info') {
+                        echo '<div id="filtro" class="filter-empty">';
+                        echo '    <p>Non sono presenti filtri per questa sezione.</p>';
+                        echo '</div>';
+                    } elseif ($tab_corrente === 'gruppi') {
+                        $filtro_config = [
+                            'campi' => [
+                                ['tipo' => 'hidden', 'name' => 'utente', 'value' => $idUtente],
+                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'gruppi'],
+                                ['tipo' => 'text', 'name' => 'nome_gruppo', 'label' => 'Nome Gruppo:'],
+                                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario:']
+                            ]
+                        ];
+                        include 'filter.php';
+                    } elseif ($tab_corrente === 'bacheche') {
+                        $filtro_config = [
+                            'campi' => [
+                                ['tipo' => 'hidden', 'name' => 'utente', 'value' => $idUtente],
+                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'bacheche'],
+                                ['tipo' => 'text', 'name' => 'nome_bacheca', 'label' => 'Nome Bacheca:'],
+                                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario:']
+                            ]
+                        ];
+                        include 'filter.php';
+                    } elseif ($tab_corrente === 'file') {
+                        $filtro_config = [
+                            'campi' => [
+                                ['tipo' => 'hidden', 'name' => 'utente', 'value' => $idUtente],
+                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'file'],
+                                ['tipo' => 'text', 'name' => 'titolo_file', 'label' => 'Nome File:']
+                            ]
+                        ];
+                        include 'filter.php';
+                    }
                 }
                 ?>
             </aside>
@@ -50,7 +87,6 @@ if (!$isAjax):
             <?php endif; ?>
 
             <?php if (!$isAjax): ?>
-                <!-- Contenitore bersaglio per le risposte AJAX -->
                 <div id="ajax-results">
                 <?php endif; ?>
 
@@ -60,6 +96,7 @@ if (!$isAjax):
                 // =========================================================
                 if (!empty($_GET['utente'])) {
                     $idUtente = (int)$_GET['utente'];
+                    $tab_corrente = $_GET['tab'] ?? 'info';
 
                     // 1. Lettura dati anagrafici dell'utente selezionato
                     $stmtUtente = $pdo->prepare("SELECT nickname, nome, cognome, dataNascita FROM Utente WHERE codice = :codice");
@@ -71,210 +108,279 @@ if (!$isAjax):
 
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
                         echo "<h2 class='h2utente'>Profilo di <b><i>" . htmlspecialchars($infoUtente['nickname']) . "</i></b></h2>";
-                        echo "<p><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>";
-                        echo "<p><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>";
-                        echo "<p><strong>Data di Nascita:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
 
-                        // ---------------------------------------------------------
-                        // TABELLA 1: BACHECHE ASSOCIATE CON LINK INCROCIATI
-                        // ---------------------------------------------------------
-                        echo "<h3>Bacheche associate</h3>";
+                        echo '<div class="tabs">';
+                        echo '<a href="?utente=' . $idUtente . '&tab=info" class="tab ' . ($tab_corrente === 'info' ? 'active' : '') . '">Informazioni</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=gruppi" class="tab ' . ($tab_corrente === 'gruppi' ? 'active' : '') . '">Gruppi</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=bacheche" class="tab ' . ($tab_corrente === 'bacheche' ? 'active' : '') . '">Bacheche</a>';
+                        echo '<a href="?utente=' . $idUtente . '&tab=file" class="tab ' . ($tab_corrente === 'file' ? 'active' : '') . '">File Condivisi</a>';
+                        echo '</div>';
 
-                        $stmtBacheche = $pdo->prepare("
-                            SELECT 
-                                b.nome AS 'nomeBacheca',
-                                b.codiceUtente AS 'bachecaOwnerId',
-                                uProp.nickname AS 'proprietarioNickname'
-                            FROM UtenteAutorizzatoBacheca uab
-                            JOIN Bacheca b ON uab.codUtente = b.codiceUtente AND uab.nomeBacheca = b.nome
-                            JOIN Utente uProp ON b.codiceUtente = uProp.codice
-                            WHERE uab.utenteAutorizzato = :codice
-                            ORDER BY b.nome ASC
-                        ");
-                        $stmtBacheche->execute([':codice' => $idUtente]);
-                        $bachecheRaw = $stmtBacheche->fetchAll(PDO::FETCH_ASSOC);
+                        if ($tab_corrente === 'info') {
+                            $stmtFile = $pdo->prepare("SELECT COUNT(*) FROM FileMultimediale WHERE caricatoDa = :codice");
+                            $stmtFile->execute([':codice' => $idUtente]);
+                            $numFile = $stmtFile->fetchColumn();
 
-                        if (!empty($bachecheRaw)) {
-                            $datiBacheche = [];
-                            foreach ($bachecheRaw as $bacheca) {
-                                $linkBacheca = "bacheche.php?vista=dettaglio&bacheca=" . urlencode($bacheca['nomeBacheca']) . "&owner=" . urlencode($bacheca['bachecaOwnerId']);
-                                $htmlBacheca = "<a href='{$linkBacheca}'>" . htmlspecialchars($bacheca['nomeBacheca']) . "</a>";
+                            $stmtGruppi = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoGruppo WHERE codUtente = :codice");
+                            $stmtGruppi->execute([':codice' => $idUtente]);
+                            $numGruppi = $stmtGruppi->fetchColumn();
 
-                                $linkOwnerBacheca = "utenti.php?utente=" . urlencode($bacheca['bachecaOwnerId']);
-                                $htmlProprietario = "<a href='{$linkOwnerBacheca}'>" . htmlspecialchars($bacheca['proprietarioNickname']) . "</a>";
+                            $stmtBacheche = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoBacheca WHERE utenteAutorizzato = :codice AND autorizzato = 1");
+                            $stmtBacheche->execute([':codice' => $idUtente]);
+                            $numBacheche = $stmtBacheche->fetchColumn();
 
-                                $datiBacheche[] = [
-                                    'Nome Bacheca' => $htmlBacheca,
-                                    'Proprietario' => $htmlProprietario
-                                ];
-                            }
+                            echo "<div class='info-dettaglio' style='margin-top: 20px;'>";
+                            echo "<p><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>";
+                            echo "<p><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>";
+                            echo "<p><strong>Data di Nascita:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
+                            echo "<p><strong>Numero di file caricati:</strong> " . $numFile . "</p>";
+                            echo "<p><strong>Numero di gruppi a cui appartiene:</strong> " . $numGruppi . "</p>";
+                            echo "<p><strong>Numero di bacheche a cui appartiene:</strong> " . $numBacheche . "</p>";
+                            echo "</div>";
 
-                            echo '<div class="table-container">';
-                            stampaTabella($datiBacheche, ['Nome Bacheca', 'Proprietario']);
-                            echo '</div>';
-                        } else {
-                            echo "<p>L'utente non partecipa a nessuna bacheca.</p>";
-                        }
+                        } elseif ($tab_corrente === 'gruppi') {
+                            $limit = 10;
+                            $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
+                            if ($np < 1) $np = 1;
+                            $start_from = ($np - 1) * $limit;
 
-                        // ---------------------------------------------------------
-                        // TABELLA 2: GRUPPI DI APPARTENENZA CON LINK INCROCIATI
-                        // ---------------------------------------------------------
-                        echo "<h3>Gruppi di appartenenza</h3>";
-
-                        $stmtGruppi = $pdo->prepare("
-                            SELECT 
-                                g.codice AS 'gruppo_id',
-                                g.nome AS 'nome_gruppo',
-                                g.creatoDa AS 'gruppo_owner_id',
-                                uProp.nickname AS 'proprietarioNickname'
-                            FROM UtenteAutorizzatoGruppo uag
-                            JOIN Gruppo g ON uag.codGruppo = g.codice
-                            JOIN Utente uProp ON g.creatoDa = uProp.codice
-                            WHERE uag.codUtente = :codice
-                            ORDER BY g.nome ASC
-                        ");
-                        $stmtGruppi->execute([':codice' => $idUtente]);
-                        $gruppiRaw = $stmtGruppi->fetchAll(PDO::FETCH_ASSOC);
-
-                        if (!empty($gruppiRaw)) {
-                            $datiGruppi = [];
-                            foreach ($gruppiRaw as $gruppo) {
-                                $linkGruppo = "gruppi.php?gruppo=" . urlencode($gruppo['gruppo_id']);
-                                $htmlGruppo = "<a href='{$linkGruppo}'>" . htmlspecialchars($gruppo['nome_gruppo']) . "</a>";
-
-                                $linkOwnerGruppo = "utenti.php?utente=" . urlencode($gruppo['gruppo_owner_id']);
-                                $htmlProprietarioGruppo = "<a href='{$linkOwnerGruppo}'>" . htmlspecialchars($gruppo['proprietarioNickname']) . "</a>";
-
-                                $datiGruppi[] = [
-                                    'Nome Gruppo'  => $htmlGruppo,
-                                    'Proprietario' => $htmlProprietarioGruppo
-                                ];
-                            }
-                            echo '<div class="table-container">';
-                            stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario']);
-                            echo '</div>';
-                        } else {
-                            echo "<p>L'utente non è iscritto a nessun gruppo.</p>";
-                        }
-
-                        // ---------------------------------------------------------
-                        // TABELLA 3: FILE MULTIMEDIALI CARICATI DALL'UTENTE
-                        // ---------------------------------------------------------
-                        echo "<h3>File multimediali caricati</h3>";
-
-                        $stmtFiles = $pdo->prepare("
-                            SELECT f.titolo, f.tipo, f.dimensione, f.URL
-                            FROM FileMultimediale f
-                            WHERE f.caricatoDa = :codice
-                            ORDER BY f.titolo ASC
-                        ");
-                        $stmtFiles->execute([':codice' => $idUtente]);
-                        $filesRaw = $stmtFiles->fetchAll(PDO::FETCH_ASSOC);
-
-                        if (!empty($filesRaw)) {
-                            $datiFiles = [];
-
-                            $icon_types = [
-                                'immagine' => 'images/image.png',
-                                'video'    => 'images/video.png',
-                                'audio'    => 'images/headphones.png',
-                                'default'  => 'images/document.png'
+                            $allowed_sorts = [
+                                'nome' => 'g.nome',
+                                'proprietario' => 'u_owner.nickname',
+                                'data' => 'g.dataCreazione'
                             ];
+                            $sort_col = $_GET['sort'] ?? 'data';
+                            $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'ASC' ? 'ASC' : 'DESC';
+                            $sql_sort = $allowed_sorts[$sort_col] ?? 'g.dataCreazione';
 
-                            foreach ($filesRaw as $file) {
-                                $icon_path = $icon_types[$file['tipo']] ?? $icon_types['default'];
+                            $whereSql = " WHERE uag.codUtente = :codice";
+                            $params = [':codice' => $idUtente];
 
-                                $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($file['tipo']) . "'>";
-                                $file_name = htmlspecialchars($file['titolo']);
-                                $file_link = htmlspecialchars($file['URL']);
-
-                                $title_html = "<div id='file_name'>{$file_icon}<a href='{$file_link}'>{$file_name}</a></div>";
-                                $size_html = formatFileSizeHtml((int)$file['dimensione']);
-
-                                $datiFiles[] = [
-                                    'File'       => $title_html,
-                                    'Dimensione' => $size_html
-                                ];
+                            if (!empty($_GET['nome_gruppo'])) {
+                                $whereSql .= " AND g.nome LIKE :nome_gruppo";
+                                $params[':nome_gruppo'] = '%' . $_GET['nome_gruppo'] . '%';
                             }
+                            if (!empty($_GET['proprietario'])) {
+                                $whereSql .= " AND u_owner.nickname LIKE :proprietario";
+                                $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
+                            }
+
+                            $countSql = "SELECT COUNT(*) FROM UtenteAutorizzatoGruppo uag 
+                                         JOIN Gruppo g ON uag.codGruppo = g.codice 
+                                         JOIN Utente u_owner ON g.creatoDa = u_owner.codice " . $whereSql;
+                            $stmtCount = $pdo->prepare($countSql);
+                            $stmtCount->execute($params);
+                            $numero_records = $stmtCount->fetchColumn();
+                            $numero_pagine = ceil($numero_records / $limit);
+
+                            $sql = "SELECT g.nome AS `Nome Gruppo`, u_owner.nickname AS `Proprietario`, g.dataCreazione AS `Data Creazione` 
+                                    FROM UtenteAutorizzatoGruppo uag 
+                                    JOIN Gruppo g ON uag.codGruppo = g.codice 
+                                    JOIN Utente u_owner ON g.creatoDa = u_owner.codice 
+                                    $whereSql 
+                                    ORDER BY $sql_sort $sort_dir 
+                                    LIMIT $start_from, $limit";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute($params);
+                            $gruppi = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> gruppi.</p></div>";
+                            
+                            $customHeaders = generaIntestazioniOrdinabili([
+                                'Nome Gruppo' => 'nome',
+                                'Proprietario' => 'proprietario',
+                                'Data Creazione' => 'data'
+                            ], $sort_col, $sort_dir);
+
                             echo '<div class="table-container">';
-                            stampaTabella($datiFiles, ['File', 'Dimensione']);
+                            stampaTabella($gruppi, [], $customHeaders);
                             echo '</div>';
-                        } else {
-                            echo "<p>L'utente non ha caricato nessun file multimediale.</p>";
+                            echo getPagesNav($np, $numero_pagine, 1);
+
+                        } elseif ($tab_corrente === 'bacheche') {
+                            $limit = 10;
+                            $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
+                            if ($np < 1) $np = 1;
+                            $start_from = ($np - 1) * $limit;
+
+                            $allowed_sorts = [
+                                'nome' => 'uab.nomeBacheca',
+                                'proprietario' => 'u_owner.nickname',
+                                'data' => 'b.dataCreazione'
+                            ];
+                            $sort_col = $_GET['sort'] ?? 'data';
+                            $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'ASC' ? 'ASC' : 'DESC';
+                            $sql_sort = $allowed_sorts[$sort_col] ?? 'b.dataCreazione';
+
+                            $whereSql = " WHERE uab.utenteAutorizzato = :codice AND uab.autorizzato = 1";
+                            $params = [':codice' => $idUtente];
+
+                            if (!empty($_GET['nome_bacheca'])) {
+                                $whereSql .= " AND uab.nomeBacheca LIKE :nome_bacheca";
+                                $params[':nome_bacheca'] = '%' . $_GET['nome_bacheca'] . '%';
+                            }
+                            if (!empty($_GET['proprietario'])) {
+                                $whereSql .= " AND u_owner.nickname LIKE :proprietario";
+                                $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
+                            }
+
+                            $countSql = "SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab 
+                                         JOIN Bacheca b ON uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente
+                                         JOIN Utente u_owner ON b.codiceUtente = u_owner.codice " . $whereSql;
+                            $stmtCount = $pdo->prepare($countSql);
+                            $stmtCount->execute($params);
+                            $numero_records = $stmtCount->fetchColumn();
+                            $numero_pagine = ceil($numero_records / $limit);
+
+                            $sql = "SELECT uab.nomeBacheca AS `Nome Bacheca`, u_owner.nickname AS `Proprietario`, b.dataCreazione AS `Data Creazione` 
+                                    FROM UtenteAutorizzatoBacheca uab 
+                                    JOIN Bacheca b ON uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente
+                                    JOIN Utente u_owner ON b.codiceUtente = u_owner.codice 
+                                    $whereSql 
+                                    ORDER BY $sql_sort $sort_dir 
+                                    LIMIT $start_from, $limit";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute($params);
+                            $bacheche = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>$numero_records</strong> bacheche.</p></div>";
+                            
+                            $customHeaders = generaIntestazioniOrdinabili([
+                                'Nome Bacheca' => 'nome',
+                                'Proprietario' => 'proprietario',
+                                'Data Creazione' => 'data'
+                            ], $sort_col, $sort_dir);
+
+                            echo '<div class="table-container">';
+                            stampaTabella($bacheche, [], $customHeaders);
+                            echo '</div>';
+                            echo getPagesNav($np, $numero_pagine, 1);
+
+                        } elseif ($tab_corrente === 'file') {
+                            $limit = 10;
+                            $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
+                            if ($np < 1) $np = 1;
+                            $start_from = ($np - 1) * $limit;
+
+                            $allowed_sorts = [
+                                'file' => 'titolo',
+                                'dimensione' => 'dimensione'
+                            ];
+                            $sort_col = $_GET['sort'] ?? 'file';
+                            $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'ASC' ? 'ASC' : 'DESC';
+                            $sql_sort = $allowed_sorts[$sort_col] ?? 'titolo';
+
+                            $whereSql = " WHERE caricatoDa = :codice";
+                            $params = [':codice' => $idUtente];
+
+                            if (!empty($_GET['titolo_file'])) {
+                                $whereSql .= " AND titolo LIKE :titolo_file";
+                                $params[':titolo_file'] = '%' . $_GET['titolo_file'] . '%';
+                            }
+
+                            $countSql = "SELECT COUNT(*) FROM FileMultimediale" . $whereSql;
+                            $stmtCount = $pdo->prepare($countSql);
+                            $stmtCount->execute($params);
+                            $numero_records = $stmtCount->fetchColumn();
+                            $numero_pagine = ceil($numero_records / $limit);
+
+                            $sql = "SELECT titolo AS `File`, dimensione AS `Dimensione` 
+                                    FROM FileMultimediale 
+                                    $whereSql 
+                                    ORDER BY $sql_sort $sort_dir 
+                                    LIMIT $start_from, $limit";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute($params);
+                            $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                            foreach ($files as &$fileRow) {
+                                $fileRow['Dimensione'] .= " MB";
+                            }
+
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> file condivisi.</p></div>";
+                            
+                            $customHeaders = generaIntestazioniOrdinabili([
+                                'File' => 'file',
+                                'Dimensione' => 'dimensione'
+                            ], $sort_col, $sort_dir);
+
+                            echo '<div class="table-container">';
+                            stampaTabella($files, [], $customHeaders);
+                            echo '</div>';
+                            echo getPagesNav($np, $numero_pagine, 1);
                         }
+
+                    } else {
+                        echo "<p class='info-risultati'>Utente non trovato.</p>";
                     }
                 } else {
-                    // ---------------------------------------------------------
-                    // VISTA PRINCIPALE: Tabella globale con filtri e paginazione
-                    // ---------------------------------------------------------
-                    $recordsPerPage = 20;
-                    list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
+                    // 2. Elenco generale utenti
+                    $limit = 15;
+                    $np = isset($_GET['np']) ? (int) $_GET['np'] : 1;
+                    if ($np < 1) $np = 1;
+                    $start_from = ($np - 1) * $limit;
 
-                    $where = [];
-                    $params = [];
-
-                    if (!empty($_GET['nickname'])) {
-                        $where[] = "nickname LIKE :nickname";
-                        $params[':nickname'] = '%' . $_GET['nickname'] . '%';
-                    }
-                    if (!empty($_GET['nome'])) {
-                        $where[] = "nome LIKE :nome";
-                        $params[':nome'] = '%' . $_GET['nome'] . '%';
-                    }
-                    if (!empty($_GET['cognome'])) {
-                        $where[] = "cognome LIKE :cognome";
-                        $params[':cognome'] = '%' . $_GET['cognome'] . '%';
-                    }
-                    if (!empty($_GET['data'])) {
-                        if (isDataValidaRange($_GET['data'])) {
-                            $where[] = "DATE(dataNascita) >= :data";
-                            $params[':data'] = $_GET['data'];
-                        }
-                    }
-
-                    // Parametri di Ordinamento Dinamico
-                    list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
+                    // Gestione Ordinamento
+                    $allowed_sorts = [
                         'nickname' => 'nickname',
                         'nome'     => 'nome',
                         'cognome'  => 'cognome',
                         'data'     => 'dataNascita'
-                    ], 'nickname', 'ASC');
+                    ];
 
-                    // Conteggio e recupero dei risultati
-                    $totaleRisultati = getNumberOfRecords($pdo, 'Utente', $where, $params);
-                    $numero_pagine = getNumberOfPages($totaleRisultati, $limit);
+                    $sort_col = $_GET['sort'] ?? 'nickname';
+                    $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'DESC' ? 'DESC' : 'ASC';
+                    $sql_sort = $allowed_sorts[$sort_col] ?? 'nickname';
 
-                    $sql = "
-                        SELECT codice as 'owner',
-                               nickname as 'Nickname',
-                               nome as 'Nome',
-                               cognome as 'Cognome',
-                               dataNascita as 'Data di Nascita'
-                        FROM Utente
-                    ";
-                    if ($where) {
-                        $sql .= " WHERE " . implode(" AND ", $where);
+                    // Costruzione clausola WHERE
+                    $whereSql = "WHERE 1=1";
+                    $params = [];
+
+                    if (!empty($_GET['nickname'])) {
+                        $whereSql .= " AND nickname LIKE :nickname";
+                        $params[':nickname'] = '%' . $_GET['nickname'] . '%';
                     }
-                    $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
-                    $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$start_from;
+                    if (!empty($_GET['nome'])) {
+                        $whereSql .= " AND nome LIKE :nome";
+                        $params[':nome'] = '%' . $_GET['nome'] . '%';
+                    }
+                    if (!empty($_GET['cognome'])) {
+                        $whereSql .= " AND cognome LIKE :cognome";
+                        $params[':cognome'] = '%' . $_GET['cognome'] . '%';
+                    }
+                    if (!empty($_GET['data'])) {
+                        if (isDataValidaRange($_GET['data'])) {
+                            $whereSql .= " AND dataNascita >= :data";
+                            $params[':data'] = $_GET['data'];
+                        }
+                    }
+
+                    // Query per il numero totale di record
+                    $countSql = "SELECT COUNT(*) FROM Utente " . $whereSql;
+                    $stmtCount = $pdo->prepare($countSql);
+                    $stmtCount->execute($params);
+                    $numero_records = $stmtCount->fetchColumn();
+                    $numero_pagine = ceil($numero_records / $limit);
+
+                    // Query per i dati
+                    $sql = "SELECT codice, nickname, nome AS Nome, cognome AS Cognome, dataNascita AS `Data di Nascita` 
+                            FROM Utente 
+                            $whereSql 
+                            ORDER BY $sql_sort $sort_dir 
+                            LIMIT $start_from, $limit";
 
                     $stmt = $pdo->prepare($sql);
-                    foreach ($params as $chiave => $valore) {
-                        $stmt->bindValue($chiave, $valore);
-                    }
-                    $stmt->execute();
-                    $righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $stmt->execute($params);
+                    $utenti = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                    echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> utenti (<strong>$recordsPerPage</strong> per pagina)</p>";
+                    echo "<div class='table-top-bar'>";
+                    echo "<p class='info-risultati zero-margin'>Trovati <strong>$numero_records</strong> utenti.</p>";
+                    echo "</div>";
 
-                    if (!empty($righe)) {
+                    if (count($utenti) > 0) {
                         $datiUtenti = [];
-                        $current_url = $_SERVER['REQUEST_URI'];
-
-                        foreach ($righe as $riga) {
-                            $linkDettaglio = "utenti.php?utente=" . urlencode($riga['owner']) . "&return_to=" . urlencode($current_url);
-                            $htmlNickname = "<a href='{$linkDettaglio}'>" . htmlspecialchars($riga['Nickname']) . "</a>";
-
+                        foreach ($utenti as $riga) {
+                            $htmlNickname = "<a href='?utente=" . urlencode($riga['codice']) . "' class='row-link' title='Visualizza profilo'>" . htmlspecialchars($riga['nickname']) . "</a>";
                             $datiUtenti[] = [
                                 'Nickname'        => $htmlNickname,
                                 'Nome'            => $riga['Nome'],
@@ -302,8 +408,7 @@ if (!$isAjax):
                 ?>
 
                 <?php if (!$isAjax): ?>
-                </div> <!-- Fine ajax-results -->
-            <?php endif; ?>
+                </div> <?php endif; ?>
 
             <?php if (!$isAjax): ?>
             </div>
