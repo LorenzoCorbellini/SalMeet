@@ -146,7 +146,6 @@ if (!$isAjax):
                                     <p class='info-card-text'><strong>Numero di bacheche a cui appartiene:</strong> " . $numBacheche . "</p>
                                     <p class='info-card-text-last'><strong>Numero di file caricati:</strong> " . $numFile . "</p>
                                 </div>";
-
                         } elseif ($tab_corrente === 'gruppi') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -220,7 +219,6 @@ if (!$isAjax):
                             stampaTabella($gruppiFormattati, ['Nome Gruppo', 'Proprietario'], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
-
                         } elseif ($tab_corrente === 'bacheche') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -294,7 +292,6 @@ if (!$isAjax):
                             stampaTabella($bachecheFormattate, ['Nome Bacheca', 'Proprietario'], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
-
                         } elseif ($tab_corrente === 'file') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -324,10 +321,10 @@ if (!$isAjax):
                             $numero_pagine = ceil($numero_records / $limit);
 
                             $sql = "SELECT url, tipo, titolo AS `File`, dimensione AS `Dimensione` 
-                                    FROM FileMultimediale 
-                                    $whereSql 
-                                    ORDER BY $sql_sort $sort_dir 
-                                    LIMIT $start_from, $limit";
+            FROM FileMultimediale 
+            $whereSql 
+            ORDER BY $sql_sort $sort_dir 
+            LIMIT $start_from, $limit";
                             $stmt = $pdo->prepare($sql);
                             $stmt->execute($params);
                             $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -345,13 +342,16 @@ if (!$isAjax):
                                 $icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
 
                                 $link_file = htmlspecialchars($f['url']);
-                                $titolo_html = "<a href='{$link_file}' target='_blank' class='row-link' style='text-decoration:none; color:inherit;'>" .
-                                               "<img src='{$icon_path}' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
-                                               "<strong>" . htmlspecialchars($f['File']) . "</strong></a>";
 
+                                // Uso della classe .file-link definita nel CSS per il colore rosa
+                                $titolo_html = "<a href='{$link_file}' target='_blank' class='file-link'>" .
+                                    "<img src='{$icon_path}' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
+                                    "<strong>" . htmlspecialchars($f['File']) . "</strong></a>";
+
+                                // Uso della classe .text-right per allineare la dimensione a destra
                                 $filesFormattati[] = [
                                     'File' => $titolo_html,
-                                    'Dimensione' => htmlspecialchars($f['Dimensione']) . " MB"
+                                    'Dimensione' => "<span class='text-right' style='display:block;'>" . htmlspecialchars($f['Dimensione']) . " MB</span>"
                                 ];
                             }
 
@@ -363,13 +363,14 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            stampaTabella($filesFormattati, ['File'], $customHeaders);
+                            // Utilizzo della funzione standard stampaTabella di functions.php
+                            stampaTabella($filesFormattati, ['File', 'Dimensione'], $customHeaders);
                             echo '</div>';
-                            echo getPagesNav($np, $numero_pagine, 1);
-                        }
 
-                    } else {
-                        echo "<p class='info-risultati'>Utente non trovato.</p>";
+                            echo getPagesNav($np, $numero_pagine, 1);
+                        } else {
+                            echo "<p class='info-risultati'>Utente non trovato.</p>";
+                        }
                     }
                 } else {
                     // 2. Elenco generale utenti
