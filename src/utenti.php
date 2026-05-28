@@ -55,7 +55,8 @@ if (!$isAjax):
                                 ['tipo' => 'hidden', 'name' => 'utente', 'value' => $idUtente],
                                 ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'gruppi'],
                                 ['tipo' => 'text', 'name' => 'nome_gruppo', 'label' => 'Nome Gruppo:'],
-                                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario:']
+                                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario:'],
+                                ['tipo' => 'date', 'name' => 'data', 'label' => 'Data Creazione (Da):']
                             ]
                         ];
                         include 'filter.php';
@@ -65,7 +66,8 @@ if (!$isAjax):
                                 ['tipo' => 'hidden', 'name' => 'utente', 'value' => $idUtente],
                                 ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'bacheche'],
                                 ['tipo' => 'text', 'name' => 'nome_bacheca', 'label' => 'Nome Bacheca:'],
-                                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario:']
+                                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario:'],
+                                ['tipo' => 'date', 'name' => 'data', 'label' => 'Data Creazione (Da):']
                             ]
                         ];
                         include 'filter.php';
@@ -172,6 +174,12 @@ if (!$isAjax):
                                 $whereSql .= " AND u_owner.nickname LIKE :proprietario";
                                 $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
                             }
+                            if (!empty($_GET['data'])) {
+                                if (isDataValidaRange($_GET['data'])) {
+                                    $whereSql .= " AND g.dataCreazione >= :data";
+                                    $params[':data'] = $_GET['data'];
+                                }
+                            }
 
                             $countSql = "SELECT COUNT(*) FROM UtenteAutorizzatoGruppo uag 
                                          JOIN Gruppo g ON uag.codGruppo = g.codice 
@@ -244,6 +252,12 @@ if (!$isAjax):
                             if (!empty($_GET['proprietario'])) {
                                 $whereSql .= " AND u_owner.nickname LIKE :proprietario";
                                 $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
+                            }
+                            if (!empty($_GET['data'])) {
+                                if (isDataValidaRange($_GET['data'])) {
+                                    $whereSql .= " AND b.dataCreazione >= :data";
+                                    $params[':data'] = $_GET['data'];
+                                }
                             }
 
                             $countSql = "SELECT COUNT(*) FROM UtenteAutorizzatoBacheca uab 
