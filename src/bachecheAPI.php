@@ -59,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
+            // Esclude chi è già autorizzato alla bacheca
             if ($nomeBachecaEsclusione !== '' && $ownerEsclusione > 0) {
                 $sql .= " AND codice NOT IN (
                     SELECT utenteAutorizzato 
@@ -68,6 +69,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )";
                 $params[':nomeBachecaEx'] = $nomeBachecaEsclusione;
                 $params[':ownerEx']       = $ownerEsclusione;
+            }
+
+            // ESCLUSIONE DINAMICA DEGLI UTENTI GIÀ NEL CARRELLO DEL POPUP
+            $utenti_esclusi = !empty($input['utenti_esclusi']) && is_array($input['utenti_esclusi']) ? $input['utenti_esclusi'] : [];
+            if (!empty($utenti_esclusi)) {
+                $inParams = [];
+                foreach ($utenti_esclusi as $i => $id) {
+                    $pName = ':ex_u_' . $i;
+                    $inParams[] = $pName;
+                    $params[$pName] = (int)$id;
+                }
+                $sql .= " AND codice NOT IN (" . implode(',', $inParams) . ")";
             }
 
             $sql .= " ORDER BY nickname ASC LIMIT 50";
@@ -205,6 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':ownerBacheca' => $owner
             ];
 
+            // Esclude i file già pubblicati in bacheca
             $sql .= " AND f.numero NOT IN (
                 SELECT file 
                 FROM FilePubblicatoBacheca 
@@ -226,6 +240,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($cognome !== '') {
                 $sql .= " AND u.cognome LIKE :cognome";
                 $params[':cognome'] = '%' . $cognome . '%';
+            }
+
+            // ESCLUSIONE DINAMICA DEI FILE GIÀ NEL CARRELLO DEL POPUP
+            $file_esclusi = !empty($input['file_esclusi']) && is_array($input['file_esclusi']) ? $input['file_esclusi'] : [];
+            if (!empty($file_esclusi)) {
+                $inParams = [];
+                foreach ($file_esclusi as $i => $id) {
+                    $pName = ':ex_f_' . $i;
+                    $inParams[] = $pName;
+                    $params[$pName] = (int)$id;
+                }
+                $sql .= " AND f.numero NOT IN (" . implode(',', $inParams) . ")";
             }
 
             $sql .= " ORDER BY f.numero DESC LIMIT 30";

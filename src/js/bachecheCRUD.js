@@ -428,9 +428,80 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
             const countSpan = document.getElementById('swal-m-count');
             const resultsTitle = document.getElementById('swal-m-results-title');
 
-            let cachedServerResults = [];
+            async function eseguiCercaUtente() {
+                resultsDiv.innerHTML = '<p class="swal-multi-msg-loading">Ricerca in corso...</p>';
+                resultsTitle.textContent = 'Ricerca in corso...';
 
-            const aggiornaColonnaSelezionati = () => {
+                const payload = {
+                    azione: 'cerca_utente',
+                    nickname: nickIn.value.trim(),
+                    filtro_nome: nomeIn.value.trim(),
+                    cognome: cognomeIn.value.trim(),
+                    data_nascita: dateIn.value || null,
+                    nomeBacheca: nomeBacheca,
+                    owner: owner,
+                    utenti_esclusi: Array.from(utentiSelezionati.keys())
+                };
+
+                try {
+                    const r = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await r.json();
+
+                    if (data.successo && data.utenti && data.utenti.length > 0) {
+                        renderizzaRisultatiCentrali(data.utenti);
+                    } else {
+                        resultsTitle.textContent = 'Risultati (0)';
+                        resultsDiv.innerHTML = `<p class="swal-multi-msg-error">${data.messaggio || 'Nessun risultato trovato.'}</p>`;
+                    }
+                } catch (err) {
+                    resultsTitle.textContent = 'Errore';
+                    resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Errore server di ricerca.</p>';
+                }
+            }
+
+            function renderizzaRisultatiCentrali(utenti) {
+                resultsDiv.innerHTML = '';
+
+                const limitUtenti = 50;
+                if (utenti.length >= limitUtenti) {
+                    resultsTitle.textContent = `Risultati (Primi ${limitUtenti})`;
+                } else {
+                    resultsTitle.textContent = `Risultati (${utenti.length})`;
+                }
+
+                utenti.forEach(u => {
+                    const row = document.createElement('div');
+                    const infoData = u.data_formattata ? ` ${u.data_formattata}` : '';
+                    row.className = 'swal-multi-row';
+                    row.innerHTML = `
+                        <div>
+                            <strong>${u.nickname}</strong>
+                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome} ${infoData}</div>
+                        </div>
+                        <button type="button" class="swal-multi-btn-add">+</button>
+                    `;
+
+                    // L'evento ora è chiuso in una "bolla" protetta, la variabile 'u' non la perde mai!
+                    row.querySelector('.swal-multi-btn-add').addEventListener('click', () => {
+                        utentiSelezionati.set(String(u.codice), {
+                            nickname: u.nickname,
+                            nome: u.nome,
+                            cognome: u.cognome,
+                            data_formattata: u.data_formattata || ''
+                        });
+                        aggiornaColonnaSelezionati();
+                        eseguiCercaUtente();
+                    });
+
+                    resultsDiv.appendChild(row);
+                });
+            }
+
+            function aggiornaColonnaSelezionati() {
                 countSpan.textContent = utentiSelezionati.size;
                 if (utentiSelezionati.size === 0) {
                     selectedDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun utente selezionato.</p>';
@@ -447,96 +518,23 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
                             <strong>${u.nickname}</strong>
                             <div class="swal-multi-row-subtext">${u.nome} ${u.cognome} ${infoData}</div>
                         </div>
-                        <button type="button" class="swal-multi-btn-del" data-id="${id}">-</button>
+                        <button type="button" class="swal-multi-btn-del">-</button>
                     `;
+
+                    // Idem per la rimozione, evento agganciato direttamente
+                    row.querySelector('.swal-multi-btn-del').addEventListener('click', () => {
+                        utentiSelezionati.delete(id);
+                        aggiornaColonnaSelezionati();
+                        eseguiCercaUtente();
+                    });
+
                     selectedDiv.appendChild(row);
                 });
+            }
 
-                selectedDiv.querySelectorAll('.swal-multi-btn-del').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const idDaTogliere = btn.getAttribute('data-id');
-                        utentiSelezionati.delete(idDaTogliere);
-                        aggiornaColonnaSelezionati();
-                        renderizzaRisultatiCentrali(cachedServerResults);
-                    });
-                });
-            };
-
-            const renderizzaRisultatiCentrali = (utenti) => {
-                cachedServerResults = utenti;
-                resultsDiv.innerHTML = '';
-
-                const filtrati = utenti.filter(u => !utentiSelezionati.has(String(u.codice)));
-
-                if (filtrati.length === 0) {
-                    resultsDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun utente disponibile o tutti già selezionati.</p>';
-                    return;
-                }
-
-                filtrati.forEach(u => {
-                    const row = document.createElement('div');
-                    const infoData = u.data_formattata ? ` ${u.data_formattata}` : '';
-                    row.className = 'swal-multi-row';
-                    row.innerHTML = `
-                        <div>
-                            <strong>${u.nickname}</strong>
-                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome} ${infoData}</div>
-                        </div>
-                        <button type="button" class="swal-multi-btn-add" data-id="${u.codice}" data-nick="${u.nickname}" data-nome="${u.nome}" data-cognome="${u.cognome}">+</button>
-                    `;
-                    resultsDiv.appendChild(row);
-                });
-
-                resultsDiv.querySelectorAll('.swal-multi-btn-add').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.getAttribute('data-id');
-                        utentiSelezionati.set(id, {
-                            nickname: btn.getAttribute('data-nick'),
-                            nome: btn.getAttribute('data-nome'),
-                            cognome: btn.getAttribute('data-cognome')
-                        });
-                        aggiornaColonnaSelezionati();
-                        renderizzaRisultatiCentrali(cachedServerResults);
-                    });
-                });
-            };
-
-            searchBtn.addEventListener('click', async () => {
-                const payload = {
-                    azione: 'cerca_utente',
-                    nickname: nickIn.value.trim(),
-                    filtro_nome: nomeIn.value.trim(),
-                    cognome: cognomeIn.value.trim(),
-                    data_nascita: dateIn.value || null,
-                    nomeBacheca: nomeBacheca,
-                    owner: owner
-                };
-
-                resultsDiv.innerHTML = '<p class="swal-multi-msg-loading">Ricerca in corso...</p>';
-
-                try {
-                    const r = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await r.json();
-
-                    if (data.successo && data.utenti) {
-                        const limitUtenti = 50;
-                        if (data.utenti.length >= limitUtenti) {
-                            resultsTitle.textContent = `Risultati (Primi ${limitUtenti})`;
-                        } else {
-                            resultsTitle.textContent = `Risultati (${data.utenti.length})`;
-                        }
-                        renderizzaRisultatiCentrali(data.utenti);
-                    } else {
-                        resultsTitle.textContent = 'Risultati (0)';
-                        resultsDiv.innerHTML = `<p class="swal-multi-msg-error">${data.messaggio || 'Nessun risultato.'}</p>`;
-                    }
-                } catch (err) {
-                    resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Errore server di ricerca.</p>';
-                }
+            searchBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                eseguiCercaUtente();
             });
 
             [nickIn, nomeIn, cognomeIn, dateIn].forEach(input => {
@@ -665,84 +663,15 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
             const countSpan = document.getElementById('swal-f-count');
             const resultsTitle = document.getElementById('swal-f-results-title');
 
-            let cachedServerResults = [];
-
-            const aggiornaColonnaSelezionati = () => {
-                countSpan.textContent = fileSelezionati.size;
-                if (fileSelezionati.size === 0) {
-                    selectedDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun file selezionato.</p>';
-                    return;
-                }
-
-                selectedDiv.innerHTML = '';
-                fileSelezionati.forEach((f, id) => {
-                    const row = document.createElement('div');
-                    row.className = 'swal-multi-row swal-multi-row-selected';
-                    row.innerHTML = `
-                        <div>
-                            <strong>${f.nomeFile}</strong>
-                            <div class="swal-multi-row-subtext">@${f.nickname}</div>
-                        </div>
-                        <button type="button" class="swal-multi-btn-del" data-id="${id}">-</button>
-                    `;
-                    selectedDiv.appendChild(row);
-                });
-
-                selectedDiv.querySelectorAll('.swal-multi-btn-del').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const idDaTogliere = btn.getAttribute('data-id');
-                        fileSelezionati.delete(idDaTogliere);
-                        aggiornaColonnaSelezionati();
-                        renderizzaRisultatiCentrali(cachedServerResults);
-                    });
-                });
-            };
-
-            const renderizzaRisultatiCentrali = (files) => {
-                cachedServerResults = files;
-                resultsDiv.innerHTML = '';
-
-                const filtrati = files.filter(f => !fileSelezionati.has(String(f.numero)));
-
-                if (filtrati.length === 0) {
-                    resultsDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun file disponibile o tutti già selezionati.</p>';
-                    return;
-                }
-
-                filtrati.forEach(f => {
-                    const row = document.createElement('div');
-                    row.className = 'swal-multi-row';
-                    row.innerHTML = `
-                        <div>
-                            <strong>${f.nome_file}</strong>
-                            <div class="swal-multi-row-subtext">@${f.nickname} (${f.utente_nome} ${f.utente_cognome})</div>
-                        </div>
-                        <button type="button" class="swal-multi-btn-add" data-id="${f.numero}" data-nomefile="${f.nome_file}" data-nick="${f.nickname}">+</button>
-                    `;
-                    resultsDiv.appendChild(row);
-                });
-
-                resultsDiv.querySelectorAll('.swal-multi-btn-add').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.getAttribute('data-id');
-                        fileSelezionati.set(id, {
-                            nomeFile: btn.getAttribute('data-nomefile'),
-                            nickname: btn.getAttribute('data-nick')
-                        });
-                        aggiornaColonnaSelezionati();
-                        renderizzaRisultatiCentrali(cachedServerResults);
-                    });
-                });
-            };
-
-            const eseguiCercaFile = async () => {
+            async function eseguiCercaFile() {
                 resultsDiv.innerHTML = '<p class="swal-multi-msg-loading">Ricerca in corso...</p>';
                 resultsTitle.textContent = 'Ricerca in corso...';
 
                 const payloadDati = {
                     azione: 'cerca_file_bacheca',
                     nome: nomeBacheca,
-                    owner: owner
+                    owner: owner,
+                    file_esclusi: Array.from(fileSelezionati.keys())
                 };
 
                 const tFile = fileIn.value.trim();
@@ -764,12 +693,6 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                     const data = await response.json();
 
                     if (data.successo && data.files && data.files.length > 0) {
-                        const limitFile = 30;
-                        if (data.files.length >= limitFile) {
-                            resultsTitle.textContent = `Disponibili (Primi ${limitFile})`;
-                        } else {
-                            resultsTitle.textContent = `Disponibili (${data.files.length})`;
-                        }
                         renderizzaRisultatiCentrali(data.files);
                     } else {
                         resultsTitle.textContent = 'Disponibili (0)';
@@ -779,7 +702,72 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                     resultsTitle.textContent = 'Errore';
                     resultsDiv.innerHTML = '<p class="swal-multi-msg-error">Errore di comunicazione col server.</p>';
                 }
-            };
+            }
+
+            function renderizzaRisultatiCentrali(files) {
+                resultsDiv.innerHTML = '';
+
+                const limitFile = 30;
+                if (files.length >= limitFile) {
+                    resultsTitle.textContent = `Disponibili (Primi ${limitFile})`;
+                } else {
+                    resultsTitle.textContent = `Disponibili (${files.length})`;
+                }
+
+                files.forEach(f => {
+                    const row = document.createElement('div');
+                    row.className = 'swal-multi-row';
+                    row.innerHTML = `
+                        <div>
+                            <strong>${f.nome_file}</strong>
+                            <div class="swal-multi-row-subtext">@${f.nickname} (${f.utente_nome} ${f.utente_cognome})</div>
+                        </div>
+                        <button type="button" class="swal-multi-btn-add">+</button>
+                    `;
+
+                    // Aggiungiamo l'evento in modo sicuro e diretto
+                    row.querySelector('.swal-multi-btn-add').addEventListener('click', () => {
+                        fileSelezionati.set(String(f.numero), {
+                            nomeFile: f.nome_file,
+                            nickname: f.nickname
+                        });
+                        aggiornaColonnaSelezionati();
+                        eseguiCercaFile();
+                    });
+
+                    resultsDiv.appendChild(row);
+                });
+            }
+
+            function aggiornaColonnaSelezionati() {
+                countSpan.textContent = fileSelezionati.size;
+                if (fileSelezionati.size === 0) {
+                    selectedDiv.innerHTML = '<p class="swal-multi-msg-empty">Nessun file selezionato.</p>';
+                    return;
+                }
+
+                selectedDiv.innerHTML = '';
+                fileSelezionati.forEach((f, id) => {
+                    const row = document.createElement('div');
+                    row.className = 'swal-multi-row swal-multi-row-selected';
+                    row.innerHTML = `
+                        <div>
+                            <strong>${f.nomeFile}</strong>
+                            <div class="swal-multi-row-subtext">@${f.nickname}</div>
+                        </div>
+                        <button type="button" class="swal-multi-btn-del">-</button>
+                    `;
+
+                    // Aggiungiamo l'evento di rimozione in modo sicuro
+                    row.querySelector('.swal-multi-btn-del').addEventListener('click', () => {
+                        fileSelezionati.delete(id);
+                        aggiornaColonnaSelezionati();
+                        eseguiCercaFile();
+                    });
+
+                    selectedDiv.appendChild(row);
+                });
+            }
 
             searchBtn.addEventListener('click', (e) => {
                 e.preventDefault();
