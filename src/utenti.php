@@ -107,7 +107,7 @@ if (!$isAjax):
                         $dataFormattata = !empty($infoUtente['dataNascita']) ? (function_exists('formattaData') ? formattaData($infoUtente['dataNascita']) : date('d/m/Y', strtotime($infoUtente['dataNascita']))) : "";
 
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
-                        echo "<h2>Profilo di <b><i>" . htmlspecialchars($infoUtente['nickname']) . "</i></b></h2>";
+                        echo "<h2>Profilo di <b><i>" . htmlspecialchars($infoUtente['cognome']) . htmlspecialchars($infoUtente['nome']) . "</i></b></h2>";
 
                         echo " <div class='detail-tabs-header'>
                                     <div class='bacheca-tabs tabs-reset'>";
@@ -133,14 +133,15 @@ if (!$isAjax):
                             $stmtBacheche->execute([':codice' => $idUtente]);
                             $numBacheche = $stmtBacheche->fetchColumn();
 
-                            echo "<div class='tab-info-card'>";
-                            echo "<p class='info-card-text'><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>";
-                            echo "<p class='info-card-text'><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>";
-                            echo "<p class='info-card-text'><strong>Data di Nascita:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
-                            echo "<p class='info-card-text'><strong>Numero di file caricati:</strong> " . $numFile . "</p>";
-                            echo "<p class='info-card-text'><strong>Numero di gruppi a cui appartiene:</strong> " . $numGruppi . "</p>";
-                            echo "<p class='info-card-text-last'><strong>Numero di bacheche a cui appartiene:</strong> " . $numBacheche . "</p>";
-                            echo "</div>";
+                            echo "<div class='tab-info-card'>;
+                                    <p class='info-card-text'><strong>Nickname:</strong> " . htmlspecialchars($infoUtente['nickname']) . "</p>
+                                    <p class='info-card-text'><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>
+                                    <p class='info-card-text'><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>
+                                    <p class='info-card-text'><strong>Data di Nascita:</strong> " . htmlspecialchars($dataFormattata) . "</p>
+                                    <p class='info-card-text'><strong>Numero di gruppi a cui appartiene:</strong> " . $numGruppi . "</p>
+                                    <p class='info-card-text'><strong>Numero di bacheche a cui appartiene:</strong> " . $numBacheche . "</p>
+                                    <p class='info-card-text-last'><strong>Numero di file caricati:</strong> " . $numFile . "</p>
+                                </div>";
                         } elseif ($tab_corrente === 'gruppi') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
