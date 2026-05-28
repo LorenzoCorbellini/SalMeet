@@ -14,7 +14,6 @@ if (!$isAjax):
 		<title>SalMeet - Gruppi</title>
 		<?php include 'head.html'; ?>
 
-		<!-- Richiamo lo script AJAX esterno -->
 		<script src="js/AJAXHandler.js" defer></script>
 	</head>
 
@@ -28,6 +27,9 @@ if (!$isAjax):
 				<?php include 'nav.html'; ?>
 
 				<?php
+				// =========================================================
+				// CONFIGURAZIONE DINAMICA DEI FILTRI NELLA SIDEBAR
+				// =========================================================
 				if (empty($_GET['gruppo'])) {
 					$filtro_config = [
 						'campi' => [
@@ -37,6 +39,37 @@ if (!$isAjax):
 						]
 					];
 					include 'filter.php';
+				} else {
+					$tab_corrente = $_GET['tab'] ?? 'info';
+					$idGruppo = (int)$_GET['gruppo'];
+
+					if ($tab_corrente === 'info') {
+						echo '<div id="filtro" class="filter-empty">';
+						echo '    <p>Non sono presenti filtri per questa sezione.</p>';
+						echo '</div>';
+					} elseif ($tab_corrente === 'membri') {
+						$filtro_config = [
+							'campi' => [
+								['tipo' => 'hidden', 'name' => 'gruppo', 'value' => $idGruppo],
+								['tipo' => 'hidden', 'name' => 'tab', 'value' => 'membri'],
+								['tipo' => 'text', 'name' => 'nickname', 'label' => 'Nickname:'],
+								['tipo' => 'text', 'name' => 'nome', 'label' => 'Nome:'],
+								['tipo' => 'text', 'name' => 'cognome', 'label' => 'Cognome:'],
+								['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Data di Nascita (Da):']
+							]
+						];
+						include 'filter.php';
+					} elseif ($tab_corrente === 'file') {
+						$filtro_config = [
+							'campi' => [
+								['tipo' => 'hidden', 'name' => 'gruppo', 'value' => $idGruppo],
+								['tipo' => 'hidden', 'name' => 'tab', 'value' => 'file'],
+								['tipo' => 'text', 'name' => 'titolo_file', 'label' => 'Nome File:'],
+								['tipo' => 'text', 'name' => 'nickname', 'label' => 'Nickname (Caricato da):']
+							]
+						];
+						include 'filter.php';
+					}
 				}
 				?>
 			</aside>
@@ -45,19 +78,20 @@ if (!$isAjax):
 			<?php endif; ?>
 
 			<?php if (!$isAjax): ?>
-				<!-- Contenitore bersaglio per le risposte AJAX -->
 				<div id="ajax-results">
 				<?php endif; ?>
 
 				<?php
 				// =========================================================
-				// ROUTING VISTE: DETTAGLIO GRUPPO (Profilo, Membri e File)
+				// ROUTING VISTE: DETTAGLIO GRUPPO E GLOBALE
 				// =========================================================
+				
+				// Cattura l'URL attuale per navigare indietro correttamente da Utenti
+				$current_url = $_SERVER['REQUEST_URI'];
+
 				if (!empty($_GET['gruppo'])) {
 					$idGruppo = (int)$_GET['gruppo'];
-
-					// Cattura l'URL attuale per navigare indietro correttamente da Utenti
-					$current_url = $_SERVER['REQUEST_URI'];
+					$tab_corrente = $_GET['tab'] ?? 'info';
 
 					$stmtGruppo = $pdo->prepare("
 						SELECT g.nome, g.dataCreazione, u.nickname, u.codice as ownerId
@@ -69,156 +103,261 @@ if (!$isAjax):
 					$infoGruppo = $stmtGruppo->fetch(PDO::FETCH_ASSOC);
 
 					if ($infoGruppo) {
-						echo "<h2>Gruppo: " . htmlspecialchars($infoGruppo['nome']) . "</h2>";
-						echo "<p><strong>Data Creazione:</strong> " . formattaData($infoGruppo['dataCreazione']) . "</p>";
+						echo "<p><a href='gruppi.php'>&larr; Torna all'elenco gruppi</a></p>";
+						echo "<h2>" . htmlspecialchars($infoGruppo['nome']) . "</h2>";
 
-						$linkOwner = "utenti.php?utente=" . urlencode($infoGruppo['ownerId']) . "&return_to=" . urlencode($current_url);
-						echo "<p><strong>Creato da:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>";
+						$urlInfo   = "?gruppo=" . urlencode($idGruppo) . "&tab=info";
+						$urlMembri = "?gruppo=" . urlencode($idGruppo) . "&tab=membri";
+						$urlFile   = "?gruppo=" . urlencode($idGruppo) . "&tab=file";
 
-						echo "<h3>Membri del gruppo</h3>";
-						$stmtMembri = $pdo->prepare("
-							SELECT u.codice, u.nickname, u.nome, u.cognome
-							FROM UtenteAutorizzatoGruppo uag
-							JOIN Utente u ON uag.codUtente = u.codice
-							WHERE uag.codGruppo = :id
-							ORDER BY u.nickname ASC
-						");
-						$stmtMembri->execute([':id' => $idGruppo]);
-						$membriRaw = $stmtMembri->fetchAll(PDO::FETCH_ASSOC);
+						echo "<div class='detail-tabs-header'>
+								<div class='bacheca-tabs tabs-reset'>
+									<a href='{$urlInfo}' class='" . ($tab_corrente === 'info' ? 'active' : '') . "'>Informazioni</a>
+									<a href='{$urlMembri}' class='" . ($tab_corrente === 'membri' ? 'active' : '') . "'>Membri del Gruppo</a>
+									<a href='{$urlFile}' class='" . ($tab_corrente === 'file' ? 'active' : '') . "'>File Condivisi</a>
+								</div>
+							  </div>";
 
-						if (!empty($membriRaw)) {
-							$datiMembri = [];
-							foreach ($membriRaw as $membro) {
-								$linkMembro = "utenti.php?utente=" . urlencode($membro['codice']) . "&return_to=" . urlencode($current_url);
-								$htmlMembroNickname = "<a href='{$linkMembro}'>" . htmlspecialchars($membro['nickname']) . "</a>";
+						$ownerId = (int)$infoGruppo['ownerId'];
 
-								$datiMembri[] = [
-									'Nickname' => $htmlMembroNickname,
-									'Nome'     => $membro['nome'],
-									'Cognome'  => $membro['cognome']
-								];
+						if ($tab_corrente === 'info') {
+							$stmtFile = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo WHERE codGruppo = :id");
+							$stmtFile->execute([':id' => $idGruppo]);
+							$numFile = $stmtFile->fetchColumn();
+
+							$stmtMembri = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoGruppo WHERE codGruppo = :id");
+							$stmtMembri->execute([':id' => $idGruppo]);
+							$numMembri = $stmtMembri->fetchColumn();
+
+							$linkOwner = "utenti.php?utente=" . urlencode($ownerId) . "&return_to=" . urlencode($current_url);
+
+							echo "<div class='tab-info-card'>
+									<p class='info-card-text'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>
+									<p class='info-card-text'><strong>Data Creazione:</strong> " . formattaData($infoGruppo['dataCreazione']) . "</p>
+									<p class='info-card-text'><strong>Numero di membri del gruppo:</strong> " . $numMembri . "</p>
+									<p class='info-card-text-last'><strong>Numero di file totali caricati nel DB:</strong> " . $numFile . "</p>
+								</div>";
+
+						} elseif ($tab_corrente === 'membri') {
+							$limit = 20;
+							list($limit, $np, $start_from) = getPaginationParams($limit);
+
+							$allowed_sorts = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data' => 'u.dataNascita'];
+							list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nickname', 'ASC');
+
+							$whereSql = "";
+							$params = [':id' => $idGruppo];
+
+							if (!empty($_GET['nickname'])) {
+								$whereSql .= " AND u.nickname LIKE :nickname";
+								$params[':nickname'] = '%' . $_GET['nickname'] . '%';
 							}
-							echo '<div class="table-container">';
-							stampaTabella($datiMembri, ['Nickname']);
-							echo '</div>';
-						} else {
-							echo "<p>Nessun membro associato a questo gruppo.</p>";
-						}
-						echo "<br><hr>";
+							if (!empty($_GET['nome'])) {
+								$whereSql .= " AND u.nome LIKE :nome";
+								$params[':nome'] = '%' . $_GET['nome'] . '%';
+							}
+							if (!empty($_GET['cognome'])) {
+								$whereSql .= " AND u.cognome LIKE :cognome";
+								$params[':cognome'] = '%' . $_GET['cognome'] . '%';
+							}
+							if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {
+								$whereSql .= " AND u.dataNascita >= :data_nascita";
+								$params[':data_nascita'] = $_GET['data_nascita'];
+							}
 
-						// ---------------------------------------------------------
-						// TABELLA 3: FILE MULTIMEDIALI CARICATI DAL GRUPPO
-						// ---------------------------------------------------------
-						echo "<h3>File multimediali del gruppo</h3>";
-						$stmtFile = $pdo->prepare("
-							SELECT uProp.nickname, uProp.codice as caricatoDa, f.titolo, f.tipo, f.dimensione, f.URL
-							FROM FileAssociatoGruppo fag
-							JOIN FileMultimediale f ON fag.file = f.numero
-							JOIN Utente uProp ON uProp.codice=f.caricatoDa
-							WHERE fag.codGruppo = :codice
-							ORDER BY f.titolo ASC
-						");
-						$stmtFile->execute([':codice' => $idGruppo]);
-						$filesRaw = $stmtFile->fetchAll(PDO::FETCH_ASSOC);
+							$stmtCount = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoGruppo uag JOIN Utente u ON uag.codUtente = u.codice WHERE uag.codGruppo = :id" . $whereSql);
+							$stmtCount->execute($params);
+							$totale = $stmtCount->fetchColumn();
 
-						if (!empty($filesRaw)) {
-							$datiFiles = [];
+							$numero_pagine = getNumberOfPages($totale, $limit);
 
-							$icon_types = [
-								'immagine' => 'images/image.png',
-								'video'    => 'images/video.png',
-								'audio'    => 'images/headphones.png',
-								'default'  => 'images/document.png'
-							];
+							$stmtMembri = $pdo->prepare("
+								SELECT u.codice, u.nickname, u.nome, u.cognome, u.dataNascita
+								FROM UtenteAutorizzatoGruppo uag
+								JOIN Utente u ON uag.codUtente = u.codice
+								WHERE uag.codGruppo = :id {$whereSql}
+								ORDER BY {$sql_sort} {$sort_dir}
+								LIMIT {$start_from}, {$limit}
+							");
+							$stmtMembri->execute($params);
+							$membriRaw = $stmtMembri->fetchAll(PDO::FETCH_ASSOC);
 
-							foreach ($filesRaw as $file) {
-								$icon_path = $icon_types[$file['tipo']] ?? $icon_types['default'];
+							echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Membri trovati: <strong>{$totale}</strong></p></div>";
 
-								$file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($file['tipo']) . "'>";
-								$file_name = htmlspecialchars($file['titolo']);
-								$file_link = htmlspecialchars($file['URL']);
-								$owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']);
-								if (!empty($current_url)) {
-									$owner_link .= "&return_to=" . urlencode($current_url);
+							if (!empty($membriRaw)) {
+								$datiMembri = [];
+								foreach ($membriRaw as $membro) {
+									$linkMembro = "utenti.php?utente=" . urlencode($membro['codice']) . "&return_to=" . urlencode($current_url);
+									
+									// Aggiunta icona proprietario
+									$iconaCorona = ((int)$membro['codice'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+
+									$htmlMembroNickname = "<a href='{$linkMembro}'>" . htmlspecialchars($membro['nickname']) . "</a>" . $iconaCorona;
+									$dataFormattata = !empty($membro['dataNascita']) ? formattaData($membro['dataNascita']) : "";
+
+									$datiMembri[] = [
+										'Nickname' => $htmlMembroNickname,
+										'Nome' => htmlspecialchars($membro['nome']),
+										'Cognome' => htmlspecialchars($membro['cognome']),
+										'Data di Nascita' => htmlspecialchars($dataFormattata)
+									];
 								}
-								$htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($file['nickname']) . "</a>";
 
-								$title_html = "<div id='file_name'>{$file_icon}<a href='{$file_link}'>{$file_name}</a></div>";
-								$size_html = formatFileSizeHtml((int)$file['dimensione']);
+								$customHeaders = generaIntestazioniOrdinabili([
+									'Nickname' => 'nickname',
+									'Nome' => 'nome',
+									'Cognome' => 'cognome',
+									'Data di Nascita' => 'data'
+								], $sort_col, $sort_dir);
 
-								$datiFiles[] = [
-									'File'         => $title_html,
-									'Proprietario' => $htmlOwner,
-									'Dimensione'   => $size_html
-								];
+								echo '<div class="table-container">';
+								stampaTabella($datiMembri, ['Nickname'], $customHeaders);
+								echo '</div>';
+								echo getPagesNav($np, $numero_pagine, 1);
+							} else {
+								echo "<p class='info-risultati'>Nessun membro trovato nel gruppo con i filtri selezionati.</p>";
 							}
-							echo '<div class="table-container">';
-							stampaTabella($datiFiles, ['File', 'Proprietario', 'Dimensione']);
-							echo '</div>';
-						} else {
-							echo "<p>Nessun file multimediale associato o caricato in questo gruppo.</p>";
+
+						} elseif ($tab_corrente === 'file') {
+							$limit = 20;
+							list($limit, $np, $start_from) = getPaginationParams($limit);
+
+							$allowed_sorts = [
+								'file' => 'f.titolo', 
+								'nickname' => 'uProp.nickname', 
+								'cognome' => 'uProp.cognome', 
+								'nome' => 'uProp.nome', 
+								'dimensione' => 'f.dimensione'
+							];
+							list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'file', 'ASC');
+
+							$whereSql = "";
+							$params = [':codice' => $idGruppo];
+
+							if (!empty($_GET['titolo_file'])) {
+								$whereSql .= " AND f.titolo LIKE :titolo_file";
+								$params[':titolo_file'] = '%' . $_GET['titolo_file'] . '%';
+							}
+							if (!empty($_GET['nickname'])) {
+								$whereSql .= " AND uProp.nickname LIKE :nickname";
+								$params[':nickname'] = '%' . $_GET['nickname'] . '%';
+							}
+
+							$stmtCount = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo fag JOIN FileMultimediale f ON fag.file = f.numero JOIN Utente uProp ON uProp.codice=f.caricatoDa WHERE fag.codGruppo = :codice" . $whereSql);
+							$stmtCount->execute($params);
+							$totale = $stmtCount->fetchColumn();
+
+							$numero_pagine = getNumberOfPages($totale, $limit);
+
+							$stmtFile = $pdo->prepare("
+								SELECT f.numero, f.titolo, f.tipo, uProp.codice as caricatoDa, uProp.nickname, uProp.cognome, uProp.nome, f.dimensione, f.URL 
+								FROM FileAssociatoGruppo fag 
+								JOIN FileMultimediale f ON fag.file = f.numero 
+								JOIN Utente uProp ON uProp.codice=f.caricatoDa 
+								WHERE fag.codGruppo = :codice {$whereSql}
+								ORDER BY {$sql_sort} {$sort_dir}
+								LIMIT {$start_from}, {$limit}
+							");
+							$stmtFile->execute($params);
+							$filesRaw = $stmtFile->fetchAll(PDO::FETCH_ASSOC);
+
+							echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>File condivisi trovati: <strong>{$totale}</strong></p></div>";
+
+							if (!empty($filesRaw)) {
+								$datiFiles = [];
+								$icon_types = [
+									'immagine' => 'images/image.png',
+									'video'    => 'images/video.png',
+									'audio'    => 'images/headphones.png',
+									'default'  => 'images/document.png'
+								];
+
+								foreach ($filesRaw as $file) {
+									$tipoStr = strtolower($file['tipo']);
+									$icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
+
+									$file_link = htmlspecialchars($file['URL']);
+
+									$titolo_html = "<a href='{$file_link}' target='_blank' class='file-link'>" . 
+												   "<img src='" . htmlspecialchars($icon_path) . "' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" . 
+												   htmlspecialchars($file['titolo']) . "</a>";
+
+									$owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']) . "&return_to=" . urlencode($current_url);
+									
+									// Aggiunta icona proprietario
+									$iconaCorona = ((int)$file['caricatoDa'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+
+									$htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($file['nickname']) . "</a>" . $iconaCorona;
+
+									$datiFiles[] = [
+										'File' => $titolo_html,
+										'Nickname' => $htmlOwner,
+										'Cognome' => htmlspecialchars($file['cognome']),
+										'Nome' => htmlspecialchars($file['nome']),
+										'Dimensione' => "<span class='text-right' style='display:block;'>" . htmlspecialchars($file['dimensione']) . " MB</span>"
+									];
+								}
+
+								$customHeaders = generaIntestazioniOrdinabili([
+									'File'       => 'file',
+									'Nickname'   => 'nickname',
+									'Cognome'    => 'cognome',
+									'Nome'       => 'nome',
+									'Dimensione' => 'dimensione'
+								], $sort_col, $sort_dir);
+
+								echo '<div class="table-container">';
+								stampaTabella($datiFiles, ['File', 'Nickname'], $customHeaders);
+								echo '</div>';
+								echo getPagesNav($np, $numero_pagine, 1);
+							} else {
+								echo "<p class='info-risultati'>Nessun file condiviso trovato nel gruppo con i filtri selezionati.</p>";
+							}
 						}
 
-						$back_url = !empty($_GET['return_to']) ? $_GET['return_to'] : 'gruppi.php';
-						echo "<br><p><a href='" . htmlspecialchars($back_url) . "'>&larr; Torna alla pagina precedente</a></p>";
 					} else {
-						echo "<p>Gruppo non trovato o non esistente.</p>";
-						echo "<p><a href='gruppi.php'>Torna alla pagina precedente</a></p>";
+						echo "<p class='info-risultati'>Gruppo non trovato.</p>";
 					}
+
 				} else {
 					// =========================================================
-					// VISTA PRINCIPALE: LISTA DEI GRUPPI CON PAGINAZIONE AJAX
+					// ELENCO GLOBALE GRUPPI
 					// =========================================================
+					$limit = 20;
+					list($limit, $np, $start_from) = getPaginationParams($limit);
 
-					// Parametri di paginazione
-					$recordsPerPage = 20;
-					list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
+					// Definizione dei campi ordinabili: label in the table => column in the db
+					$allowed_sorts = [
+						'nome' => 'Gruppo.nome',
+						'data' => 'Gruppo.dataCreazione',
+						'Proprietario' => 'Utente.nickname',
+					];
+					list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nome', 'ASC');
 
 					$where = [];
 					$params = [];
 
 					if (!empty($_GET['nome'])) {
 						$where[] = "Gruppo.nome LIKE :nome";
-						$params[':nome'] = "%" . $_GET['nome'] . "%";
+						$params[':nome'] = '%' . $_GET['nome'] . '%';
 					}
 					if (!empty($_GET['proprietario'])) {
 						$where[] = "Utente.nickname LIKE :proprietario";
-						$params[':proprietario'] = "%" . $_GET['proprietario'] . "%";
+						$params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
 					}
 					if (!empty($_GET['data'])) {
 						if (isDataValidaRange($_GET['data'])) {
-							$where[] = "DATE(Gruppo.dataCreazione) >= :data";
+							$where[] = "Gruppo.dataCreazione >= :data";
 							$params[':data'] = $_GET['data'];
 						}
 					}
 
-					// Parametri di Ordinamento Dinamico
-					list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
-						'nome'         => 'Gruppo.nome',
-						'Proprietario' => 'Proprietario',
-						'data'         => 'Gruppo.dataCreazione'
-					], 'data', 'ASC');
-
-					// Conteggio per la paginazione
-					$sqlContatore = "SELECT COUNT(*) FROM Gruppo JOIN Utente ON Gruppo.creatoDa = Utente.codice";
-					if (!empty($where)) {
-						$sqlContatore .= " WHERE " . implode(" AND ", $where);
-					}
-					$stmtConto = $pdo->prepare($sqlContatore);
-					$stmtConto->execute($params);
-					$totaleRisultati = $stmtConto->fetchColumn();
-
-					// Calcolo numero di pagine
+					$tabella_count = "Gruppo JOIN Utente ON Gruppo.creatoDa = Utente.codice";
+					$totaleRisultati = getNumberOfRecords($pdo, $tabella_count, $where, $params);
 					$numero_pagine = getNumberOfPages($totaleRisultati, $limit);
 
-					// Query principale con LIMIT, OFFSET e SORT
 					$sql = "
-						SELECT 
-							Gruppo.codice as 'gruppoId',
-							Gruppo.nome as 'Nome Gruppo',
-							Gruppo.dataCreazione as 'Data Creazione',
-							Utente.nickname as 'Proprietario',
-							Utente.codice as 'ownerId'
+						SELECT Gruppo.codice as 'gruppoId', Gruppo.nome as 'Nome Gruppo', Gruppo.dataCreazione as 'Data Creazione', Utente.nickname as 'Proprietario', Utente.codice as 'ownerId'
 						FROM Gruppo
 						JOIN Utente ON Gruppo.creatoDa = Utente.codice
 					";
@@ -232,19 +371,17 @@ if (!$isAjax):
 					$sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$start_from;
 
 					$stmt = $pdo->prepare($sql);
-					foreach ($params as $chiave => $valore) {
-						$stmt->bindValue($chiave, $valore);
-					}
-					$stmt->execute();
-					$righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
+					$stmt->execute($params);
+					$datiOriginale = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-					echo "<p class='info-risultati'>Trovati <strong>$totaleRisultati</strong> gruppi (<strong>$recordsPerPage</strong> per pagina)</p>";
+					echo "<div class='table-top-bar'>";
+					echo "<p class='info-risultati zero-margin'>Gruppi trovati: <strong>{$totaleRisultati}</strong></p>";
+					echo "</div>";
 
-					if (!empty($righe)) {
+					if ($datiOriginale) {
 						$datiGruppi = [];
-						$current_url = $_SERVER['REQUEST_URI'];
-
-						foreach ($righe as $riga) {
+						// Costruiamo un nuovo array iniettando i link
+						foreach ($datiOriginale as $riga) {
 							$linkGruppo = "gruppi.php?gruppo=" . urlencode($riga['gruppoId']) . "&return_to=" . urlencode($current_url);
 							$htmlNomeGruppo = "<a href='{$linkGruppo}'>" . htmlspecialchars($riga['Nome Gruppo']) . "</a>";
 
@@ -254,7 +391,7 @@ if (!$isAjax):
 							$datiGruppi[] = [
 								'Nome Gruppo'    => $htmlNomeGruppo,
 								'Proprietario'   => $htmlProprietario,
-								'Data Creazione' => $riga['Data Creazione']
+								'Data Creazione' => formattaData($riga['Data Creazione'])
 							];
 						}
 
@@ -272,13 +409,13 @@ if (!$isAjax):
 						// Stampa i link della paginazione
 						echo getPagesNav($np, $numero_pagine, 1);
 					} else {
-						echo "<p class='info-risultati'>Nessun risultato trovato.</p>";
+						echo "<p class='info-risultati'>Nessun gruppo trovato.</p>";
 					}
 				}
 				?>
 
 				<?php if (!$isAjax): ?>
-				</div> <!-- Fine ajax-results -->
+				</div>
 			<?php endif; ?>
 
 			<?php if (!$isAjax): ?>
