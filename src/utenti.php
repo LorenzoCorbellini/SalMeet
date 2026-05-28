@@ -107,18 +107,22 @@ if (!$isAjax):
                         $dataFormattata = !empty($infoUtente['dataNascita']) ? (function_exists('formattaData') ? formattaData($infoUtente['dataNascita']) : date('d/m/Y', strtotime($infoUtente['dataNascita']))) : "";
 
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
-                        echo "<h2>Profilo di <b><i>" . htmlspecialchars($infoUtente['cognome']) . htmlspecialchars($infoUtente['nome']) . "</i></b></h2>";
+                        echo "<h2>Profilo di <b><i>" . htmlspecialchars($infoUtente['cognome']) . " " . htmlspecialchars($infoUtente['nome']) . "</i></b></h2>";
 
-                        echo " <div class='detail-tabs-header'>
-                                    <div class='bacheca-tabs tabs-reset'>";
+                        // Costruzione dinamica degli URL per le tab (Stile bacheche.php)
+                        $urlInfo     = "?utente=" . urlencode($idUtente) . "&tab=info";
+                        $urlGruppi   = "?utente=" . urlencode($idUtente) . "&tab=gruppi";
+                        $urlBacheche = "?utente=" . urlencode($idUtente) . "&tab=bacheche";
+                        $urlFile     = "?utente=" . urlencode($idUtente) . "&tab=file";
 
-                        // Esempio corretto per ogni link:
-                        echo '<a href="?utente=' . $idUtente . '&tab=info" class="tab ' . ($tab_corrente === 'info' ? 'active' : '') . '">Informazioni</a>';
-                        echo '<a href="?utente=' . $idUtente . '&tab=gruppi" class="tab ' . ($tab_corrente === 'gruppi' ? 'active' : '') . '">Gruppi</a>';
-                        echo '<a href="?utente=' . $idUtente . '&tab=bacheche" class="tab ' . ($tab_corrente === 'bacheche' ? 'active' : '') . '">Bacheche</a>';
-                        echo '<a href="?utente=' . $idUtente . '&tab=file" class="tab ' . ($tab_corrente === 'file' ? 'active' : '') . '">File Condivisi</a>';
-                        echo '</div>';
-                        echo '</div>';
+                        echo "<div class='detail-tabs-header'>
+                                <div class='bacheca-tabs tabs-reset'>
+                                    <a href='{$urlInfo}' class='" . ($tab_corrente === 'info' ? 'active' : '') . "'>Informazioni</a>
+                                    <a href='{$urlGruppi}' class='" . ($tab_corrente === 'gruppi' ? 'active' : '') . "'>Gruppi</a>
+                                    <a href='{$urlBacheche}' class='" . ($tab_corrente === 'bacheche' ? 'active' : '') . "'>Bacheche</a>
+                                    <a href='{$urlFile}' class='" . ($tab_corrente === 'file' ? 'active' : '') . "'>File Condivisi</a>
+                                </div>
+                              </div>";
 
                         if ($tab_corrente === 'info') {
                             $stmtFile = $pdo->prepare("SELECT COUNT(*) FROM FileMultimediale WHERE caricatoDa = :codice");
@@ -133,7 +137,7 @@ if (!$isAjax):
                             $stmtBacheche->execute([':codice' => $idUtente]);
                             $numBacheche = $stmtBacheche->fetchColumn();
 
-                            echo "<div class='tab-info-card'>;
+                            echo "<div class='tab-info-card'>
                                     <p class='info-card-text'><strong>Nickname:</strong> " . htmlspecialchars($infoUtente['nickname']) . "</p>
                                     <p class='info-card-text'><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>
                                     <p class='info-card-text'><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>
@@ -142,6 +146,7 @@ if (!$isAjax):
                                     <p class='info-card-text'><strong>Numero di bacheche a cui appartiene:</strong> " . $numBacheche . "</p>
                                     <p class='info-card-text-last'><strong>Numero di file caricati:</strong> " . $numFile . "</p>
                                 </div>";
+
                         } elseif ($tab_corrente === 'gruppi') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -190,9 +195,13 @@ if (!$isAjax):
 
                             $gruppiFormattati = [];
                             foreach ($gruppi as $g) {
+                                // Link strutturati per i gruppi e per i proprietari
+                                $link_gruppo = "gruppi.php?codice=" . urlencode($g['id_gruppo']);
+                                $link_proprietario = "utenti.php?utente=" . urlencode($g['id_proprietario']);
+
                                 $gruppiFormattati[] = [
-                                    'Nome Gruppo' => "<a href='gruppi.php?gruppo=" . urlencode($g['id_gruppo']) . "'><strong>" . htmlspecialchars($g['Nome Gruppo']) . "</strong></a>",
-                                    'Proprietario' => "<a href='utenti.php?utente=" . urlencode($g['id_proprietario']) . "'>" . htmlspecialchars($g['Proprietario']) . "</a>",
+                                    'Nome Gruppo' => "<a href='{$link_gruppo}' class='row-link'><strong>" . htmlspecialchars($g['Nome Gruppo']) . "</strong></a>",
+                                    'Proprietario' => "<a href='{$link_proprietario}' class='row-link'>" . htmlspecialchars($g['Proprietario']) . "</a>",
                                     'Data Creazione' => htmlspecialchars($g['Data Creazione'] ?? '')
                                 ];
                             }
@@ -209,6 +218,7 @@ if (!$isAjax):
                             stampaTabella($gruppiFormattati, [], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
+
                         } elseif ($tab_corrente === 'bacheche') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -257,9 +267,13 @@ if (!$isAjax):
 
                             $bachecheFormattate = [];
                             foreach ($bacheche as $b) {
+                                // Link strutturati per le bacheche
+                                $link_bacheca = "bacheche.php?bacheca=" . urlencode($b['Nome Bacheca']) . "&owner=" . urlencode($b['id_proprietario']);
+                                $link_proprietario = "utenti.php?utente=" . urlencode($b['id_proprietario']);
+
                                 $bachecheFormattate[] = [
-                                    'Nome Bacheca' => "<a href='bacheche.php?bacheca=" . urlencode($b['Nome Bacheca']) . "&owner=" . urlencode($b['id_proprietario']) . "'><strong>" . htmlspecialchars($b['Nome Bacheca']) . "</strong></a>",
-                                    'Proprietario' => "<a href='utenti.php?utente=" . urlencode($b['id_proprietario']) . "'>" . htmlspecialchars($b['Proprietario']) . "</a>",
+                                    'Nome Bacheca' => "<a href='{$link_bacheca}' class='row-link'><strong>" . htmlspecialchars($b['Nome Bacheca']) . "</strong></a>",
+                                    'Proprietario' => "<a href='{$link_proprietario}' class='row-link'>" . htmlspecialchars($b['Proprietario']) . "</a>",
                                     'Data Creazione' => htmlspecialchars($b['Data Creazione'] ?? '')
                                 ];
                             }
@@ -276,6 +290,7 @@ if (!$isAjax):
                             stampaTabella($bachecheFormattate, [], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
+
                         } elseif ($tab_corrente === 'file') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -330,9 +345,11 @@ if (!$isAjax):
                                     $icona = "images/text.png";
                                 }
 
+                                // Link strutturati e unificati per i file (apertura in nuova scheda)
                                 $link_file = htmlspecialchars($f['url']);
-                                $titolo_html = "<img src='{$icona}' alt='Icona File' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
-                                    "<a href='{$link_file}' target='_blank'><strong>" . htmlspecialchars($f['File']) . "</strong></a>";
+                                $titolo_html = "<a href='{$link_file}' target='_blank' class='row-link' style='text-decoration:none; color:inherit;'>" .
+                                               "<img src='{$icona}' alt='Icona File' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
+                                               "<strong>" . htmlspecialchars($f['File']) . "</strong></a>";
 
                                 $filesFormattati[] = [
                                     'File' => $titolo_html,
@@ -352,6 +369,7 @@ if (!$isAjax):
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
                         }
+
                     } else {
                         echo "<p class='info-risultati'>Utente non trovato.</p>";
                     }
@@ -421,9 +439,9 @@ if (!$isAjax):
                             $htmlNickname = "<a href='?utente=" . urlencode($riga['codice']) . "' class='row-link' title='Visualizza profilo'>" . htmlspecialchars($riga['nickname']) . "</a>";
                             $datiUtenti[] = [
                                 'Nickname'        => $htmlNickname,
-                                'Nome'            => $riga['Nome'],
-                                'Cognome'         => $riga['Cognome'],
-                                'Data di Nascita' => $riga['Data di Nascita']
+                                'Nome'            => htmlspecialchars($riga['Nome']),
+                                'Cognome'         => htmlspecialchars($riga['Cognome']),
+                                'Data di Nascita' => htmlspecialchars($riga['Data di Nascita'])
                             ];
                         }
 
