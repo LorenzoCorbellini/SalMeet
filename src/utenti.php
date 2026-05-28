@@ -137,7 +137,6 @@ if (!$isAjax):
                             echo "<p><strong>Numero di gruppi a cui appartiene:</strong> " . $numGruppi . "</p>";
                             echo "<p><strong>Numero di bacheche a cui appartiene:</strong> " . $numBacheche . "</p>";
                             echo "</div>";
-
                         } elseif ($tab_corrente === 'gruppi') {
                             $limit = 10;
                             $np = isset($_GET['np']) ? (int)$_GET['np'] : 1;
@@ -173,7 +172,6 @@ if (!$isAjax):
                             $numero_records = $stmtCount->fetchColumn();
                             $numero_pagine = ceil($numero_records / $limit);
 
-                            // Modifica della Query per estrarre anche gli ID da linkare
                             $sql = "SELECT g.codice AS id_gruppo, g.nome AS `Nome Gruppo`, u_owner.codice AS id_proprietario, u_owner.nickname AS `Proprietario`, g.dataCreazione AS `Data Creazione` 
                                     FROM UtenteAutorizzatoGruppo uag 
                                     JOIN Gruppo g ON uag.codGruppo = g.codice 
@@ -185,7 +183,6 @@ if (!$isAjax):
                             $stmt->execute($params);
                             $gruppi = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                            // Formattazione dati con link
                             $gruppiFormattati = [];
                             foreach ($gruppi as $g) {
                                 $gruppiFormattati[] = [
@@ -243,7 +240,6 @@ if (!$isAjax):
                             $numero_records = $stmtCount->fetchColumn();
                             $numero_pagine = ceil($numero_records / $limit);
 
-                            // Modifica della Query per estrarre anche gli ID da linkare
                             $sql = "SELECT b.codiceUtente AS id_proprietario, uab.nomeBacheca AS `Nome Bacheca`, u_owner.nickname AS `Proprietario`, b.dataCreazione AS `Data Creazione` 
                                     FROM UtenteAutorizzatoBacheca uab 
                                     JOIN Bacheca b ON uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente
@@ -255,7 +251,6 @@ if (!$isAjax):
                             $stmt->execute($params);
                             $bacheche = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                            // Formattazione dati con link
                             $bachecheFormattate = [];
                             foreach ($bacheche as $b) {
                                 $bachecheFormattate[] = [
@@ -306,7 +301,6 @@ if (!$isAjax):
                             $numero_records = $stmtCount->fetchColumn();
                             $numero_pagine = ceil($numero_records / $limit);
 
-                            // Modifica per estrarre estensione/tipo e l'url per costruire icone e link
                             $sql = "SELECT url, tipo, titolo AS `File`, dimensione AS `Dimensione` 
                                     FROM FileMultimediale 
                                     $whereSql 
@@ -316,7 +310,6 @@ if (!$isAjax):
                             $stmt->execute($params);
                             $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                            // Formattazione file con icone cliccabili e link
                             $filesFormattati = [];
                             foreach ($files as $f) {
                                 $mime = strtolower($f['tipo']);
@@ -367,7 +360,6 @@ if (!$isAjax):
                     if ($np < 1) $np = 1;
                     $start_from = ($np - 1) * $limit;
 
-                    // Gestione Ordinamento
                     $allowed_sorts = [
                         'nickname' => 'nickname',
                         'nome'     => 'nome',
@@ -379,7 +371,6 @@ if (!$isAjax):
                     $sort_dir = isset($_GET['dir']) && strtoupper($_GET['dir']) === 'DESC' ? 'DESC' : 'ASC';
                     $sql_sort = $allowed_sorts[$sort_col] ?? 'nickname';
 
-                    // Costruzione clausola WHERE
                     $whereSql = "WHERE 1=1";
                     $params = [];
 
@@ -402,14 +393,12 @@ if (!$isAjax):
                         }
                     }
 
-                    // Query per il numero totale di record
                     $countSql = "SELECT COUNT(*) FROM Utente " . $whereSql;
                     $stmtCount = $pdo->prepare($countSql);
                     $stmtCount->execute($params);
                     $numero_records = $stmtCount->fetchColumn();
                     $numero_pagine = ceil($numero_records / $limit);
 
-                    // Query per i dati
                     $sql = "SELECT codice, nickname, nome AS Nome, cognome AS Cognome, dataNascita AS `Data di Nascita` 
                             FROM Utente 
                             $whereSql 
