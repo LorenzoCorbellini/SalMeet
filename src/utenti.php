@@ -19,7 +19,7 @@ if (!$isAjax):
 
     <body>
         <header>
-            <h1 id=\"hcod1\">Utenti</h1>
+            <h1 id="hcod1">Utenti</h1>
         </header>
 
         <div class="main-container">
@@ -199,7 +199,7 @@ if (!$isAjax):
                                 $link_proprietario = "utenti.php?utente=" . urlencode($g['id_proprietario']);
 
                                 // Controllo corona: se il proprietario del gruppo è l'utente corrente visualizzato
-                                $iconaCorona = ((int)$g['id_proprietario'] === $idUtente) ? " <img src='images/crow.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+                                $iconaCorona = ((int)$g['id_proprietario'] === $idUtente) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                 $gruppiFormattati[] = [
                                     'Nome Gruppo' => "<a href='{$link_gruppo}' class='row-link'><strong>" . htmlspecialchars($g['Nome Gruppo']) . "</strong></a>" . $iconaCorona,
@@ -217,7 +217,6 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            // CORREZIONE: Inserite le chiavi HTML nei campi sicuri (secondo parametro)
                             stampaTabella($gruppiFormattati, ['Nome Gruppo', 'Proprietario'], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
@@ -274,7 +273,7 @@ if (!$isAjax):
                                 $link_proprietario = "utenti.php?utente=" . urlencode($b['id_proprietario']);
 
                                 // Controllo corona: se il proprietario della bacheca è l'utente corrente visualizzato
-                                $iconaCorona = ((int)$b['id_proprietario'] === $idUtente) ? " <img src='images/crow.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+                                $iconaCorona = ((int)$b['id_proprietario'] === $idUtente) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                 $bachecheFormattate[] = [
                                     'Nome Bacheca' => "<a href='{$link_bacheca}' class='row-link'><strong>" . htmlspecialchars($b['Nome Bacheca']) . "</strong></a>" . $iconaCorona,
@@ -292,7 +291,6 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            // CORREZIONE: Inserite le chiavi HTML nei campi sicuri (secondo parametro)
                             stampaTabella($bachecheFormattate, ['Nome Bacheca', 'Proprietario'], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
@@ -334,26 +332,21 @@ if (!$isAjax):
                             $stmt->execute($params);
                             $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                            $icon_types = [
+                                'immagine' => 'images/image.png',
+                                'video' => 'images/video.png',
+                                'audio' => 'images/headphones.png',
+                                'default' => 'images/document.png'
+                            ];
+
                             $filesFormattati = [];
                             foreach ($files as $f) {
-                                $mime = strtolower($f['tipo']);
-                                $icona = "images/file.png";
-
-                                if (strpos($mime, 'image/') !== false) {
-                                    $icona = "images/image.png";
-                                } elseif (strpos($mime, 'pdf') !== false) {
-                                    $icona = "images/pdf.png";
-                                } elseif (strpos($mime, 'video/') !== false) {
-                                    $icona = "images/video.png";
-                                } elseif (strpos($mime, 'audio/') !== false) {
-                                    $icona = "images/audio.png";
-                                } elseif (strpos($mime, 'text/') !== false || strpos($mime, 'php') !== false || strpos($mime, 'sql') !== false) {
-                                    $icona = "images/text.png";
-                                }
+                                $tipoStr = strtolower($f['tipo']);
+                                $icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
 
                                 $link_file = htmlspecialchars($f['url']);
                                 $titolo_html = "<a href='{$link_file}' target='_blank' class='row-link' style='text-decoration:none; color:inherit;'>" .
-                                               "<img src='{$icona}' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
+                                               "<img src='{$icon_path}' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
                                                "<strong>" . htmlspecialchars($f['File']) . "</strong></a>";
 
                                 $filesFormattati[] = [
@@ -370,7 +363,6 @@ if (!$isAjax):
                             ], $sort_col, $sort_dir);
 
                             echo '<div class="table-container">';
-                            // CORREZIONE: Inserita la chiave HTML nel campo sicuro (secondo parametro)
                             stampaTabella($filesFormattati, ['File'], $customHeaders);
                             echo '</div>';
                             echo getPagesNav($np, $numero_pagine, 1);
