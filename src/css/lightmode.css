@@ -875,9 +875,11 @@ div.swal2-container .swal-wide-split .swal2-input {
 
 /* Intestazioni delle colonne (Fisse in alto) */
 .swal-multi-header {
-    margin: 0 0 10px 0;
-    padding-bottom: 3px;
-    color: #333;
+    margin: 0 0 12px 0;
+    padding-bottom: 5px;
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    font-weight: 600;
     flex-shrink: 0;
 }
 
@@ -905,24 +907,27 @@ div.swal2-container .swal-wide-split .swal2-input {
 }
 
 .swal-multi-label {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: bold;
     display: block;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
+    color: var(--text-dark);
 }
 
 .swal-multi-input {
     width: 100%;
-    height: 32px;
+    height: 38px;
     margin: 0;
-    font-size: 13px;
+    font-size: 14px;
+    padding: 0 10px;
 }
 
 .swal-multi-btn-search {
     width: 100%;
     margin: 0;
-    padding: 8px;
-    font-size: 13px;
+    padding: 10px;
+    font-size: 14.5px;
+    font-weight: bold;
     flex-shrink: 0;
 }
 
@@ -932,7 +937,7 @@ div.swal2-container .swal-wide-split .swal2-input {
 .swal-multi-list {
     overflow-y: auto;
     flex-grow: 1;
-    font-size: 13px;
+    font-size: 14.5px;
     padding-right: 5px;
     margin-top: 5px;
 }
@@ -952,23 +957,27 @@ div.swal2-container .swal-wide-split .swal2-input {
 }
 
 /* Contenuti statici all'interno delle liste scrollabili */
-.swal-multi-msg-empty {
-    color: #888;
-    font-style: italic;
+.swal-multi-msg-empty,
+.swal-multi-msg-loading,
+.swal-multi-msg-error {
+    font-size: 14.5px;
     text-align: center;
     margin-top: 40px;
 }
 
+.swal-multi-msg-empty {
+    color: #777;
+    font-style: italic;
+}
+
 .swal-multi-msg-loading {
-    text-align: center;
-    margin-top: 40px;
+    color: #555;
     font-style: italic;
 }
 
 .swal-multi-msg-error {
     color: #e74c3c;
-    text-align: center;
-    margin-top: 40px;
+    font-weight: bold;
 }
 
 /* Righe degli utenti (Risultati e Selezionati) */
@@ -976,8 +985,8 @@ div.swal2-container .swal-wide-split .swal2-input {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px;
-    border-bottom: 1px solid #eee;
+    padding: 8px 10px;
+    border-bottom: 1px solid #ddd;
     margin-bottom: 4px;
     box-sizing: border-box;
 }
@@ -987,9 +996,18 @@ div.swal2-container .swal-wide-split .swal2-input {
     border-radius: 3px;
 }
 
+.swal-multi-row strong {
+    font-size: 15px;
+    color: var(--text-dark);
+    display: block;
+    margin-bottom: 2px;
+}
+
 .swal-multi-row-subtext {
-    font-size: 11px;
-    color: #666;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #555;
+    line-height: 1.3;
 }
 
 /* Bottoni Più (+) e Meno (-) */
@@ -997,10 +1015,11 @@ div.swal2-container .swal-wide-split .swal2-input {
 .swal-multi-btn-del {
     color: white;
     border: none;
-    border-radius: 3px;
-    width: 22px;
-    height: 22px;
+    border-radius: 4px;
+    width: 26px;
+    height: 26px;
     cursor: pointer;
+    font-size: 16px;
     font-weight: bold;
     display: flex;
     align-items: center;

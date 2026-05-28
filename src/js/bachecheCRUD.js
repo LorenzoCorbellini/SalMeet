@@ -302,7 +302,7 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false, nome
                             // Generazione righe iniettate direttamente nel contenitore flessibile
                             let html = '';
                             data.utenti.forEach(u => {
-                                const infoData = u.data_formattata ? ` | Nascita: ${u.data_formattata}` : '';
+                                const infoData = u.data_formattata ? ` ${u.data_formattata}` : '';
                                 html += `
                                     <label class="swal-multi-row" style="cursor: pointer; justify-content: flex-start; gap: 10px;">
                                         <input type="radio" name="swal-user-radio" value="${u.codice}" data-nickname="${u.nickname}" style="cursor: pointer; margin:0;">
@@ -440,11 +440,12 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
                 selectedDiv.innerHTML = '';
                 utentiSelezionati.forEach((u, id) => {
                     const row = document.createElement('div');
+                    const infoData = u.data_formattata ? ` ${u.data_formattata}` : '';
                     row.className = 'swal-multi-row swal-multi-row-selected';
                     row.innerHTML = `
                         <div>
                             <strong>${u.nickname}</strong>
-                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome}</div>
+                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome} ${infoData}</div>
                         </div>
                         <button type="button" class="swal-multi-btn-del" data-id="${id}">-</button>
                     `;
@@ -474,11 +475,12 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
 
                 filtrati.forEach(u => {
                     const row = document.createElement('div');
+                    const infoData = u.data_formattata ? ` ${u.data_formattata}` : '';
                     row.className = 'swal-multi-row';
                     row.innerHTML = `
                         <div>
                             <strong>${u.nickname}</strong>
-                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome}</div>
+                            <div class="swal-multi-row-subtext">${u.nome} ${u.cognome} ${infoData}</div>
                         </div>
                         <button type="button" class="swal-multi-btn-add" data-id="${u.codice}" data-nick="${u.nickname}" data-nome="${u.nome}" data-cognome="${u.cognome}">+</button>
                     `;
@@ -521,7 +523,12 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
                     const data = await r.json();
 
                     if (data.successo && data.utenti) {
-                        resultsTitle.textContent = `Risultati (${data.utenti.length})`;
+                        const limitUtenti = 50;
+                        if (data.utenti.length >= limitUtenti) {
+                            resultsTitle.textContent = `Risultati (Primi ${limitUtenti})`;
+                        } else {
+                            resultsTitle.textContent = `Risultati (${data.utenti.length})`;
+                        }
                         renderizzaRisultatiCentrali(data.utenti);
                     } else {
                         resultsTitle.textContent = 'Risultati (0)';
@@ -544,7 +551,7 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
             nomeBacheca: nomeBacheca,
             owner: owner,
             listaUtenti: arrayIdUtenti
-        }, 'Tutti gli utenti selezionati sono stati abilitati correttamente nella bacheca!');
+        }, 'Tutti gli utenti selezionati sono stati autorizzati con successo alla bacheca!');
     }
 }
 
@@ -564,7 +571,7 @@ async function aggiungiAutorizzato(nomeBacheca, owner) {
 function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
     Swal.fire({
         title: 'Rimuovi Autorizzazione',
-        html: `Vuoi davvero revocare l'accesso a <b class="swal-text-heavy">${nickname}</b>? Tutti i suoi file in questa bacheca verranno rimossi.`,
+        html: `Vuoi davvero revocare l'accesso a <b class="swal-text-heavy">${nickname}</b> da <b class="swal-text-heavy">${nomeBacheca}</b>? Tutti i suoi file verranno rimossi da questa bacheca.`,
         icon: 'warning',
         heightAuto: false,
         scrollbarPadding: false,
@@ -644,7 +651,6 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                 Swal.showValidationMessage('Seleziona almeno un file dalla colonna centrale prima di pubblicare.');
                 return false;
             }
-            // Ritorna l'array degli ID dei file
             return Array.from(fileSelezionati.keys());
         },
         didOpen: () => {
@@ -675,14 +681,13 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                     row.innerHTML = `
                         <div>
                             <strong>${f.nomeFile}</strong>
-                            <div class="swal-multi-row-subtext">Di: @${f.nickname}</div>
+                            <div class="swal-multi-row-subtext">@${f.nickname}</div>
                         </div>
                         <button type="button" class="swal-multi-btn-del" data-id="${id}">-</button>
                     `;
                     selectedDiv.appendChild(row);
                 });
 
-                // Gestore click per togliere file dai selezionati
                 selectedDiv.querySelectorAll('.swal-multi-btn-del').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const idDaTogliere = btn.getAttribute('data-id');
@@ -697,7 +702,6 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                 cachedServerResults = files;
                 resultsDiv.innerHTML = '';
 
-                // Mostriamo solo i file non ancora selezionati
                 const filtrati = files.filter(f => !fileSelezionati.has(String(f.numero)));
 
                 if (filtrati.length === 0) {
@@ -711,14 +715,13 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                     row.innerHTML = `
                         <div>
                             <strong>${f.nome_file}</strong>
-                            <div class="swal-multi-row-subtext">Di: @${f.nickname} (${f.utente_nome} ${f.utente_cognome})</div>
+                            <div class="swal-multi-row-subtext">@${f.nickname} (${f.utente_nome} ${f.utente_cognome})</div>
                         </div>
                         <button type="button" class="swal-multi-btn-add" data-id="${f.numero}" data-nomefile="${f.nome_file}" data-nick="${f.nickname}">+</button>
                     `;
                     resultsDiv.appendChild(row);
                 });
 
-                // Gestore click per spostare il file a destra
                 resultsDiv.querySelectorAll('.swal-multi-btn-add').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const id = btn.getAttribute('data-id');
@@ -760,8 +763,13 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                     });
                     const data = await response.json();
 
-                    if (data.successo && data.files.length > 0) {
-                        resultsTitle.textContent = `Disponibili (${data.files.length})`;
+                    if (data.successo && data.files && data.files.length > 0) {
+                        const limitFile = 30;
+                        if (data.files.length >= limitFile) {
+                            resultsTitle.textContent = `Disponibili (Primi ${limitFile})`;
+                        } else {
+                            resultsTitle.textContent = `Disponibili (${data.files.length})`;
+                        }
                         renderizzaRisultatiCentrali(data.files);
                     } else {
                         resultsTitle.textContent = 'Disponibili (0)';
@@ -773,7 +781,6 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                 }
             };
 
-            // Eventi di ricerca
             searchBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 eseguiCercaFile();
@@ -798,7 +805,7 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
             nomeBacheca: nomeBacheca,
             owner: owner,
             listaFiles: arrayIdFiles
-        }, 'Tutti i file selezionati sono stati pubblicati correttamente!');
+        }, 'Tutti i file selezionati sono stati aggiunti correttamente alla bacheca!');
     }
 }
 
