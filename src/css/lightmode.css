@@ -492,7 +492,6 @@ td {
     border-bottom: 1px solid rgba(179, 162, 159, 0.3);
     transition: background-color 0.2s ease;
     position: relative;
-    vertical-align: middle;
 }
 
 tr:last-child td {
@@ -532,8 +531,8 @@ table .btn-aggiungi {
 }
 
 table .btn-azione {
-    width: 22px;
-    height: 22px;
+    width: 19px;
+    height: 19px;
     margin: 0 2px;
 }
 
