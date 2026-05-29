@@ -157,23 +157,6 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 	return $result;
 }
 
-function initFilters(): void {
-	$filtro_config = [
-		'campi' => [
-			['tipo'  => 'text',  'name' => 'filename', 'label' => 'File'],
-			['tipo'  => 'text',  'name' => 'owner', 'label' => 'Proprietario'],
-			['tipo'  => 'checkbox-group',  'name' => 'filetype', 'label' => 'Tipo',
-				'opzioni' => [
-					'immagine' => 'Immagini',
-					'audio' => 'Audio',
-					'video' => 'Video'
-				]
-			]
-		]
-	];
-	include 'filter.php';
-}
-
 function isAjaxRequest(): bool {
 	return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
 		strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
