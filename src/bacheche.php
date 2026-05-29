@@ -446,7 +446,6 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             $dataFormattata = !empty($datiBachecaDb['dataCreazione']) ? (function_exists('formattaData') ? formattaData($datiBachecaDb['dataCreazione']) : date('d/m/Y', strtotime($datiBachecaDb['dataCreazione']))) : "";
 
             echo "<div class='tab-info-card'>";
-            echo "<h3 class='info-card-title'>Dettagli Bacheca</h3>";
             if (!empty($dataFormattata)) {
                 echo "<p class='info-card-text'><strong>Data di Creazione:</strong> " . htmlspecialchars($dataFormattata) . "</p>";
                 $linkOwner = "utenti.php?utente=" . urlencode($owner);
@@ -474,7 +473,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         $numero_pagine = getNumberOfPages($countRichieste, $limit);
 
         echo "<div class='table-top-bar'>";
-        echo "<p class='zero-margin'>Richieste in attesa: <strong>{$countRichieste}</strong></p>";
+        echo "<p class='zero-margin'>Richieste in attesa trovate: <strong>{$countRichieste}</strong></p>";
         echo "</div>";
 
         if ($countRichieste > 0) {
@@ -490,7 +489,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo "</div>";
         } else {
             echo '<div class="table-container table-container-empty">';
-            echo "<p class='empty-message'>Nessuna richiesta in sospeso trovata.</p>";
+            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
             echo '</div>';
             echo "<div class='pagination-spacer'></div>";
         }
@@ -519,7 +518,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo "</div>";
         } else {
             echo '<div class="table-container table-container-empty">';
-            echo "<p class='empty-message'>Nessun utente autorizzato presente in questa bacheca.</p>";
+            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
             echo '</div>';
             echo "<div class='pagination-spacer'></div>";
         }
@@ -548,7 +547,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo "</div>";
         } else {
             echo '<div class="table-container table-container-empty">';
-            echo "<p class='empty-message'>Nessun file condiviso in questa bacheca.</p>";
+            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
             echo '</div>';
             echo "<div class='pagination-spacer'></div>";
         }
