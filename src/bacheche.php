@@ -159,7 +159,7 @@ function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickn
     ];
 
     $whereSql = "";
-    if (!empty($_GET['utente'])) {
+    /*if (!empty($_GET['utente'])) {
         $whereSql .= " AND u.nickname LIKE :utente";
         $params[':utente'] = '%' . $_GET['utente'] . '%';
     }
@@ -170,6 +170,15 @@ function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickn
     if (!empty($_GET['cognome'])) {
         $whereSql .= " AND u.cognome LIKE :cognome";
         $params[':cognome'] = '%' . $_GET['cognome'] . '%';
+    }*/    
+    $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
+    if ($ricercaGlobale !== '') {
+        $whereSql .= " AND (
+            u.nickname LIKE :rg 
+            OR CONCAT(u.nome, ' ', u.cognome) LIKE :rg 
+            OR CONCAT(u.cognome, ' ', u.nome) LIKE :rg
+        )";
+        $params[':rg'] = '%' . $ricercaGlobale . '%';
     }
     if (!empty($_GET['data_nascita'])) {
         if (isDataValidaRange($_GET['data_nascita'])) {
@@ -239,7 +248,7 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
     ];
 
     $whereSql = "";
-    if (!empty($_GET['utente'])) {
+    /*if (!empty($_GET['utente'])) {
         $whereSql .= " AND u.nickname LIKE :utente";
         $params[':utente'] = '%' . $_GET['utente'] . '%';
     }
@@ -250,6 +259,15 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
     if (!empty($_GET['cognome'])) {
         $whereSql .= " AND u.cognome LIKE :cognome";
         $params[':cognome'] = '%' . $_GET['cognome'] . '%';
+    }*/    
+    $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
+    if ($ricercaGlobale !== '') {
+        $whereSql .= " AND (
+            u.nickname LIKE :rg 
+            OR CONCAT(u.nome, ' ', u.cognome) LIKE :rg 
+            OR CONCAT(u.cognome, ' ', u.nome) LIKE :rg
+        )";
+        $params[':rg'] = '%' . $ricercaGlobale . '%';
     }
     if (!empty($_GET['data_nascita'])) {
         if (isDataValidaRange($_GET['data_nascita'])) {
@@ -575,9 +593,20 @@ function renderElencoBacheche($pdo, $isAjax)
         $where[]           = "b.nome LIKE :titolo";
         $params[':titolo'] = '%' . $_GET['titolo'] . '%';
     }
-    if (!empty($_GET['proprietario'])) {
+    /*if (!empty($_GET['proprietario'])) {
         $where[]                 = "u.nickname LIKE :proprietario";
         $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
+    }*/
+    // Ricerca unificata proprietario (nome, cognome, nick)
+    $ricercaProprietario = isset($_GET['ricerca_proprietario']) ? trim($_GET['ricerca_proprietario']) : '';
+    
+    if ($ricercaProprietario !== '') {
+        $where[] = "(
+            u.nickname LIKE :rp 
+            OR CONCAT(u.nome, ' ', u.cognome) LIKE :rp 
+            OR CONCAT(u.cognome, ' ', u.nome) LIKE :rp
+        )";
+        $params[':rp'] = '%' . $ricercaProprietario . '%';
     }
     if (!empty($_GET['data'])) {
         if (isDataValidaRange($_GET['data'])) {

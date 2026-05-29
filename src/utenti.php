@@ -253,7 +253,7 @@ function renderElencoUtenti($pdo, $isAjax)
     list($limit, $np, $start_from) = getPaginationParams(20);
     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nickname' => 'nickname', 'nome' => 'nome', 'cognome' => 'cognome', 'data' => 'dataNascita'], 'nickname', 'ASC');
 
-    $where = [];
+    /*$where = [];
     $params = [];
     if (!empty($_GET['utente'])) {
         $where[] = "nickname LIKE :u";
@@ -266,7 +266,24 @@ function renderElencoUtenti($pdo, $isAjax)
     if (!empty($_GET['cognome'])) {
         $where[] = "cognome LIKE :c";
         $params[':c'] = '%' . $_GET['cognome'] . '%';
+    }*/
+
+    $where = [];
+    $params = [];
+    
+    //Puliamo l'input: trim() rimuove gli spazi inseriti per sbaglio all'inizio o alla fine
+    $ricerca = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
+
+    if ($ricerca !== '') {
+        // 2. CONCAT unisce nome e cognome per permettere la ricerca dell'intero nome!
+        $where[] = "(
+            nickname LIKE :rg 
+            OR CONCAT(nome, ' ', cognome) LIKE :rg 
+            OR CONCAT(cognome, ' ', nome) LIKE :rg
+        )";
+        $params[':rg'] = '%' . $ricerca . '%';
     }
+
     if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {
         $where[] = "dataNascita >= :d";
         $params[':d'] = $_GET['data_nascita'];

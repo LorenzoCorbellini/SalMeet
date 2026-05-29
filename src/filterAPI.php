@@ -26,9 +26,10 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca', 'placeholder' => 'es. Botanica di notte, Apicoltura...'],
                     ['tipo' => 'date', 'name' => 'data',                 'label' => 'Creata dopo'],
-                    ['tipo' => 'text', 'name' => 'proprietario',         'label' => 'Nickname Proprietario', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
+                    ['tipo' => 'text', 'name' => 'ricerca_proprietario', 'label' => 'Cerca Proprietario', 'placeholder' => 'Nome, cognome o nick del proprietario...'],
+                    /*['tipo' => 'text', 'name' => 'proprietario',         'label' => 'Nickname Proprietario', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
                     ['tipo' => 'text', 'name' => 'proprietario_nome',    'label' => 'Nome Proprietario', 'placeholder' => 'es. Mario, Anna...'],
-                    ['tipo' => 'text', 'name' => 'proprietario_cognome', 'label' => 'Cognome Proprietario', 'placeholder' => 'es. Rossi, Bianchi...'],
+                    ['tipo' => 'text', 'name' => 'proprietario_cognome', 'label' => 'Cognome Proprietario', 'placeholder' => 'es. Rossi, Bianchi...'],*/
                 ])
             ];
 
@@ -36,9 +37,10 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'utenti':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname Utente', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
+                    /*['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname Utente', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
                     ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Utente', 'placeholder' => 'es. Mario, Luca...'],
-                    ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome Utente', 'placeholder' => 'es. Rossi, Verdi...'],
+                    ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome Utente', 'placeholder' => 'es. Rossi, Verdi...'],*/
+                    ['tipo' => 'text', 'name' => 'ricerca_globale', 'label' => 'Ricerca Rapida', 'placeholder' => 'Nome, cognome o nickname...'],
                     ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nato dopo'],
                 ])
             ];
@@ -101,7 +103,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
 function getRegoleFiltroSQL(string $entita): array
 {
     $mappe = [
-        'bacheche' => [
+        /*'bacheche' => [
             'titolo'               => ['colonna' => 'b.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
             'proprietario'         => ['colonna' => 'u.nickname',      'operatore' => 'LIKE', 'formato' => '%val%'],
             'proprietario_nome'    => ['colonna' => 'u.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
@@ -113,6 +115,21 @@ function getRegoleFiltroSQL(string $entita): array
             'nome'          => ['colonna' => 'u.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
             'cognome'       => ['colonna' => 'u.cognome',       'operatore' => 'LIKE', 'formato' => '%val%'],
             'data_nascita'  => ['colonna' => 'u.dataNascita',   'operatore' => '>=',   'formato' => 'val'],
+        ],*/
+        'bacheche' => [
+            'titolo'               => ['colonna' => 'b.nome', 'operatore' => 'LIKE', 'formato' => '%val%'],
+            'ricerca_proprietario' => [
+                'tipo'    => 'ricerca_multipla',
+                'colonne' => ['u.nickname', 'u.nome', 'u.cognome'] 
+            ],
+            'data' => ['colonna' => 'b.dataCreazione', 'operatore' => '>=', 'formato' => 'val'],
+        ],
+        'utenti' => [
+            'ricerca_globale' => [
+                'tipo'    => 'ricerca_multipla',
+                'colonne' => ['u.nickname', 'u.nome', 'u.cognome']
+            ],
+            'data_nascita' => ['colonna' => 'u.dataNascita', 'operatore' => '=', 'formato' => 'val'],
         ],
         'file' => [
             'file'              => ['colonna' => 'fm.nome',       'operatore' => 'LIKE', 'formato' => '%val%'],
@@ -138,18 +155,54 @@ function applicaFiltriDinamici(array $inputs, string $entita): array
     foreach ($regole as $chiaveInput => $regola) {
         if (isset($inputs[$chiaveInput]) && $inputs[$chiaveInput] !== '') {
             $valore = trim($inputs[$chiaveInput]);
-            $colonna = $regola['colonna'];
-            $operatore = $regola['operatore'];
 
-            // Genera placeholder univoco per PDO (es. :dimensione_min)
-            $placeholder = ":" . str_replace('.', '_', $chiaveInput);
+            // =========================================================
+            // RICERCA GLOBALE (Multi-colonna e Multi-parola)
+            // =========================================================
+            if (isset($regola['tipo']) && $regola['tipo'] === 'ricerca_multipla') {
+                $parole = preg_split('/\s+/', $valore);
+                $subCondizioniAND = [];
 
-            if ($regola['formato'] === '%val%') {
-                $valore = "%" . $valore . "%";
+                foreach ($parole as $indexParola => $parola) {
+                    $subCondizioniOR = [];
+                    
+                    // Cicliamo le colonne e creiamo un parametro al 100% univoco
+                    foreach ($regola['colonne'] as $indexColonna => $colonna) {
+                        // Creiamo un nome parametro che include sia l'indice della parola che quello della colonna
+                        $paramName = ":rg_{$chiaveInput}_{$indexParola}_{$indexColonna}";
+                        
+                        $subCondizioniOR[] = "$colonna LIKE $paramName";
+                        // Assegniamo il valore al suo parametro univoco
+                        $parametri[$paramName] = "%" . $parola . "%";
+                    }
+
+                    // Ogni singola parola deve trovarsi in ALMENO UNA delle colonne (OR)
+                    $subCondizioniAND[] = "(" . implode(' OR ', $subCondizioniOR) . ")";
+                }
+
+                // Tutte le parole digitate devono trovare un riscontro contemporaneamente (AND)
+                $condizioni[] = "(" . implode(' AND ', $subCondizioniAND) . ")";
+                continue; // Passa al prossimo campo saltando la logica standard
             }
 
-            $condizioni[] = "{$colonna} {$operatore} {$placeholder}";
-            $parametri[$placeholder] = $valore;
+            // =========================================================
+            // LOGICA STANDARD (Singola colonna)
+            // =========================================================
+            $colonna = $regola['colonna'] ?? '';
+            $operatore = $regola['operatore'] ?? '=';
+            
+            $placeholder = ":" . str_replace('.', '_', $chiaveInput);
+
+            if (($regola['formato'] ?? '') === '%val%') {
+                $condizioni[] = "$colonna $operatore $placeholder";
+                $parametri[$placeholder] = "%" . $valore . "%";
+            } elseif (($regola['formato'] ?? '') === 'val%') {
+                $condizioni[] = "$colonna $operatore $placeholder";
+                $parametri[$placeholder] = $valore . "%";
+            } else {
+                $condizioni[] = "$colonna $operatore $placeholder";
+                $parametri[$placeholder] = $valore;
+            }
         }
     }
 
