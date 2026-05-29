@@ -1480,3 +1480,36 @@ div.swal2-container .swal-wide-split .swal2-input {
     width: 100%;
     margin-top: auto;
 }
+
+/* =========================================================
+   PULSANTE "INDIETRO" (Navigazione)
+   ========================================================= */
+.btn-indietro {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: var(--surface);
+    color: var(--text-dark);
+    text-decoration: none;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px var(--shadow);
+}
+
+.btn-indietro:hover {
+    background-color: var(--border-soft);
+    color: var(--text-dark);
+}
+
+/* Freccia CSS pura per evitare immagini esterne */
+.btn-indietro::before {
+    content: "←";
+    font-size: 1.2rem;
+    line-height: 1;
+}

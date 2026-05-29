@@ -87,8 +87,9 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
 
     if (!$isAjax) echo '<div id="ajax-results">';
 
-    echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
-    echo "<h2>" . htmlspecialchars($infoUtente['cognome']) . " " . htmlspecialchars($infoUtente['nome']) . "</h2>";
+    echo "<a href='utenti.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
+
+    echo "<h2>Profilo Utente: " . htmlspecialchars($infoUtente['nickname']) . "</h2>";
 
     $base = "?utente=" . urlencode($idUtente) . "&tab=";
     echo "<div class='detail-tabs-header'><div class='bacheca-tabs tabs-reset'>

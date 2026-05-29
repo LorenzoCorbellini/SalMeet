@@ -238,7 +238,8 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 			</div>
 		</div>";
 
-		$contentHtml = $tabsHtml;
+		$btnIndietro = "<a href='media.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
+		$contentHtml = $btnIndietro . $tabsHtml;
 
 		if ($activeTab === 'info') {
 			$ownerLink = "utenti.php?utente=" . urlencode((int)$file['owner_id']);

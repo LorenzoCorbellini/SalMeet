@@ -417,6 +417,8 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         echo '<div id="ajax-results">';
     }
 
+    echo "<a href='bacheche.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
+
     echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
 
     echo "
