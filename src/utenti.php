@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/filterAPI.php';
 
 // Verifica se la richiesta arriva tramite AJAX
 $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
@@ -30,55 +31,34 @@ if (!$isAjax):
                 // =========================================================
                 // CONFIGURAZIONE DINAMICA DEI FILTRI NELLA SIDEBAR
                 // =========================================================
-                if (empty($_GET['utente'])) {
+                if (empty($_GET['utente']) || !is_numeric($_GET['utente'])) {
                     // Filtri per la lista globale degli utenti
-                    $filtro_config = [
-                        'campi' => [
-                            ['tipo'  => 'text', 'name' => 'nickname', 'label' => 'Nickname:'],
-                            ['tipo'  => 'text', 'name' => 'nome',     'label' => 'Nome:'],
-                            ['tipo'  => 'text', 'name' => 'cognome',  'label' => 'Cognome:'],
-                            ['tipo'  => 'date', 'name' => 'data',     'label' => 'Nato dopo:'],
-                        ]
-                    ];
+                    $filtro_config = getFiltroConfig('utenti');
                     include 'filter.php';
                 } else {
                     $tab_corrente = $_GET['tab'] ?? 'info';
                     $idUtente = (int)$_GET['utente'];
 
                     if ($tab_corrente === 'info') {
-                        echo '<div id="filtro" class="filter-empty">';
-                        echo '    <p>Non sono presenti filtri per questa sezione.</p>';
-                        echo '</div>';
+                        $filtro_config = getFiltroConfig('vuoto');
+                        include 'filter.php';
                     } elseif ($tab_corrente === 'gruppi') {
-                        $filtro_config = [
-                            'campi' => [
-                                ['tipo' => 'hidden', 'name' => 'utente', 'value' => $idUtente],
-                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'gruppi'],
-                                ['tipo' => 'text', 'name' => 'nome_gruppo', 'label' => 'Nome Gruppo:'],
-                                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario:'],
-                                ['tipo' => 'date', 'name' => 'data', 'label' => 'Data Creazione (Da):']
-                            ]
-                        ];
+                        $filtro_config = getFiltroConfig('gruppi', [
+                            'utente' => $idUtente,
+                            'tab' => 'gruppi'
+                        ]);
                         include 'filter.php';
                     } elseif ($tab_corrente === 'bacheche') {
-                        $filtro_config = [
-                            'campi' => [
-                                ['tipo' => 'hidden', 'name' => 'utente', 'value' => $idUtente],
-                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'bacheche'],
-                                ['tipo' => 'text', 'name' => 'nome_bacheca', 'label' => 'Nome Bacheca:'],
-                                ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario:'],
-                                ['tipo' => 'date', 'name' => 'data', 'label' => 'Data Creazione (Da):']
-                            ]
-                        ];
+                        $filtro_config = getFiltroConfig('bacheche', [
+                            'utente' => $idUtente,
+                            'tab' => 'bacheche'
+                        ]);
                         include 'filter.php';
                     } elseif ($tab_corrente === 'file') {
-                        $filtro_config = [
-                            'campi' => [
-                                ['tipo' => 'hidden', 'name' => 'utente', 'value' => $idUtente],
-                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'file'],
-                                ['tipo' => 'text', 'name' => 'titolo_file', 'label' => 'Nome File:']
-                            ]
-                        ];
+                        $filtro_config = getFiltroConfig('file', [
+                            'utente' => $idUtente,
+                            'tab' => 'file'
+                        ]);
                         include 'filter.php';
                     }
                 }
@@ -96,7 +76,7 @@ if (!$isAjax):
                 // =========================================================
                 // ROUTING VISTE
                 // =========================================================
-                if (!empty($_GET['utente'])) {
+                if (!empty($_GET['utente']) && is_numeric($_GET['utente'])) {
                     $idUtente = (int)$_GET['utente'];
                     $tab_corrente = $_GET['tab'] ?? 'info';
 
@@ -109,7 +89,7 @@ if (!$isAjax):
                         $dataFormattata = !empty($infoUtente['dataNascita']) ? (function_exists('formattaData') ? formattaData($infoUtente['dataNascita']) : date('d/m/Y', strtotime($infoUtente['dataNascita']))) : "";
 
                         echo "<p><a href='utenti.php'>&larr; Torna all'elenco utenti</a></p>";
-                        echo "<h2>Profilo di <b><i>" . htmlspecialchars($infoUtente['cognome']) . " " . htmlspecialchars($infoUtente['nome']) . "</i></b></h2>";
+                        echo "<h2>". htmlspecialchars($infoUtente['cognome']) . " " . htmlspecialchars($infoUtente['nome']) . "</h2>";
 
                         // Costruzione dinamica degli URL per le tab
                         $urlInfo     = "?utente=" . urlencode($idUtente) . "&tab=info";
@@ -162,9 +142,9 @@ if (!$isAjax):
                             $whereSql = " WHERE uag.codUtente = :codice";
                             $params = [':codice' => $idUtente];
 
-                            if (!empty($_GET['nome_gruppo'])) {
-                                $whereSql .= " AND g.nome LIKE :nome_gruppo";
-                                $params[':nome_gruppo'] = '%' . $_GET['nome_gruppo'] . '%';
+                            if (!empty($_GET['nome'])) {
+                                $whereSql .= " AND g.nome LIKE :nome";
+                                $params[':nome'] = '%' . $_GET['nome'] . '%';
                             }
                             if (!empty($_GET['proprietario'])) {
                                 $whereSql .= " AND u_owner.nickname LIKE :proprietario";
@@ -237,9 +217,9 @@ if (!$isAjax):
                             $whereSql = " WHERE uab.utenteAutorizzato = :codice AND uab.autorizzato = 1";
                             $params = [':codice' => $idUtente];
 
-                            if (!empty($_GET['nome_bacheca'])) {
-                                $whereSql .= " AND uab.nomeBacheca LIKE :nome_bacheca";
-                                $params[':nome_bacheca'] = '%' . $_GET['nome_bacheca'] . '%';
+                            if (!empty($_GET['titolo'])) {
+                                $whereSql .= " AND uab.nomeBacheca LIKE :titolo";
+                                $params[':titolo'] = '%' . $_GET['titolo'] . '%';
                             }
                             if (!empty($_GET['proprietario'])) {
                                 $whereSql .= " AND u_owner.nickname LIKE :proprietario";
@@ -311,9 +291,9 @@ if (!$isAjax):
                             $whereSql = " WHERE caricatoDa = :codice";
                             $params = [':codice' => $idUtente];
 
-                            if (!empty($_GET['titolo_file'])) {
-                                $whereSql .= " AND titolo LIKE :titolo_file";
-                                $params[':titolo_file'] = '%' . $_GET['titolo_file'] . '%';
+                            if (!empty($_GET['file'])) {
+                                $whereSql .= " AND titolo LIKE :file";
+                                $params[':file'] = '%' . $_GET['file'] . '%';
                             }
 
                             $countSql = "SELECT COUNT(*) FROM FileMultimediale" . $whereSql;
@@ -323,10 +303,10 @@ if (!$isAjax):
                             $numero_pagine = getNumberOfPages($numero_records, $limit);
 
                             $sql = "SELECT url, tipo, titolo AS `File`, dimensione AS `Dimensione` 
-            FROM FileMultimediale 
-            $whereSql 
-            ORDER BY $sql_sort $sort_dir 
-            LIMIT $start_from, $limit";
+                                    FROM FileMultimediale 
+                                    $whereSql 
+                                    ORDER BY $sql_sort $sort_dir 
+                                    LIMIT $start_from, $limit";
                             $stmt = $pdo->prepare($sql);
                             $stmt->execute($params);
                             $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -391,9 +371,9 @@ if (!$isAjax):
                     $whereSql = "WHERE 1=1";
                     $params = [];
 
-                    if (!empty($_GET['nickname'])) {
-                        $whereSql .= " AND nickname LIKE :nickname";
-                        $params[':nickname'] = '%' . $_GET['nickname'] . '%';
+                    if (!empty($_GET['utente'])) {
+                        $whereSql .= " AND nickname LIKE :utente";
+                        $params[':utente'] = '%' . $_GET['utente'] . '%';
                     }
                     if (!empty($_GET['nome'])) {
                         $whereSql .= " AND nome LIKE :nome";
@@ -403,10 +383,10 @@ if (!$isAjax):
                         $whereSql .= " AND cognome LIKE :cognome";
                         $params[':cognome'] = '%' . $_GET['cognome'] . '%';
                     }
-                    if (!empty($_GET['data'])) {
-                        if (isDataValidaRange($_GET['data'])) {
-                            $whereSql .= " AND dataNascita >= :data";
-                            $params[':data'] = $_GET['data'];
+                    if (!empty($_GET['data_nascita'])) {
+                        if (isDataValidaRange($_GET['data_nascita'])) {
+                            $whereSql .= " AND dataNascita >= :data_nascita";
+                            $params[':data_nascita'] = $_GET['data_nascita'];
                         }
                     }
 
