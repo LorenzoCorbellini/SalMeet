@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
-require_once __DIR__ . '/filterAPI.php'; // Aggiunto per usare i filtri centralizzati
+require_once __DIR__ . '/filterAPI.php';
 
 // Verifica se la richiesta arriva tramite AJAX
 $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
@@ -192,14 +192,13 @@ if (!$isAjax):
                                     $iconaCorona = ((int)$membro['codice'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                     $htmlMembroNickname = "<a href='{$linkMembro}'>" . htmlspecialchars($membro['nickname']) . "</a>" . $iconaCorona;
-                                    $dataFormattata = !empty($membro['dataNascita']) ? formattaData($membro['dataNascita']) : "";
 
                                     $datiMembri[] = [
                                         'Nickname' => $htmlMembroNickname,
                                         'Nome' => htmlspecialchars($membro['nome']),
                                         'Cognome' => htmlspecialchars($membro['cognome']),
-                                        // Allineato a destra come in bacheche
-                                        'Data di Nascita' => "<div class='text-right' style='text-align: right;'>" . htmlspecialchars($dataFormattata) . "</div>"
+                                        // Passando la data cruda, stampaTabella le assegnerà la class='data' e la formatterà
+                                        'Data di Nascita' => $membro['dataNascita']
                                     ];
                                 }
 
@@ -234,7 +233,6 @@ if (!$isAjax):
                             $whereSql = "";
                             $params = [':codice' => $idGruppo];
 
-                            // Allineato al filtro file: le chiavi generate sono 'file', 'proprietario_file', e le dimensioni
                             if (!empty($_GET['file'])) {
                                 $whereSql .= " AND f.titolo LIKE :titolo_file";
                                 $params[':titolo_file'] = '%' . $_GET['file'] . '%';
@@ -315,8 +313,8 @@ if (!$isAjax):
                                         'Nickname' => $htmlOwner,
                                         'Cognome' => htmlspecialchars($file['cognome']),
                                         'Nome' => htmlspecialchars($file['nome']),
-                                        // Allineato a destra come in bacheche
-                                        'Dimensione' => "<div class='text-right' style='text-align: right;'>" . htmlspecialchars($file['dimensione']) . " MB</div>"
+                                        // Usiamo la funzione nativa che genera l'html standard corretto
+                                        'Dimensione' => formatFileSizeHtml((float)$file['dimensione'])
                                     ];
                                 }
 
@@ -329,7 +327,8 @@ if (!$isAjax):
                                 ], $sort_col, $sort_dir);
 
                                 echo '<div class="table-container">';
-                                stampaTabella($datiFiles, ['File', 'Nickname'], $customHeaders);
+                                // Inseriamo 'Dimensione' tra le colonne html per permettere al div di renderizzare correttamente
+                                stampaTabella($datiFiles, ['File', 'Nickname', 'Dimensione'], $customHeaders);
                                 echo '</div>';
                                 echo getPagesNav($np, $numero_pagine, 1);
                             } else {
@@ -358,7 +357,6 @@ if (!$isAjax):
                     $where = [];
                     $params = [];
 
-                    // Questi campi combaciano già nativamente con getFiltroConfig('gruppi')
                     if (!empty($_GET['nome'])) {
                         $where[] = "Gruppo.nome LIKE :nome";
                         $params[':nome'] = '%' . $_GET['nome'] . '%';
@@ -411,8 +409,8 @@ if (!$isAjax):
                             $datiGruppi[] = [
                                 'Nome Gruppo'    => $htmlNomeGruppo,
                                 'Proprietario'   => $htmlProprietario,
-                                // Allineato a destra come in bacheche
-                                'Data Creazione' => "<div class='text-right' style='text-align: right;'>" . formattaData($riga['Data Creazione']) . "</div>"
+                                // Passando la data cruda, stampaTabella le assegnerà la class='data' e la formatterà nativamente
+                                'Data Creazione' => $riga['Data Creazione']
                             ];
                         }
 
