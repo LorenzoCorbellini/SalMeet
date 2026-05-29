@@ -162,7 +162,7 @@ if (!empty($reset_params)) {
                     name="<?= $name ?>"
                     id="<?= $name ?>"
                     value="<?= $value ?>"
-                    placeholder="Cerca...">
+                    placeholder="<?= htmlspecialchars($campo['placeholder'] ?? 'Cerca...') ?>">
             <?php endif; ?>
         <?php endforeach; ?>
 
