@@ -6,6 +6,76 @@ require_once __DIR__ . '/filterAPI.php';
 // Verifica se la richiesta arriva tramite AJAX
 $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
 
+// =========================================================
+//  FUNZIONE PER RENDERIZZARE LA LOGICA DEI FILTRI NELLA SIDEBAR
+// =========================================================
+function renderFiltroSidebarUtenti($pdo, $idUtente, $tab_corrente) {
+    if (empty($idUtente) || !is_numeric($idUtente)) {
+        // 1. Filtri per la lista globale degli utenti
+        $filtro_config = getFiltroConfig('utenti');
+        include 'filter.php';
+    } else {
+        // 2. Filtri per i tab di un utente specifico
+        if ($tab_corrente === 'info') {
+            $filtro_config = getFiltroConfig('vuoto');
+            if (isset($filtro_config['vuoto']) && $filtro_config['vuoto'] === true) {
+                echo '<div id="filtro" class="filter-empty">';
+                echo '    <p>' . htmlspecialchars($filtro_config['messaggio']) . '</p>';
+                echo '</div>';
+            }
+        } elseif ($tab_corrente === 'gruppi') {
+            $filtro_config = getFiltroConfig('gruppi', [
+                'utente' => $idUtente,
+                'tab' => 'gruppi'
+            ]);
+            include 'filter.php';
+        } elseif ($tab_corrente === 'bacheche') {
+            $filtro_config = getFiltroConfig('bacheche', [
+                'utente' => $idUtente,
+                'tab' => 'bacheche'
+            ]);
+            
+            // Rimuovo campi in eccesso non presenti nella tabella (Nome e Cognome Proprietario)
+            if(isset($filtro_config['campi'])){
+                foreach ($filtro_config['campi'] as $k => $c) {
+                    if (in_array(($c['name'] ?? ''), ['proprietario_nome', 'proprietario_cognome'])) {
+                        unset($filtro_config['campi'][$k]);
+                    }
+                }
+            }
+            include 'filter.php';
+        } elseif ($tab_corrente === 'file') {
+            // Estrazione dinamica dei range di dimensione per gli slider
+            $stmtRange = $pdo->prepare("SELECT MIN(dimensione) as min_dim, MAX(dimensione) as max_dim FROM FileMultimediale WHERE caricatoDa = :owner");
+            $stmtRange->execute([':owner' => $idUtente]);
+            $rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
+            
+            $minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
+            $maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
+            if ($minSize == $maxSize) {
+                $minSize = 0;
+            }
+
+            $filtro_config = getFiltroConfig('file', [
+                'utente' => $idUtente,
+                'tab' => 'file',
+                'min_size' => $minSize,
+                'max_size' => $maxSize
+            ]);
+
+            // Rimuovo "Nickname Proprietario" perché in questo tab vediamo solo i file dell'utente stesso
+            if(isset($filtro_config['campi'])){
+                foreach ($filtro_config['campi'] as $k => $c) {
+                    if (($c['name'] ?? '') === 'proprietario_file') {
+                        unset($filtro_config['campi'][$k]);
+                    }
+                }
+            }
+            include 'filter.php';
+        }
+    }
+}
+
 if (!$isAjax):
 ?>
     <!DOCTYPE html>
@@ -14,7 +84,8 @@ if (!$isAjax):
     <head>
         <title>SalMeet - Utenti</title>
         <?php include 'head.html'; ?>
-
+        
+        <script src="js/FilterHandler.js" defer></script>
         <script src="js/AJAXHandler.js" defer></script>
     </head>
 
@@ -29,39 +100,12 @@ if (!$isAjax):
 
                 <?php
                 // =========================================================
-                // CONFIGURAZIONE DINAMICA DEI FILTRI NELLA SIDEBAR
+                // INIZIALIZZAZIONE SIDEBAR
                 // =========================================================
-                if (empty($_GET['utente']) || !is_numeric($_GET['utente'])) {
-                    // Filtri per la lista globale degli utenti
-                    $filtro_config = getFiltroConfig('utenti');
-                    include 'filter.php';
-                } else {
-                    $tab_corrente = $_GET['tab'] ?? 'info';
-                    $idUtente = (int)$_GET['utente'];
-
-                    if ($tab_corrente === 'info') {
-                        $filtro_config = getFiltroConfig('vuoto');
-                        include 'filter.php';
-                    } elseif ($tab_corrente === 'gruppi') {
-                        $filtro_config = getFiltroConfig('gruppi', [
-                            'utente' => $idUtente,
-                            'tab' => 'gruppi'
-                        ]);
-                        include 'filter.php';
-                    } elseif ($tab_corrente === 'bacheche') {
-                        $filtro_config = getFiltroConfig('bacheche', [
-                            'utente' => $idUtente,
-                            'tab' => 'bacheche'
-                        ]);
-                        include 'filter.php';
-                    } elseif ($tab_corrente === 'file') {
-                        $filtro_config = getFiltroConfig('file', [
-                            'utente' => $idUtente,
-                            'tab' => 'file'
-                        ]);
-                        include 'filter.php';
-                    }
-                }
+                $idUtenteSidebar = (!empty($_GET['utente']) && is_numeric($_GET['utente'])) ? (int)$_GET['utente'] : null;
+                $tab_correnteSidebar = $_GET['tab'] ?? 'info';
+                
+                renderFiltroSidebarUtenti($pdo, $idUtenteSidebar, $tab_correnteSidebar);
                 ?>
             </aside>
 
@@ -74,7 +118,7 @@ if (!$isAjax):
 
                 <?php
                 // =========================================================
-                // ROUTING VISTE
+                // ROUTING VISTE (CONTENUTO PRINCIPALE)
                 // =========================================================
                 if (!empty($_GET['utente']) && is_numeric($_GET['utente'])) {
                     $idUtente = (int)$_GET['utente'];
@@ -181,8 +225,8 @@ if (!$isAjax):
                                 $link_gruppo = "gruppi.php?codice=" . urlencode($g['id_gruppo']);
                                 $link_proprietario = "utenti.php?utente=" . urlencode($g['id_proprietario']);
 
-                                // Controllo corona: se il proprietario del gruppo è l'utente corrente visualizzato
-                                $iconaCorona = ((int)$g['id_proprietario'] === $idUtente) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+                                // Controllo corona
+                                $iconaCorona = ((int)$g['id_proprietario'] === $idUtente) ? " <img src='images/crown.png' alt='Owner' class='owner-crown-icon'>" : "";
 
                                 $gruppiFormattati[] = [
                                     'Nome Gruppo' => "<a href='{$link_gruppo}' class='row-link'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>" . $iconaCorona,
@@ -199,10 +243,15 @@ if (!$isAjax):
                                 'Data Creazione' => 'data'
                             ], $sort_col, $sort_dir);
 
-                            echo '<div class="table-container">';
-                            stampaTabella($gruppiFormattati, ['Nome Gruppo', 'Proprietario'], $customHeaders);
-                            echo '</div>';
-                            echo getPagesNav($np, $numero_pagine, 1);
+                            if ($numero_records > 0) {
+                                echo '<div class="table-container">';
+                                stampaTabella($gruppiFormattati, ['Nome Gruppo', 'Proprietario'], $customHeaders);
+                                echo '</div>';
+                                echo getPagesNav($np, $numero_pagine, 1);
+                            } else {
+                                echo "<p class='info-risultati'>Nessun gruppo trovato con i filtri correnti.</p>";
+                            }
+
                         } elseif ($tab_corrente === 'bacheche') {
                             $limit = 20;
                             list($limit, $np, $start_from) = getPaginationParams($limit);
@@ -253,11 +302,11 @@ if (!$isAjax):
 
                             $bachecheFormattate = [];
                             foreach ($bacheche as $b) {
-                                $link_bacheca = "bacheche.php?bacheca=" . urlencode($b['Nome Bacheca']) . "&owner=" . urlencode($b['id_proprietario']);
+                                $link_bacheca = "bacheche.php?vista=dettaglio&bacheca=" . urlencode($b['Nome Bacheca']) . "&owner=" . urlencode($b['id_proprietario']);
                                 $link_proprietario = "utenti.php?utente=" . urlencode($b['id_proprietario']);
 
-                                // Controllo corona: se il proprietario della bacheca è l'utente corrente visualizzato
-                                $iconaCorona = ((int)$b['id_proprietario'] === $idUtente) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+                                // Controllo corona
+                                $iconaCorona = ((int)$b['id_proprietario'] === $idUtente) ? " <img src='images/crown.png' alt='Owner' class='owner-crown-icon'>" : "";
 
                                 $bachecheFormattate[] = [
                                     'Nome Bacheca' => "<a href='{$link_bacheca}' class='row-link'>" . htmlspecialchars($b['Nome Bacheca']) . "</a>" . $iconaCorona,
@@ -274,10 +323,15 @@ if (!$isAjax):
                                 'Data Creazione' => 'data'
                             ], $sort_col, $sort_dir);
 
-                            echo '<div class="table-container">';
-                            stampaTabella($bachecheFormattate, ['Nome Bacheca', 'Proprietario'], $customHeaders);
-                            echo '</div>';
-                            echo getPagesNav($np, $numero_pagine, 1);
+                            if ($numero_records > 0) {
+                                echo '<div class="table-container">';
+                                stampaTabella($bachecheFormattate, ['Nome Bacheca', 'Proprietario'], $customHeaders);
+                                echo '</div>';
+                                echo getPagesNav($np, $numero_pagine, 1);
+                            } else {
+                                echo "<p class='info-risultati'>Nessuna bacheca trovata con i filtri correnti.</p>";
+                            }
+
                         } elseif ($tab_corrente === 'file') {
                             $limit = 20;
                             list($limit, $np, $start_from) = getPaginationParams($limit);
@@ -294,6 +348,39 @@ if (!$isAjax):
                             if (!empty($_GET['file'])) {
                                 $whereSql .= " AND titolo LIKE :file";
                                 $params[':file'] = '%' . $_GET['file'] . '%';
+                            }
+                            
+                            // Gestione filtraggio array checkboxes (filetype) identico a media.php
+                            $filetypes = [
+                                'immagine' => 'Immagini',
+                                'audio' => 'Audio',
+                                'video' => 'Video'
+                            ];
+
+                            if (!empty($_GET['filetype'])) {
+                                $selectedTypes = array_filter((array) $_GET['filetype'], function ($type) use ($filetypes) {
+                                    return isset($filetypes[$type]);
+                                });
+
+                                if (!empty($selectedTypes)) {
+                                    $placeholders = [];
+                                    foreach (array_values($selectedTypes) as $index => $type) {
+                                        $placeholder = ':filetype_' . $index;
+                                        $placeholders[] = $placeholder;
+                                        $params[$placeholder] = $type;
+                                    }
+                                    $whereSql .= ' AND tipo IN (' . implode(', ', $placeholders) . ')';
+                                }
+                            }
+
+                            // Range dinamico file
+                            if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
+                                $whereSql .= " AND dimensione >= :dimensione_min";
+                                $params[':dimensione_min'] = (float)$_GET['dimensione_min'];
+                            }
+                            if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
+                                $whereSql .= " AND dimensione <= :dimensione_max";
+                                $params[':dimensione_max'] = (float)$_GET['dimensione_max'];
                             }
 
                             $countSql = "SELECT COUNT(*) FROM FileMultimediale" . $whereSql;
@@ -325,15 +412,14 @@ if (!$isAjax):
 
                                 $link_file = htmlspecialchars($f['url']);
 
-                                // Uso della classe .file-link definita nel CSS per il colore rosa
                                 $titolo_html = "<a href='{$link_file}' target='_blank' class='file-link'>" .
-                                    "<img src='{$icon_path}' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
+                                    "<img src='{$icon_path}' alt='Icona' class='icona icona-filetype' style='vertical-align:middle;'>" .
                                     htmlspecialchars($f['File']). "</a>";
 
-                                // Uso della classe .text-right per allineare la dimensione a destra
                                 $filesFormattati[] = [
                                     'File' => $titolo_html,
-                                    'Dimensione' => "<span class='text-right' style='display:block;'>" . htmlspecialchars($f['Dimensione']) . " MB</span>"
+                                    // Utilizzo function di formattazione nativa per la dimensione file
+                                    'Dimensione' => formatFileSizeHtml((int)$f['Dimensione'])
                                 ];
                             }
 
@@ -344,15 +430,20 @@ if (!$isAjax):
                                 'Dimensione' => 'dimensione'
                             ], $sort_col, $sort_dir);
 
-                            echo '<div class="table-container">';
-                            // Utilizzo della funzione standard stampaTabella di functions.php
-                            stampaTabella($filesFormattati, ['File', 'Dimensione'], $customHeaders);
-                            echo '</div>';
+                            if ($numero_records > 0) {
+                                echo '<div class="table-container">';
+                                stampaTabella($filesFormattati, ['File', 'Dimensione'], $customHeaders);
+                                echo '</div>';
+                                echo getPagesNav($np, $numero_pagine, 1);
+                            } else {
+                                echo "<p class='info-risultati'>Nessun file trovato con i filtri correnti.</p>";
+                            }
 
-                            echo getPagesNav($np, $numero_pagine, 1);
                         } else {
                             echo "<p class='info-risultati'>Utente non trovato.</p>";
                         }
+                    } else {
+                        echo "<p class='info-risultati'>Errore: l'utente richiesto non è presente a sistema.</p>";
                     }
                 } else {
                     // 2. Elenco generale utenti
