@@ -47,9 +47,26 @@ if (!$isAjax):
                         $filtro_config = getFiltroConfig('utenti', ['gruppo' => $idGruppo, 'tab' => 'membri']);
                         include 'filter.php';
                     } elseif ($tab_corrente === 'file') {
-                        // Usa il filtro centralizzato 'file'. In questo caso non filtriamo via nulla 
-                        // perché in un gruppo è utile cercare i file caricati da uno specifico membro
-                        $filtro_config = getFiltroConfig('file', ['gruppo' => $idGruppo, 'tab' => 'file']);
+                        // Estraiamo dinamicamente il range di dimensioni dei file specifici di questo gruppo
+                        $stmtRange = $pdo->prepare("
+                            SELECT MIN(f.dimensione) as min_dim, MAX(f.dimensione) as max_dim 
+                            FROM FileAssociatoGruppo fag 
+                            JOIN FileMultimediale f ON fag.file = f.numero 
+                            WHERE fag.codGruppo = :codice
+                        ");
+                        $stmtRange->execute([':codice' => $idGruppo]);
+                        $range = $stmtRange->fetch(PDO::FETCH_ASSOC);
+
+                        $minSize = isset($range['min_dim']) ? floor($range['min_dim']) : 0;
+                        $maxSize = isset($range['max_dim']) ? ceil($range['max_dim']) : 100;
+
+                        // Usa il filtro centralizzato 'file', passandogli min e max calcolati
+                        $filtro_config = getFiltroConfig('file', [
+                            'gruppo' => $idGruppo, 
+                            'tab' => 'file',
+                            'min_size' => $minSize,
+                            'max_size' => $maxSize ?: 100
+                        ]);
                         include 'filter.php';
                     }
                 }
@@ -181,7 +198,8 @@ if (!$isAjax):
                                         'Nickname' => $htmlMembroNickname,
                                         'Nome' => htmlspecialchars($membro['nome']),
                                         'Cognome' => htmlspecialchars($membro['cognome']),
-                                        'Data di Nascita' => htmlspecialchars($dataFormattata)
+                                        // Allineato a destra come in bacheche
+                                        'Data di Nascita' => "<div class='text-right' style='text-align: right;'>" . htmlspecialchars($dataFormattata) . "</div>"
                                     ];
                                 }
 
@@ -297,7 +315,8 @@ if (!$isAjax):
                                         'Nickname' => $htmlOwner,
                                         'Cognome' => htmlspecialchars($file['cognome']),
                                         'Nome' => htmlspecialchars($file['nome']),
-                                        'Dimensione' => htmlspecialchars($file['dimensione']) . " MB"
+                                        // Allineato a destra come in bacheche
+                                        'Dimensione' => "<div class='text-right' style='text-align: right;'>" . htmlspecialchars($file['dimensione']) . " MB</div>"
                                     ];
                                 }
 
@@ -392,7 +411,8 @@ if (!$isAjax):
                             $datiGruppi[] = [
                                 'Nome Gruppo'    => $htmlNomeGruppo,
                                 'Proprietario'   => $htmlProprietario,
-                                'Data Creazione' => formattaData($riga['Data Creazione'])
+                                // Allineato a destra come in bacheche
+                                'Data Creazione' => "<div class='text-right' style='text-align: right;'>" . formattaData($riga['Data Creazione']) . "</div>"
                             ];
                         }
 
