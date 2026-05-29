@@ -19,13 +19,19 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
 
     if ($tab === 'info') {
         $filtro_config = getFiltroConfig('vuoto');
-        echo '<div id="filtro" class="filter-empty"><p>' . htmlspecialchars($filtro_config['messaggio'] ?? 'Nessun filtro disponibile') . '</p></div>';
+        echo '<div id="filtro" class="filter-empty"><p>' . htmlspecialchars($filtro_config['messaggio']) . '</p></div>';
     } elseif ($tab === 'gruppi') {
         $filtro_config = getFiltroConfig('gruppi', ['utente' => $idUtente, 'tab' => 'gruppi']);
         include 'filter.php';
     } elseif ($tab === 'bacheche') {
-        // Usa direttamente la configurazione nativa e centralizzata per le bacheche
         $filtro_config = getFiltroConfig('bacheche', ['utente' => $idUtente, 'tab' => 'bacheche']);
+
+        // Rimuoviamo i campi del nome e cognome proprietario che non servono nella tab corrente
+        if (isset($filtro_config['campi'])) {
+            $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
+                return !in_array($c['name'] ?? '', ['proprietario_nome', 'proprietario_cognome']);
+            });
+        }
         include 'filter.php';
     } elseif ($tab === 'file') {
         $stmtRange = $pdo->prepare("SELECT MIN(dimensione) as min_dim, MAX(dimensione) as max_dim FROM FileMultimediale WHERE caricatoDa = :owner");
@@ -35,13 +41,19 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
         $minSize = isset($range['min_dim']) ? floor($range['min_dim']) : 0;
         $maxSize = isset($range['max_dim']) ? ceil($range['max_dim']) : 100;
 
-        // Usa direttamente la configurazione nativa e centralizzata per i media/file
         $filtro_config = getFiltroConfig('file', [
             'utente' => $idUtente,
             'tab' => 'file',
             'min_size' => $minSize,
             'max_size' => $maxSize ?: 100
         ]);
+        
+        // Rimuoviamo il campo del proprietario visto che i file mostrati sono già filtrati per l'utente corrente
+        if (isset($filtro_config['campi'])) {
+            $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
+                return ($c['name'] ?? '') !== 'proprietario_file';
+            });
+        }
         include 'filter.php';
     }
 }
@@ -137,10 +149,9 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $where = ["uab.utenteAutorizzato = :c", "uab.autorizzato = 1"];
         $params = [':c' => $idUtente];
 
-        // Usa 'titolo' coerentemente con il name strutturato dentro getFiltroConfig('bacheche')
         if (!empty($_GET['titolo'])) {
-            $where[] = "uab.nomeBacheca LIKE :nome_bacheca";
-            $params[':nome_bacheca'] = '%' . $_GET['titolo'] . '%';
+            $where[] = "uab.nomeBacheca LIKE :tit";
+            $params[':tit'] = '%' . $_GET['titolo'] . '%';
         }
         if (!empty($_GET['proprietario'])) {
             $where[] = "u.nickname LIKE :prop";
