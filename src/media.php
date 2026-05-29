@@ -136,13 +136,13 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 		$file_link = $dati_riga['url'];
 		$file_icon  = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($dati_riga['type']) . "'>";
 		$file_name   = htmlspecialchars($riga['File']);
-		$follow_link_html = "<a class='media-download-link' href='$file_link' target='_blank'>
-								<img class='media-external-icon' src='images/external-link.png'>
-						</a>";
-		$media_item_html = "<div class='media-item'>$file_icon<a href='$file_link'>$file_name</a>
-							<div class='media-action-wrapper'>$follow_link_html</div>
-						</div>";
-		
+		$detail_link = "media.php?vista=dettaglio&file_id=" . urlencode((int)$dati_riga['file_id']);
+		$follow_link_html = "<a class='media-download-link' href='" . htmlspecialchars($file_link) . "' target='_blank'>"
+				. "<img class='media-external-icon' src='images/external-link.png'>"
+				. "</a>";
+		$media_item_html = "<div class='media-item'>" . $file_icon . "<a href='" . htmlspecialchars($detail_link) . "'>" . $file_name . "</a>"
+				. "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
+				. "</div>";
 		$owner_link = "utenti.php?utente=" . (int)$dati_riga['owner'];
 		$owner_html = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
 		
@@ -179,6 +179,154 @@ function isAjaxRequest(): bool {
 		strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 }
 
+function getParametriRichiestaMedia(): array {
+	return [
+		'vista'   => $_GET['vista'] ?? '',
+		'tab'     => $_GET['tab'] ?? 'info',
+		'file_id' => $_GET['file_id'] ?? ''
+	];
+}
+
+function getMediaFileDettaglio(PDO $pdo, string $file_id): ?array {
+	$stmt = $pdo->prepare(
+		"SELECT fmm.numero AS file_id, fmm.titolo AS title, fmm.dimensione AS size, fmm.URL AS url,
+				fmm.tipo AS type, u.codice AS owner_id, u.nickname AS owner_nickname,
+				u.nome AS owner_name, u.cognome AS owner_surname
+		 FROM FileMultimediale fmm
+		 LEFT JOIN Utente u ON fmm.caricatoDa = u.codice
+		 WHERE fmm.numero = :file_id"
+	);
+	$stmt->execute([':file_id' => $file_id]);
+	$result = $stmt->fetch(PDO::FETCH_ASSOC);
+	return $result ?: null;
+}
+
+function getGruppiDelFile(PDO $pdo, string $file_id): array {
+	$stmt = $pdo->prepare(
+		"SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId
+		 FROM Gruppo g
+		 JOIN Utente u ON g.creatoDa = u.codice
+		 JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
+		 WHERE ag.file = :file_id
+		 ORDER BY g.nome"
+	);
+	$stmt->execute([':file_id' => $file_id]);
+	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getBachecheDelFile(PDO $pdo, string $file_id): array {
+	$stmt = $pdo->prepare(
+		"SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId
+		 FROM FilePubblicatoBacheca pb
+		 JOIN Utente u ON pb.codUtente = u.codice
+		 WHERE pb.file = :file_id
+		 ORDER BY pb.nomeBacheca"
+	);
+	$stmt->execute([':file_id' => $file_id]);
+	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool $isAjax)
+{
+	$file = getMediaFileDettaglio($pdo, $file_id);
+	if (!$file) {
+		$contentHtml = "<div class='info-risultati'>File non trovato.</div>";
+		if ($isAjax) {
+			echo $contentHtml;
+			exit;
+		}
+		// continue to render page skeleton with message
+	} else {
+		$validTabs = ['info', 'gruppi', 'bacheche'];
+		if (!in_array($activeTab, $validTabs, true)) {
+			$activeTab = 'info';
+		}
+
+		$baseParams = ['vista' => 'dettaglio', 'file_id' => $file_id];
+		$urlInfo = '?' . http_build_query(array_merge($baseParams, ['tab' => 'info']));
+		$urlGruppi = '?' . http_build_query(array_merge($baseParams, ['tab' => 'gruppi']));
+		$urlBacheche = '?' . http_build_query(array_merge($baseParams, ['tab' => 'bacheche']));
+
+		$tabsHtml = "<div class='detail-tabs-header'>
+			<div class='bacheca-tabs tabs-reset'>
+				<a href='" . htmlspecialchars($urlInfo) . "' class='" . ($activeTab === 'info' ? 'active' : '') . "'>Informazioni</a>
+				<a href='" . htmlspecialchars($urlGruppi) . "' class='" . ($activeTab === 'gruppi' ? 'active' : '') . "'>Gruppi</a>
+				<a href='" . htmlspecialchars($urlBacheche) . "' class='" . ($activeTab === 'bacheche' ? 'active' : '') . "'>Bacheche</a>
+			</div>
+		</div>";
+
+		$contentHtml = $tabsHtml;
+
+		if ($activeTab === 'info') {
+			$ownerLink = "utenti.php?utente=" . urlencode((int)$file['owner_id']);
+			$contentHtml .= "<div class='tab-info-card'>
+				<h2>" . htmlspecialchars($file['title']) . "</h2>
+				<p><strong>Proprietario:</strong> <a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($file['owner_nickname']) . "</a></p>
+				<p><strong>Nome:</strong> " . htmlspecialchars($file['owner_name']) . "</p>
+				<p><strong>Cognome:</strong> " . htmlspecialchars($file['owner_surname']) . "</p>
+				<p><strong>Tipo file:</strong> " . htmlspecialchars($file['type']) . "</p>
+				<p><strong>Dimensione:</strong> " . htmlspecialchars(formatFileSize($file['size'])) . "</p>
+				<p><a href='" . htmlspecialchars($file['url']) . "' target='_blank'>Apri file</a></p>
+			</div>";
+		} elseif ($activeTab === 'gruppi') {
+			$groups = getGruppiDelFile($pdo, $file_id);
+			if (empty($groups)) {
+				$contentHtml .= "<p class='info-risultati'>Nessun gruppo trovato per questo file.</p>";
+			} else {
+				$datiGruppi = [];
+				foreach ($groups as $group) {
+					$groupLink = "gruppi.php?gruppo=" . urlencode($group['gruppoId']);
+					$ownerLink = "utenti.php?utente=" . urlencode($group['ownerId']);
+					$datiGruppi[] = [
+						'Nome Gruppo' => "<a href='" . htmlspecialchars($groupLink) . "'>" . htmlspecialchars($group['Nome Gruppo']) . "</a>",
+						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($group['Proprietario']) . "</a>"
+					];
+				}
+				$contentHtml .= "<div class='table-container'>" . getTabella($datiGruppi, ['Nome Gruppo', 'Proprietario']) . "</div>";
+			}
+		} else {
+			$bacheche = getBachecheDelFile($pdo, $file_id);
+			if (empty($bacheche)) {
+				$contentHtml .= "<p class='info-risultati'>Nessuna bacheca trovata per questo file.</p>";
+			} else {
+				$datiBacheche = [];
+				foreach ($bacheche as $bacheca) {
+					$bachecaLink = "bacheche.php?vista=dettaglio&bacheca=" . urlencode($bacheca['Nome Bacheca']) . "&owner=" . urlencode($bacheca['ownerId']);
+					$ownerLink = "utenti.php?utente=" . urlencode($bacheca['ownerId']);
+					$datiBacheche[] = [
+						'Nome Bacheca' => "<a href='" . htmlspecialchars($bachecaLink) . "'>" . htmlspecialchars($bacheca['Nome Bacheca']) . "</a>",
+						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($bacheca['Proprietario']) . "</a>"
+					];
+				}
+				$contentHtml .= "<div class='table-container'>" . getTabella($datiBacheche, ['Nome Bacheca', 'Proprietario']) . "</div>";
+			}
+		}
+	}
+
+	if ($isAjax) {
+		echo $contentHtml;
+		exit;
+	}
+
+	renderDettaglioMediaPage($pdo, $contentHtml);
+}
+
+function renderDettaglioMediaPage(PDO $pdo, string $contentHtml)
+{
+	echo "<!DOCTYPE html>\n<html>\n<head>\n";
+	include 'head.html';
+	echo "<title>Dettaglio File</title>\n</head>\n<body>\n";
+	echo "<header>\n		<h1 id='hcod1'>File Multimediali</h1>\n	</header>\n\n	<div class='main-container'>\n	<aside class='sidebar'>\n";
+	include 'nav.html';
+	setupFiltroConfig($pdo);
+	echo "</aside>\n<div id='content'>\n";
+	echo $contentHtml;
+	echo "</div>\n</div>\n";
+	include 'footer.html';
+	echo "</body>\n</html>\n";
+	exit;
+}
+
 function setupFiltroConfig(PDO $pdo)
 {
 	$entita = 'file';
@@ -203,6 +351,13 @@ function setupFiltroConfig(PDO $pdo)
 
 /* PAGINAZIONE */
 list($limit, $np, $start_from) = getPaginationParams(20);
+
+/* ROUTING VISTA DETTAGLIO */
+$mediaParams = getParametriRichiestaMedia();
+if ($mediaParams['vista'] === 'dettaglio' && !empty($mediaParams['file_id'])) {
+	renderDettaglioMedia($pdo, $mediaParams['file_id'], $mediaParams['tab'], isAjaxRequest());
+	exit;
+}
 
 /* FILTRI */
 $where  = [];
