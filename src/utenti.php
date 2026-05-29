@@ -26,9 +26,14 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
     } elseif ($tab === 'bacheche') {
         $filtro_config = getFiltroConfig('bacheche', ['utente' => $idUtente, 'tab' => 'bacheche']);
         if (isset($filtro_config['campi'])) {
-            $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
-                return !in_array($c['name'] ?? '', ['proprietario_nome', 'proprietario_cognome']);
-            });
+            // Mappa i campi per nome e ricostruiscili nell'ordine desiderato
+            $map = array_column($filtro_config['campi'], null, 'name');
+            $ordine = ['titolo', 'proprietario', 'data'];
+
+            $filtro_config['campi'] = [];
+            foreach ($ordine as $key) {
+                if (isset($map[$key])) $filtro_config['campi'][] = $map[$key];
+            }
         }
         include 'filter.php';
     } elseif ($tab === 'file') {
