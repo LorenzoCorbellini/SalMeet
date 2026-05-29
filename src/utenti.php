@@ -28,7 +28,7 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
 
         if (isset($filtro_config['campi'])) {
             $map = array_column($filtro_config['campi'], null, 'name');
-            $ordine = ['titolo', 'proprietario', 'data']; // L'ordine richiesto
+            $ordine = ['nome', 'proprietario', 'data']; // L'ordine richiesto (corretto da "titolo" a "nome")
 
             // Ricostruiamo l'array mantenendo i campi 'hidden' e ordinando i visibili
             $campi_ordinati = [];
@@ -60,7 +60,9 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
             'min_size' => $minSize,
             'max_size' => $maxSize ?: 100
         ]);
+        
         if (isset($filtro_config['campi'])) {
+            // Rimuoviamo il campo 'proprietario_file' dato che stiamo già guardando i file di un utente specifico
             $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
                 return ($c['name'] ?? '') !== 'proprietario_file';
             });
@@ -143,7 +145,6 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $dati = [];
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $g) {
-            // ... all'interno del foreach per i gruppi
             $icona = ((int)$g['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
             $dati[] = [
                 'Nome Gruppo' => $icona . "<a href='gruppi.php?codice={$g['id_gruppo']}'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>",
@@ -161,9 +162,10 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $where = ["uab.utenteAutorizzato = :c", "uab.autorizzato = 1"];
         $params = [':c' => $idUtente];
 
-        if (!empty($_GET['titolo'])) {
-            $where[] = "uab.nomeBacheca LIKE :tit";
-            $params[':tit'] = '%' . $_GET['titolo'] . '%';
+        // Cambiato in "nome" per allinearci con i filtri di bacheche
+        if (!empty($_GET['nome'])) {
+            $where[] = "uab.nomeBacheca LIKE :nome_bacheca";
+            $params[':nome_bacheca'] = '%' . $_GET['nome'] . '%';
         }
         if (!empty($_GET['proprietario'])) {
             $where[] = "u.nickname LIKE :prop";
@@ -186,7 +188,6 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $dati = [];
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $b) {
-            // ... all'interno del foreach per le bacheche
             $icona = ((int)$b['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
             $dati[] = [
                 'Nome Bacheca' => $icona . "<a href='bacheche.php?vista=dettaglio&bacheca=" . urlencode($b['Nome Bacheca']) . "&owner={$b['id_proprietario']}'>" . htmlspecialchars($b['Nome Bacheca']) . "</a>",
