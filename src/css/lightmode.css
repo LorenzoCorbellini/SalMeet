@@ -1526,3 +1526,40 @@ div.swal2-container .swal-wide-split .swal2-input {
     font-size: 1.2rem;
     line-height: 1;
 }
+
+/* =========================================================
+     BOTTONE "X" PER CANCELLARE IL SINGOLO INPUT
+   ========================================================= */
+.input-clearable-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* Evita che il testo digitato finisca sotto la X */
+.input-clearable-wrapper input {
+    width: 100%;
+    padding-right: 28px !important; 
+}
+
+.clear-input-btn {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    font-weight: bold;
+    line-height: 1;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.clear-input-btn:hover {
+    color: var(--accent); /* Diventa rossa (o colore d'accento) al passaggio del mouse */
+}
+
+/* MAGIA CSS: Se il placeholder è visibile (quindi l'input è vuoto), nascondi la X */
+.input-clearable-wrapper input:placeholder-shown ~ .clear-input-btn {
+    display: none;
+}

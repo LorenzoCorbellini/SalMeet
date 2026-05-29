@@ -158,11 +158,24 @@ if (!empty($reset_params)) {
 
             <?php else: ?>
                 <label for="<?= $name ?>"><?= $label ?></label>
-                <input type="<?= htmlspecialchars($campo['tipo']) ?>"
-                    name="<?= $name ?>"
-                    id="<?= $name ?>"
-                    value="<?= $value ?>"
-                    placeholder="<?= htmlspecialchars($campo['placeholder'] ?? 'Cerca...') ?>">
+                
+                <?php if ($campo['tipo'] === 'text'): ?>
+                    <div class="input-clearable-wrapper">
+                        <input type="text"
+                            name="<?= $name ?>"
+                            id="<?= $name ?>"
+                            value="<?= $value ?>"
+                            placeholder="<?= htmlspecialchars($campo['placeholder'] ?? 'Cerca...') ?>">
+                        <span class="clear-input-btn" title="Cancella il testo">&times;</span>
+                    </div>
+                <?php else: ?>
+                    <input type="<?= htmlspecialchars($campo['tipo']) ?>"
+                        name="<?= $name ?>"
+                        id="<?= $name ?>"
+                        value="<?= $value ?>"
+                        placeholder="<?= htmlspecialchars($campo['placeholder'] ?? 'Cerca...') ?>">
+                <?php endif; ?>
+
             <?php endif; ?>
         <?php endforeach; ?>
 

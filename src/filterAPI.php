@@ -24,11 +24,11 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'bacheche':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca:', 'placeholder' => 'es. Bacheca Bricolage, Apicoltura...'],
-                    ['tipo' => 'date', 'name' => 'data',                 'label' => 'Creata dopo:'],
-                    ['tipo' => 'text', 'name' => 'proprietario',         'label' => 'Nickname Proprietario:', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
-                    ['tipo' => 'text', 'name' => 'proprietario_nome',    'label' => 'Nome Proprietario:', 'placeholder' => 'es. Mario, Anna...'],
-                    ['tipo' => 'text', 'name' => 'proprietario_cognome', 'label' => 'Cognome Proprietario:', 'placeholder' => 'es. Rossi, Bianchi...'],
+                    ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca', 'placeholder' => 'es. Botanica di notte, Apicoltura...'],
+                    ['tipo' => 'date', 'name' => 'data',                 'label' => 'Creata dopo'],
+                    ['tipo' => 'text', 'name' => 'proprietario',         'label' => 'Nickname Proprietario', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
+                    ['tipo' => 'text', 'name' => 'proprietario_nome',    'label' => 'Nome Proprietario', 'placeholder' => 'es. Mario, Anna...'],
+                    ['tipo' => 'text', 'name' => 'proprietario_cognome', 'label' => 'Cognome Proprietario', 'placeholder' => 'es. Rossi, Bianchi...'],
                 ])
             ];
 
@@ -36,10 +36,10 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'utenti':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname Utente:', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
-                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Utente:', 'placeholder' => 'es. Mario, Luca...'],
-                    ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome Utente:', 'placeholder' => 'es. Rossi, Verdi...'],
-                    ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nato dopo:'],
+                    ['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname Utente', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
+                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Utente', 'placeholder' => 'es. Mario, Luca...'],
+                    ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome Utente', 'placeholder' => 'es. Rossi, Verdi...'],
+                    ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nato dopo'],
                 ])
             ];
 
@@ -47,7 +47,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'gruppi':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:', 'placeholder' => 'es. Custodi dell\'infinito, Figli del nor...'],
+                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:', 'placeholder' => 'es. Cantastorie del mezzogiorno, Eredi del pas...'],
                     ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario:', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
                     ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo:'],
                 ])

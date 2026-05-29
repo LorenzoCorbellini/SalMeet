@@ -163,4 +163,23 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(debounceTimer);
         applicaFiltriAJAX();
     });
+
+    // =========================================================
+    // GESTIONE CANCELLAZIONE SINGOLO INPUT (Tasto X)
+    // =========================================================
+    filterForm.addEventListener('click', function (e) {
+        // Se l'elemento cliccato è la nostra X
+        if (e.target.classList.contains('clear-input-btn')) {
+            const wrapper = e.target.closest('.input-clearable-wrapper');
+            if (wrapper) {
+                const input = wrapper.querySelector('input');
+                if (input) {
+                    input.value = ''; // Svuota il campo
+                    
+                    // Richiama immediatamente l'aggiornamento AJAX della tabella
+                    applicaFiltriAJAX();
+                }
+            }
+        }
+    });
 });
