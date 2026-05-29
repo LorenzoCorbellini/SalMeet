@@ -44,6 +44,14 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
             ];
 
             //filtro file
+        case 'gruppi':
+            return [
+                'campi' => array_merge($campiBase, [
+                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:'],
+                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario:'],
+                    ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo:'],
+                ])
+            ];
         case 'file':
             $minSize = $parametriExtra['min_size'] ?? 0;
             $maxSize = $parametriExtra['max_size'] ?? 100;

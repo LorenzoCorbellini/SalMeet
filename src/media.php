@@ -301,7 +301,9 @@ function renderDettaglioMediaPage(PDO $pdo, string $contentHtml)
 	echo "<title>Dettaglio File</title>\n</head>\n<body>\n";
 	echo "<header>\n		<h1 id='hcod1'>File Multimediali</h1>\n	</header>\n\n	<div class='main-container'>\n	<aside class='sidebar'>\n";
 	include 'nav.html';
-	setupFiltroConfig($pdo, null);
+
+	$mediaParams = getParametriRichiestaMedia();
+	setupFiltroConfig($pdo, $mediaParams['tab']);
 	echo "</aside>\n<div id='content'>\n";
 	echo $contentHtml;
 	echo "</div>\n</div>\n";
@@ -310,25 +312,16 @@ function renderDettaglioMediaPage(PDO $pdo, string $contentHtml)
 	exit;
 }
 
-function setupFiltroConfig(PDO $pdo, $activeTab)
+function setupFiltroConfig(PDO $pdo, string $activeTab)
 {
-	if ($activeTab === 'info') {
+	if(!isset($activeTab)) $entita = 'file';
+
+	if ($activeTab === 'file') {
 		$entita = 'file';
-		$stmtRange = $pdo->query("SELECT MIN(dimensione) AS min_dim, MAX(dimensione) AS max_dim FROM FileMultimediale");
-		$rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
-	
-		$minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 1;
-		$maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
-		if ($minSize == $maxSize) {
-			$minSize = 0;
-		}
-	
-		$parametriExtra = [
-			'min_size' => $minSize,
-			'max_size' => $maxSize
-		];
-	} else if ($activeTab === 'dettaglio') {
-		$entita = 'dettaglio';
+		$parametriExtra = [];
+	}
+	else if ($activeTab === 'info') {
+		$entita = 'vuoto';
 		$parametriExtra = [];
 	} else if ($activeTab === 'bacheche') {
 		$entita = 'bacheche';
@@ -340,7 +333,6 @@ function setupFiltroConfig(PDO $pdo, $activeTab)
 		$entita = 'vuoto';
 		$parametriExtra = [];
 	}
-
 
 	$filtro_config = getFiltroConfig($entita, $parametriExtra);
 	include 'filter.php';
@@ -467,7 +459,7 @@ if (isAjaxRequest()) {
 	<div class="main-container">
 	<aside class="sidebar">
 		<?php include 'nav.html'; ?>
-		<?php setupFiltroConfig($pdo, $mediaParams['tab']) ?>
+		<?php setupFiltroConfig($pdo, 'file') ?>
 	</aside>
 		<div id="content">
 			<?php 

@@ -34,8 +34,8 @@ if (!$isAjax):
                     $filtro_config = [
                         'campi' => [
                             ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:'],
-                            ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Proprietario (nickname):'],
-                            ['tipo' => 'date', 'name' => 'data',         'label' => 'Data Creazione (Creato dal):'],
+                            ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario:'],
+                            ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo:'],
                         ]
                     ];
                     include 'filter.php';

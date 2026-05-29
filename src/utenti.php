@@ -37,7 +37,7 @@ if (!$isAjax):
                             ['tipo'  => 'text', 'name' => 'nickname', 'label' => 'Nickname:'],
                             ['tipo'  => 'text', 'name' => 'nome',     'label' => 'Nome:'],
                             ['tipo'  => 'text', 'name' => 'cognome',  'label' => 'Cognome:'],
-                            ['tipo'  => 'date', 'name' => 'data',     'label' => 'Data di Nascita (Da):'],
+                            ['tipo'  => 'date', 'name' => 'data',     'label' => 'Nato dopo:'],
                         ]
                     ];
                     include 'filter.php';
