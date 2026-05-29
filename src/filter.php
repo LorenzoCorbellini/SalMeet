@@ -105,6 +105,7 @@ if (!empty($reset_params)) {
             ?>
                 <label for="<?= $name ?>"><?= $label ?></label>
                 <input type="date"
+                    lang="it"
                     name="<?= $name ?>"
                     id="<?= $name ?>"
                     value="<?= $value ?>"
