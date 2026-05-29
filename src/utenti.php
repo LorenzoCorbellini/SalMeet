@@ -19,32 +19,12 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
 
     if ($tab === 'info') {
         $filtro_config = getFiltroConfig('vuoto');
-        echo '<div id="filtro" class="filter-empty"><p>' . htmlspecialchars($filtro_config['messaggio']) . '</p></div>';
+        echo '<div id="filtro" class="filter-empty"><p>' . htmlspecialchars($filtro_config['messaggio'] ?? 'Nessun filtro disponibile') . '</p></div>';
     } elseif ($tab === 'gruppi') {
         $filtro_config = getFiltroConfig('gruppi', ['utente' => $idUtente, 'tab' => 'gruppi']);
         include 'filter.php';
     } elseif ($tab === 'bacheche') {
         $filtro_config = getFiltroConfig('bacheche', ['utente' => $idUtente, 'tab' => 'bacheche']);
-
-        if (isset($filtro_config['campi'])) {
-            $map = array_column($filtro_config['campi'], null, 'name');
-            $ordine = ['titolo', 'proprietario', 'data']; // L'ordine richiesto
-
-            // Ricostruiamo l'array mantenendo i campi 'hidden' e ordinando i visibili
-            $campi_ordinati = [];
-
-            // 1. Aggiungiamo prima gli hidden (se presenti)
-            foreach ($filtro_config['campi'] as $c) {
-                if (($c['tipo'] ?? '') === 'hidden') $campi_ordinati[] = $c;
-            }
-
-            // 2. Aggiungiamo i visibili nell'ordine specificato
-            foreach ($ordine as $key) {
-                if (isset($map[$key])) $campi_ordinati[] = $map[$key];
-            }
-
-            $filtro_config['campi'] = $campi_ordinati;
-        }
         include 'filter.php';
     } elseif ($tab === 'file') {
         $stmtRange = $pdo->prepare("SELECT MIN(dimensione) as min_dim, MAX(dimensione) as max_dim FROM FileMultimediale WHERE caricatoDa = :owner");
@@ -60,11 +40,6 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
             'min_size' => $minSize,
             'max_size' => $maxSize ?: 100
         ]);
-        if (isset($filtro_config['campi'])) {
-            $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
-                return ($c['name'] ?? '') !== 'proprietario_file';
-            });
-        }
         include 'filter.php';
     }
 }
@@ -115,21 +90,11 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
               </div>";
     } elseif ($tab_corrente === 'gruppi') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'g.nome', 'proprietario' => 'u.nickname', 'data' => 'g.dataCreazione'], 'data', 'DESC');
-        $where = ["uag.codUtente = :c"];
-        $params = [':c' => $idUtente];
-
-        if (!empty($_GET['nome'])) {
-            $where[] = "g.nome LIKE :nome";
-            $params[':nome'] = '%' . $_GET['nome'] . '%';
-        }
-        if (!empty($_GET['proprietario'])) {
-            $where[] = "u.nickname LIKE :prop";
-            $params[':prop'] = '%' . $_GET['proprietario'] . '%';
-        }
-        if (!empty($_GET['data']) && isDataValidaRange($_GET['data'])) {
-            $where[] = "g.dataCreazione >= :data";
-            $params[':data'] = $_GET['data'];
-        }
+        
+        // Uso della funzione centralizzata di filterAPI
+        list($condizioni_dinamiche, $parametri_dinamici) = applicaFiltriDinamici($_GET, 'gruppi');
+        $where = array_merge(["uag.codUtente = :c"], $condizioni_dinamiche);
+        $params = array_merge([':c' => $idUtente], $parametri_dinamici);
 
         $tabella = "UtenteAutorizzatoGruppo uag JOIN Gruppo g ON uag.codGruppo = g.codice JOIN Utente u ON g.creatoDa = u.codice";
         $totale = getNumberOfRecords($pdo, $tabella, $where, $params);
@@ -143,7 +108,6 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $dati = [];
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $g) {
-            // ... all'interno del foreach per i gruppi
             $icona = ((int)$g['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
             $dati[] = [
                 'Nome Gruppo' => $icona . "<a href='gruppi.php?codice={$g['id_gruppo']}'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>",
@@ -158,21 +122,11 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         echo '</div>' . getPagesNav($np, $npagine, 1);
     } elseif ($tab_corrente === 'bacheche') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'uab.nomeBacheca', 'proprietario' => 'u.nickname', 'data' => 'b.dataCreazione'], 'data', 'DESC');
-        $where = ["uab.utenteAutorizzato = :c", "uab.autorizzato = 1"];
-        $params = [':c' => $idUtente];
-
-        if (!empty($_GET['titolo'])) {
-            $where[] = "uab.nomeBacheca LIKE :tit";
-            $params[':tit'] = '%' . $_GET['titolo'] . '%';
-        }
-        if (!empty($_GET['proprietario'])) {
-            $where[] = "u.nickname LIKE :prop";
-            $params[':prop'] = '%' . $_GET['proprietario'] . '%';
-        }
-        if (!empty($_GET['data']) && isDataValidaRange($_GET['data'])) {
-            $where[] = "b.dataCreazione >= :data";
-            $params[':data'] = $_GET['data'];
-        }
+        
+        // Uso della funzione centralizzata di filterAPI (mappa automaticamente $_GET['titolo'], data, proprietario)
+        list($condizioni_dinamiche, $parametri_dinamici) = applicaFiltriDinamici($_GET, 'bacheche');
+        $where = array_merge(["uab.utenteAutorizzato = :c", "uab.autorizzato = 1"], $condizioni_dinamiche);
+        $params = array_merge([':c' => $idUtente], $parametri_dinamici);
 
         $tabella = "UtenteAutorizzatoBacheca uab JOIN Bacheca b ON uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente JOIN Utente u ON b.codiceUtente = u.codice";
         $totale = getNumberOfRecords($pdo, $tabella, $where, $params);
@@ -186,7 +140,6 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $dati = [];
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $b) {
-            // ... all'interno del foreach per le bacheche
             $icona = ((int)$b['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
             $dati[] = [
                 'Nome Bacheca' => $icona . "<a href='bacheche.php?vista=dettaglio&bacheca=" . urlencode($b['Nome Bacheca']) . "&owner={$b['id_proprietario']}'>" . htmlspecialchars($b['Nome Bacheca']) . "</a>",
@@ -201,34 +154,11 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         echo '</div>' . getPagesNav($np, $npagine, 1);
     } elseif ($tab_corrente === 'file') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['file' => 'titolo', 'dimensione' => 'dimensione'], 'file', 'ASC');
-        $where = ["caricatoDa = :c"];
-        $params = [':c' => $idUtente];
-
-        if (!empty($_GET['file'])) {
-            $where[] = "titolo LIKE :file";
-            $params[':file'] = '%' . $_GET['file'] . '%';
-        }
-        if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
-            $where[] = "dimensione >= :dmin";
-            $params[':dmin'] = (float)$_GET['dimensione_min'];
-        }
-        if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
-            $where[] = "dimensione <= :dmax";
-            $params[':dmax'] = (float)$_GET['dimensione_max'];
-        }
-
-        $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
-        if (!empty($_GET['filetype'])) {
-            $selectedTypes = array_filter((array)$_GET['filetype'], fn($t) => isset($filetypes[$t]));
-            if ($selectedTypes) {
-                $placeholders = [];
-                foreach (array_values($selectedTypes) as $i => $type) {
-                    $placeholders[] = ":ft_$i";
-                    $params[":ft_$i"] = $type;
-                }
-                $where[] = 'tipo IN (' . implode(', ', $placeholders) . ')';
-            }
-        }
+        
+        // Uso della funzione centralizzata di filterAPI (mappa automaticamente file, dimensione_min, dimensione_max, filetype)
+        list($condizioni_dinamiche, $parametri_dinamici) = applicaFiltriDinamici($_GET, 'file');
+        $where = array_merge(["caricatoDa = :c"], $condizioni_dinamiche);
+        $params = array_merge([':c' => $idUtente], $parametri_dinamici);
 
         $totale = getNumberOfRecords($pdo, "FileMultimediale", $where, $params);
         $npagine = getNumberOfPages($totale, $limit);
@@ -265,24 +195,8 @@ function renderElencoUtenti($pdo, $isAjax)
     list($limit, $np, $start_from) = getPaginationParams(20);
     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nickname' => 'nickname', 'nome' => 'nome', 'cognome' => 'cognome', 'data' => 'dataNascita'], 'nickname', 'ASC');
 
-    $where = [];
-    $params = [];
-    if (!empty($_GET['utente'])) {
-        $where[] = "nickname LIKE :u";
-        $params[':u'] = '%' . $_GET['utente'] . '%';
-    }
-    if (!empty($_GET['nome'])) {
-        $where[] = "nome LIKE :n";
-        $params[':n'] = '%' . $_GET['nome'] . '%';
-    }
-    if (!empty($_GET['cognome'])) {
-        $where[] = "cognome LIKE :c";
-        $params[':c'] = '%' . $_GET['cognome'] . '%';
-    }
-    if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {
-        $where[] = "dataNascita >= :d";
-        $params[':d'] = $_GET['data_nascita'];
-    }
+    // Anche la vista generale utenti sfrutta la filterAPI universale
+    list($where, $params) = applicaFiltriDinamici($_GET, 'utenti');
 
     $totale = getNumberOfRecords($pdo, "Utente", $where, $params);
     $npagine = getNumberOfPages($totale, $limit);
