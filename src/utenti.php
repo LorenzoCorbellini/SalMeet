@@ -24,6 +24,7 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
         $filtro_config = getFiltroConfig('gruppi', ['utente' => $idUtente, 'tab' => 'gruppi']);
         include 'filter.php';
     } elseif ($tab === 'bacheche') {
+        // Usa direttamente la configurazione nativa e centralizzata per le bacheche
         $filtro_config = getFiltroConfig('bacheche', ['utente' => $idUtente, 'tab' => 'bacheche']);
         include 'filter.php';
     } elseif ($tab === 'file') {
@@ -34,6 +35,7 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
         $minSize = isset($range['min_dim']) ? floor($range['min_dim']) : 0;
         $maxSize = isset($range['max_dim']) ? ceil($range['max_dim']) : 100;
 
+        // Usa direttamente la configurazione nativa e centralizzata per i media/file
         $filtro_config = getFiltroConfig('file', [
             'utente' => $idUtente,
             'tab' => 'file',
@@ -90,11 +92,21 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
               </div>";
     } elseif ($tab_corrente === 'gruppi') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'g.nome', 'proprietario' => 'u.nickname', 'data' => 'g.dataCreazione'], 'data', 'DESC');
-        
-        // Uso della funzione centralizzata di filterAPI
-        list($condizioni_dinamiche, $parametri_dinamici) = applicaFiltriDinamici($_GET, 'gruppi');
-        $where = array_merge(["uag.codUtente = :c"], $condizioni_dinamiche);
-        $params = array_merge([':c' => $idUtente], $parametri_dinamici);
+        $where = ["uag.codUtente = :c"];
+        $params = [':c' => $idUtente];
+
+        if (!empty($_GET['nome'])) {
+            $where[] = "g.nome LIKE :nome";
+            $params[':nome'] = '%' . $_GET['nome'] . '%';
+        }
+        if (!empty($_GET['proprietario'])) {
+            $where[] = "u.nickname LIKE :prop";
+            $params[':prop'] = '%' . $_GET['proprietario'] . '%';
+        }
+        if (!empty($_GET['data']) && isDataValidaRange($_GET['data'])) {
+            $where[] = "g.dataCreazione >= :data";
+            $params[':data'] = $_GET['data'];
+        }
 
         $tabella = "UtenteAutorizzatoGruppo uag JOIN Gruppo g ON uag.codGruppo = g.codice JOIN Utente u ON g.creatoDa = u.codice";
         $totale = getNumberOfRecords($pdo, $tabella, $where, $params);
@@ -122,11 +134,22 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         echo '</div>' . getPagesNav($np, $npagine, 1);
     } elseif ($tab_corrente === 'bacheche') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'uab.nomeBacheca', 'proprietario' => 'u.nickname', 'data' => 'b.dataCreazione'], 'data', 'DESC');
-        
-        // Uso della funzione centralizzata di filterAPI (mappa automaticamente $_GET['titolo'], data, proprietario)
-        list($condizioni_dinamiche, $parametri_dinamici) = applicaFiltriDinamici($_GET, 'bacheche');
-        $where = array_merge(["uab.utenteAutorizzato = :c", "uab.autorizzato = 1"], $condizioni_dinamiche);
-        $params = array_merge([':c' => $idUtente], $parametri_dinamici);
+        $where = ["uab.utenteAutorizzato = :c", "uab.autorizzato = 1"];
+        $params = [':c' => $idUtente];
+
+        // Usa 'titolo' coerentemente con il name strutturato dentro getFiltroConfig('bacheche')
+        if (!empty($_GET['titolo'])) {
+            $where[] = "uab.nomeBacheca LIKE :nome_bacheca";
+            $params[':nome_bacheca'] = '%' . $_GET['titolo'] . '%';
+        }
+        if (!empty($_GET['proprietario'])) {
+            $where[] = "u.nickname LIKE :prop";
+            $params[':prop'] = '%' . $_GET['proprietario'] . '%';
+        }
+        if (!empty($_GET['data']) && isDataValidaRange($_GET['data'])) {
+            $where[] = "b.dataCreazione >= :data";
+            $params[':data'] = $_GET['data'];
+        }
 
         $tabella = "UtenteAutorizzatoBacheca uab JOIN Bacheca b ON uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente JOIN Utente u ON b.codiceUtente = u.codice";
         $totale = getNumberOfRecords($pdo, $tabella, $where, $params);
@@ -154,11 +177,34 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         echo '</div>' . getPagesNav($np, $npagine, 1);
     } elseif ($tab_corrente === 'file') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['file' => 'titolo', 'dimensione' => 'dimensione'], 'file', 'ASC');
-        
-        // Uso della funzione centralizzata di filterAPI (mappa automaticamente file, dimensione_min, dimensione_max, filetype)
-        list($condizioni_dinamiche, $parametri_dinamici) = applicaFiltriDinamici($_GET, 'file');
-        $where = array_merge(["caricatoDa = :c"], $condizioni_dinamiche);
-        $params = array_merge([':c' => $idUtente], $parametri_dinamici);
+        $where = ["caricatoDa = :c"];
+        $params = [':c' => $idUtente];
+
+        if (!empty($_GET['file'])) {
+            $where[] = "titolo LIKE :file";
+            $params[':file'] = '%' . $_GET['file'] . '%';
+        }
+        if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
+            $where[] = "dimensione >= :dmin";
+            $params[':dmin'] = (float)$_GET['dimensione_min'];
+        }
+        if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
+            $where[] = "dimensione <= :dmax";
+            $params[':dmax'] = (float)$_GET['dimensione_max'];
+        }
+
+        $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
+        if (!empty($_GET['filetype'])) {
+            $selectedTypes = array_filter((array)$_GET['filetype'], fn($t) => isset($filetypes[$t]));
+            if ($selectedTypes) {
+                $placeholders = [];
+                foreach (array_values($selectedTypes) as $i => $type) {
+                    $placeholders[] = ":ft_$i";
+                    $params[":ft_$i"] = $type;
+                }
+                $where[] = 'tipo IN (' . implode(', ', $placeholders) . ')';
+            }
+        }
 
         $totale = getNumberOfRecords($pdo, "FileMultimediale", $where, $params);
         $npagine = getNumberOfPages($totale, $limit);
@@ -195,8 +241,24 @@ function renderElencoUtenti($pdo, $isAjax)
     list($limit, $np, $start_from) = getPaginationParams(20);
     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nickname' => 'nickname', 'nome' => 'nome', 'cognome' => 'cognome', 'data' => 'dataNascita'], 'nickname', 'ASC');
 
-    // Anche la vista generale utenti sfrutta la filterAPI universale
-    list($where, $params) = applicaFiltriDinamici($_GET, 'utenti');
+    $where = [];
+    $params = [];
+    if (!empty($_GET['utente'])) {
+        $where[] = "nickname LIKE :u";
+        $params[':u'] = '%' . $_GET['utente'] . '%';
+    }
+    if (!empty($_GET['nome'])) {
+        $where[] = "nome LIKE :n";
+        $params[':n'] = '%' . $_GET['nome'] . '%';
+    }
+    if (!empty($_GET['cognome'])) {
+        $where[] = "cognome LIKE :c";
+        $params[':c'] = '%' . $_GET['cognome'] . '%';
+    }
+    if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {
+        $where[] = "dataNascita >= :d";
+        $params[':d'] = $_GET['data_nascita'];
+    }
 
     $totale = getNumberOfRecords($pdo, "Utente", $where, $params);
     $npagine = getNumberOfPages($totale, $limit);
