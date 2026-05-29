@@ -25,10 +25,25 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
         include 'filter.php';
     } elseif ($tab === 'bacheche') {
         $filtro_config = getFiltroConfig('bacheche', ['utente' => $idUtente, 'tab' => 'bacheche']);
+
         if (isset($filtro_config['campi'])) {
-            $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
-                return !in_array($c['name'] ?? '', ['proprietario_nome', 'proprietario_cognome']);
-            });
+            $map = array_column($filtro_config['campi'], null, 'name');
+            $ordine = ['titolo', 'proprietario', 'data']; // L'ordine richiesto
+
+            // Ricostruiamo l'array mantenendo i campi 'hidden' e ordinando i visibili
+            $campi_ordinati = [];
+
+            // 1. Aggiungiamo prima gli hidden (se presenti)
+            foreach ($filtro_config['campi'] as $c) {
+                if (($c['tipo'] ?? '') === 'hidden') $campi_ordinati[] = $c;
+            }
+
+            // 2. Aggiungiamo i visibili nell'ordine specificato
+            foreach ($ordine as $key) {
+                if (isset($map[$key])) $campi_ordinati[] = $map[$key];
+            }
+
+            $filtro_config['campi'] = $campi_ordinati;
         }
         include 'filter.php';
     } elseif ($tab === 'file') {
