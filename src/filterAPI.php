@@ -47,9 +47,9 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'gruppi':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:'],
-                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario:'],
-                    ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo:'],
+                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo'],
+                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario'],
+                    ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo'],
                 ])
             ];
         case 'file':
