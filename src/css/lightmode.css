@@ -126,6 +126,19 @@ li.navbar a:hover:not(.active) {
     border-radius: 6px;
 }
 
+.navbar a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.navbar a i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
 /* --- FILTRO --- */
 #filtro,
 #filtro input,
