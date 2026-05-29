@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/filterAPI.php'; // Aggiunto per usare i filtri centralizzati
 
 // Verifica se la richiesta arriva tramite AJAX
 $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
@@ -13,7 +14,7 @@ if (!$isAjax):
     <head>
         <title>SalMeet - Gruppi</title>
         <?php include 'head.html'; ?>
-
+        <script src="js/FilterHandler.js" defer></script>
         <script src="js/AJAXHandler.js" defer></script>
     </head>
 
@@ -31,43 +32,24 @@ if (!$isAjax):
                 // CONFIGURAZIONE DINAMICA DEI FILTRI NELLA SIDEBAR
                 // =========================================================
                 if (empty($_GET['gruppo'])) {
-                    $filtro_config = [
-                        'campi' => [
-                            ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:'],
-                            ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario:'],
-                            ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo:'],
-                        ]
-                    ];
+                    // Usa il filtro centralizzato nativo per i gruppi
+                    $filtro_config = getFiltroConfig('gruppi');
                     include 'filter.php';
                 } else {
                     $tab_corrente = $_GET['tab'] ?? 'info';
                     $idGruppo = (int)$_GET['gruppo'];
 
                     if ($tab_corrente === 'info') {
-                        echo '<div id="filtro" class="filter-empty">';
-                        echo '    <p>Non sono presenti filtri per questa sezione.</p>';
-                        echo '</div>';
+                        $filtro_config = getFiltroConfig('vuoto');
+                        echo '<div id="filtro" class="filter-empty"><p>' . htmlspecialchars($filtro_config['messaggio'] ?? 'Non sono presenti filtri per questa sezione.') . '</p></div>';
                     } elseif ($tab_corrente === 'membri') {
-                        $filtro_config = [
-                            'campi' => [
-                                ['tipo' => 'hidden', 'name' => 'gruppo', 'value' => $idGruppo],
-                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'membri'],
-                                ['tipo' => 'text', 'name' => 'nickname', 'label' => 'Nickname:'],
-                                ['tipo' => 'text', 'name' => 'nome', 'label' => 'Nome:'],
-                                ['tipo' => 'text', 'name' => 'cognome', 'label' => 'Cognome:'],
-                                ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Data di Nascita (Da):']
-                            ]
-                        ];
+                        // Usa il filtro centralizzato 'utenti' passandogli i parametri della vista corrente
+                        $filtro_config = getFiltroConfig('utenti', ['gruppo' => $idGruppo, 'tab' => 'membri']);
                         include 'filter.php';
                     } elseif ($tab_corrente === 'file') {
-                        $filtro_config = [
-                            'campi' => [
-                                ['tipo' => 'hidden', 'name' => 'gruppo', 'value' => $idGruppo],
-                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'file'],
-                                ['tipo' => 'text', 'name' => 'titolo_file', 'label' => 'Nome File:'],
-                                ['tipo' => 'text', 'name' => 'nickname', 'label' => 'Nickname (Caricato da):']
-                            ]
-                        ];
+                        // Usa il filtro centralizzato 'file'. In questo caso non filtriamo via nulla 
+                        // perché in un gruppo è utile cercare i file caricati da uno specifico membro
+                        $filtro_config = getFiltroConfig('file', ['gruppo' => $idGruppo, 'tab' => 'file']);
                         include 'filter.php';
                     }
                 }
@@ -148,9 +130,10 @@ if (!$isAjax):
                             $whereSql = "";
                             $params = [':id' => $idGruppo];
 
-                            if (!empty($_GET['nickname'])) {
+                            // Allineato al filtro utenti: la chiave generata è 'utente'
+                            if (!empty($_GET['utente'])) {
                                 $whereSql .= " AND u.nickname LIKE :nickname";
-                                $params[':nickname'] = '%' . $_GET['nickname'] . '%';
+                                $params[':nickname'] = '%' . $_GET['utente'] . '%';
                             }
                             if (!empty($_GET['nome'])) {
                                 $whereSql .= " AND u.nome LIKE :nome";
@@ -189,7 +172,6 @@ if (!$isAjax):
                                 foreach ($membriRaw as $membro) {
                                     $linkMembro = "utenti.php?utente=" . urlencode($membro['codice']) . "&return_to=" . urlencode($current_url);
                                     
-                                    // Aggiunta icona proprietario
                                     $iconaCorona = ((int)$membro['codice'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                     $htmlMembroNickname = "<a href='{$linkMembro}'>" . htmlspecialchars($membro['nickname']) . "</a>" . $iconaCorona;
@@ -234,13 +216,35 @@ if (!$isAjax):
                             $whereSql = "";
                             $params = [':codice' => $idGruppo];
 
-                            if (!empty($_GET['titolo_file'])) {
+                            // Allineato al filtro file: le chiavi generate sono 'file', 'proprietario_file', e le dimensioni
+                            if (!empty($_GET['file'])) {
                                 $whereSql .= " AND f.titolo LIKE :titolo_file";
-                                $params[':titolo_file'] = '%' . $_GET['titolo_file'] . '%';
+                                $params[':titolo_file'] = '%' . $_GET['file'] . '%';
                             }
-                            if (!empty($_GET['nickname'])) {
+                            if (!empty($_GET['proprietario_file'])) {
                                 $whereSql .= " AND uProp.nickname LIKE :nickname";
-                                $params[':nickname'] = '%' . $_GET['nickname'] . '%';
+                                $params[':nickname'] = '%' . $_GET['proprietario_file'] . '%';
+                            }
+                            if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
+                                $whereSql .= " AND f.dimensione >= :dmin";
+                                $params[':dmin'] = (float)$_GET['dimensione_min'];
+                            }
+                            if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
+                                $whereSql .= " AND f.dimensione <= :dmax";
+                                $params[':dmax'] = (float)$_GET['dimensione_max'];
+                            }
+
+                            $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
+                            if (!empty($_GET['filetype'])) {
+                                $selectedTypes = array_filter((array)$_GET['filetype'], fn($t) => isset($filetypes[$t]));
+                                if ($selectedTypes) {
+                                    $placeholders = [];
+                                    foreach (array_values($selectedTypes) as $i => $type) {
+                                        $placeholders[] = ":ft_$i";
+                                        $params[":ft_$i"] = $type;
+                                    }
+                                    $whereSql .= ' AND f.tipo IN (' . implode(', ', $placeholders) . ')';
+                                }
                             }
 
                             $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo fag JOIN FileMultimediale f ON fag.file = f.numero JOIN Utente uProp ON uProp.codice=f.caricatoDa WHERE fag.codGruppo = :codice" . $whereSql);
@@ -284,7 +288,6 @@ if (!$isAjax):
 
                                     $owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']) . "&return_to=" . urlencode($current_url);
                                     
-                                    // Aggiunta icona proprietario
                                     $iconaCorona = ((int)$file['caricatoDa'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                     $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($file['nickname']) . "</a>" . $iconaCorona;
@@ -326,7 +329,6 @@ if (!$isAjax):
                     $limit = 20;
                     list($limit, $np, $start_from) = getPaginationParams($limit);
 
-                    // Definizione dei campi ordinabili: label in the table => column in the db
                     $allowed_sorts = [
                         'nome' => 'Gruppo.nome',
                         'data' => 'Gruppo.dataCreazione',
@@ -337,6 +339,7 @@ if (!$isAjax):
                     $where = [];
                     $params = [];
 
+                    // Questi campi combaciano già nativamente con getFiltroConfig('gruppi')
                     if (!empty($_GET['nome'])) {
                         $where[] = "Gruppo.nome LIKE :nome";
                         $params[':nome'] = '%' . $_GET['nome'] . '%';
@@ -366,7 +369,6 @@ if (!$isAjax):
                         $sql .= " WHERE " . implode(" AND ", $where);
                     }
 
-                    // Ordinamento e paginazione
                     $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
                     $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$start_from;
 
@@ -380,7 +382,6 @@ if (!$isAjax):
 
                     if ($datiOriginale) {
                         $datiGruppi = [];
-                        // Costruiamo un nuovo array iniettando i link
                         foreach ($datiOriginale as $riga) {
                             $linkGruppo = "gruppi.php?gruppo=" . urlencode($riga['gruppoId']) . "&return_to=" . urlencode($current_url);
                             $htmlNomeGruppo = "<a href='{$linkGruppo}'>" . htmlspecialchars($riga['Nome Gruppo']) . "</a>";
@@ -395,7 +396,6 @@ if (!$isAjax):
                             ];
                         }
 
-                        // Generazione dinamica dei link per l'ordinamento delle colonne
                         $customHeaders = generaIntestazioniOrdinabili([
                             'Nome Gruppo'    => 'nome',
                             'Proprietario'   => 'Proprietario',
@@ -406,7 +406,6 @@ if (!$isAjax):
                         stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
                         echo '</div>';
 
-                        // Stampa i link della paginazione
                         echo getPagesNav($np, $numero_pagine, 1);
                     } else {
                         echo "<p class='info-risultati'>Nessun gruppo trovato.</p>";
