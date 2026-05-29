@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/filterAPI.php';
 
 // Verifica se la richiesta arriva tramite AJAX
 $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
@@ -13,7 +14,7 @@ if (!$isAjax):
     <head>
         <title>SalMeet - Gruppi</title>
         <?php include 'head.html'; ?>
-
+        <script src="js/FilterHandler.js" defer></script>
         <script src="js/AJAXHandler.js" defer></script>
     </head>
 
@@ -31,43 +32,41 @@ if (!$isAjax):
                 // CONFIGURAZIONE DINAMICA DEI FILTRI NELLA SIDEBAR
                 // =========================================================
                 if (empty($_GET['gruppo'])) {
-                    $filtro_config = [
-                        'campi' => [
-                            ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:'],
-                            ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario:'],
-                            ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo:'],
-                        ]
-                    ];
+                    // Usa il filtro centralizzato nativo per i gruppi
+                    $filtro_config = getFiltroConfig('gruppi');
                     include 'filter.php';
                 } else {
                     $tab_corrente = $_GET['tab'] ?? 'info';
                     $idGruppo = (int)$_GET['gruppo'];
 
                     if ($tab_corrente === 'info') {
-                        echo '<div id="filtro" class="filter-empty">';
-                        echo '    <p>Non sono presenti filtri per questa sezione.</p>';
-                        echo '</div>';
+                        $filtro_config = getFiltroConfig('vuoto');
+                        echo '<div id="filtro" class="filter-empty"><p>' . htmlspecialchars($filtro_config['messaggio'] ?? 'Non sono presenti filtri per questa sezione.') . '</p></div>';
                     } elseif ($tab_corrente === 'membri') {
-                        $filtro_config = [
-                            'campi' => [
-                                ['tipo' => 'hidden', 'name' => 'gruppo', 'value' => $idGruppo],
-                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'membri'],
-                                ['tipo' => 'text', 'name' => 'nickname', 'label' => 'Nickname:'],
-                                ['tipo' => 'text', 'name' => 'nome', 'label' => 'Nome:'],
-                                ['tipo' => 'text', 'name' => 'cognome', 'label' => 'Cognome:'],
-                                ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Data di Nascita (Da):']
-                            ]
-                        ];
+                        // Usa il filtro centralizzato 'utenti' passandogli i parametri della vista corrente
+                        $filtro_config = getFiltroConfig('utenti', ['gruppo' => $idGruppo, 'tab' => 'membri']);
                         include 'filter.php';
                     } elseif ($tab_corrente === 'file') {
-                        $filtro_config = [
-                            'campi' => [
-                                ['tipo' => 'hidden', 'name' => 'gruppo', 'value' => $idGruppo],
-                                ['tipo' => 'hidden', 'name' => 'tab', 'value' => 'file'],
-                                ['tipo' => 'text', 'name' => 'titolo_file', 'label' => 'Nome File:'],
-                                ['tipo' => 'text', 'name' => 'nickname', 'label' => 'Nickname (Caricato da):']
-                            ]
-                        ];
+                        // Estraiamo dinamicamente il range di dimensioni dei file specifici di questo gruppo
+                        $stmtRange = $pdo->prepare("
+                            SELECT MIN(f.dimensione) as min_dim, MAX(f.dimensione) as max_dim 
+                            FROM FileAssociatoGruppo fag 
+                            JOIN FileMultimediale f ON fag.file = f.numero 
+                            WHERE fag.codGruppo = :codice
+                        ");
+                        $stmtRange->execute([':codice' => $idGruppo]);
+                        $range = $stmtRange->fetch(PDO::FETCH_ASSOC);
+
+                        $minSize = isset($range['min_dim']) ? floor($range['min_dim']) : 0;
+                        $maxSize = isset($range['max_dim']) ? ceil($range['max_dim']) : 100;
+
+                        // Usa il filtro centralizzato 'file', passandogli min e max calcolati
+                        $filtro_config = getFiltroConfig('file', [
+                            'gruppo' => $idGruppo, 
+                            'tab' => 'file',
+                            'min_size' => $minSize,
+                            'max_size' => $maxSize ?: 100
+                        ]);
                         include 'filter.php';
                     }
                 }
@@ -148,9 +147,10 @@ if (!$isAjax):
                             $whereSql = "";
                             $params = [':id' => $idGruppo];
 
-                            if (!empty($_GET['nickname'])) {
+                            // Allineato al filtro utenti: la chiave generata è 'utente'
+                            if (!empty($_GET['utente'])) {
                                 $whereSql .= " AND u.nickname LIKE :nickname";
-                                $params[':nickname'] = '%' . $_GET['nickname'] . '%';
+                                $params[':nickname'] = '%' . $_GET['utente'] . '%';
                             }
                             if (!empty($_GET['nome'])) {
                                 $whereSql .= " AND u.nome LIKE :nome";
@@ -189,17 +189,16 @@ if (!$isAjax):
                                 foreach ($membriRaw as $membro) {
                                     $linkMembro = "utenti.php?utente=" . urlencode($membro['codice']) . "&return_to=" . urlencode($current_url);
                                     
-                                    // Aggiunta icona proprietario
                                     $iconaCorona = ((int)$membro['codice'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                     $htmlMembroNickname = "<a href='{$linkMembro}'>" . htmlspecialchars($membro['nickname']) . "</a>" . $iconaCorona;
-                                    $dataFormattata = !empty($membro['dataNascita']) ? formattaData($membro['dataNascita']) : "";
 
                                     $datiMembri[] = [
                                         'Nickname' => $htmlMembroNickname,
                                         'Nome' => htmlspecialchars($membro['nome']),
                                         'Cognome' => htmlspecialchars($membro['cognome']),
-                                        'Data di Nascita' => htmlspecialchars($dataFormattata)
+                                        // Passando la data cruda, stampaTabella le assegnerà la class='data' e la formatterà
+                                        'Data di Nascita' => $membro['dataNascita']
                                     ];
                                 }
 
@@ -234,13 +233,34 @@ if (!$isAjax):
                             $whereSql = "";
                             $params = [':codice' => $idGruppo];
 
-                            if (!empty($_GET['titolo_file'])) {
+                            if (!empty($_GET['file'])) {
                                 $whereSql .= " AND f.titolo LIKE :titolo_file";
-                                $params[':titolo_file'] = '%' . $_GET['titolo_file'] . '%';
+                                $params[':titolo_file'] = '%' . $_GET['file'] . '%';
                             }
-                            if (!empty($_GET['nickname'])) {
+                            if (!empty($_GET['proprietario_file'])) {
                                 $whereSql .= " AND uProp.nickname LIKE :nickname";
-                                $params[':nickname'] = '%' . $_GET['nickname'] . '%';
+                                $params[':nickname'] = '%' . $_GET['proprietario_file'] . '%';
+                            }
+                            if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
+                                $whereSql .= " AND f.dimensione >= :dmin";
+                                $params[':dmin'] = (float)$_GET['dimensione_min'];
+                            }
+                            if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
+                                $whereSql .= " AND f.dimensione <= :dmax";
+                                $params[':dmax'] = (float)$_GET['dimensione_max'];
+                            }
+
+                            $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
+                            if (!empty($_GET['filetype'])) {
+                                $selectedTypes = array_filter((array)$_GET['filetype'], fn($t) => isset($filetypes[$t]));
+                                if ($selectedTypes) {
+                                    $placeholders = [];
+                                    foreach (array_values($selectedTypes) as $i => $type) {
+                                        $placeholders[] = ":ft_$i";
+                                        $params[":ft_$i"] = $type;
+                                    }
+                                    $whereSql .= ' AND f.tipo IN (' . implode(', ', $placeholders) . ')';
+                                }
                             }
 
                             $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo fag JOIN FileMultimediale f ON fag.file = f.numero JOIN Utente uProp ON uProp.codice=f.caricatoDa WHERE fag.codGruppo = :codice" . $whereSql);
@@ -284,7 +304,6 @@ if (!$isAjax):
 
                                     $owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']) . "&return_to=" . urlencode($current_url);
                                     
-                                    // Aggiunta icona proprietario
                                     $iconaCorona = ((int)$file['caricatoDa'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                     $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($file['nickname']) . "</a>" . $iconaCorona;
@@ -294,7 +313,8 @@ if (!$isAjax):
                                         'Nickname' => $htmlOwner,
                                         'Cognome' => htmlspecialchars($file['cognome']),
                                         'Nome' => htmlspecialchars($file['nome']),
-                                        'Dimensione' => htmlspecialchars($file['dimensione']) . " MB"
+                                        // Usiamo la funzione nativa che genera l'html standard corretto
+                                        'Dimensione' => formatFileSizeHtml((float)$file['dimensione'])
                                     ];
                                 }
 
@@ -307,7 +327,8 @@ if (!$isAjax):
                                 ], $sort_col, $sort_dir);
 
                                 echo '<div class="table-container">';
-                                stampaTabella($datiFiles, ['File', 'Nickname'], $customHeaders);
+                                // Inseriamo 'Dimensione' tra le colonne html per permettere al div di renderizzare correttamente
+                                stampaTabella($datiFiles, ['File', 'Nickname', 'Dimensione'], $customHeaders);
                                 echo '</div>';
                                 echo getPagesNav($np, $numero_pagine, 1);
                             } else {
@@ -326,7 +347,6 @@ if (!$isAjax):
                     $limit = 20;
                     list($limit, $np, $start_from) = getPaginationParams($limit);
 
-                    // Definizione dei campi ordinabili: label in the table => column in the db
                     $allowed_sorts = [
                         'nome' => 'Gruppo.nome',
                         'data' => 'Gruppo.dataCreazione',
@@ -366,7 +386,6 @@ if (!$isAjax):
                         $sql .= " WHERE " . implode(" AND ", $where);
                     }
 
-                    // Ordinamento e paginazione
                     $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
                     $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$start_from;
 
@@ -380,7 +399,6 @@ if (!$isAjax):
 
                     if ($datiOriginale) {
                         $datiGruppi = [];
-                        // Costruiamo un nuovo array iniettando i link
                         foreach ($datiOriginale as $riga) {
                             $linkGruppo = "gruppi.php?gruppo=" . urlencode($riga['gruppoId']) . "&return_to=" . urlencode($current_url);
                             $htmlNomeGruppo = "<a href='{$linkGruppo}'>" . htmlspecialchars($riga['Nome Gruppo']) . "</a>";
@@ -391,11 +409,11 @@ if (!$isAjax):
                             $datiGruppi[] = [
                                 'Nome Gruppo'    => $htmlNomeGruppo,
                                 'Proprietario'   => $htmlProprietario,
-                                'Data Creazione' => formattaData($riga['Data Creazione'])
+                                // Passando la data cruda, stampaTabella le assegnerà la class='data' e la formatterà nativamente
+                                'Data Creazione' => $riga['Data Creazione']
                             ];
                         }
 
-                        // Generazione dinamica dei link per l'ordinamento delle colonne
                         $customHeaders = generaIntestazioniOrdinabili([
                             'Nome Gruppo'    => 'nome',
                             'Proprietario'   => 'Proprietario',
@@ -406,7 +424,6 @@ if (!$isAjax):
                         stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
                         echo '</div>';
 
-                        // Stampa i link della paginazione
                         echo getPagesNav($np, $numero_pagine, 1);
                     } else {
                         echo "<p class='info-risultati'>Nessun gruppo trovato.</p>";

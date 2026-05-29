@@ -26,24 +26,11 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
     } elseif ($tab === 'bacheche') {
         $filtro_config = getFiltroConfig('bacheche', ['utente' => $idUtente, 'tab' => 'bacheche']);
 
+        // Rimuoviamo i campi del nome e cognome proprietario che non servono nella tab corrente
         if (isset($filtro_config['campi'])) {
-            $map = array_column($filtro_config['campi'], null, 'name');
-            $ordine = ['titolo', 'proprietario', 'data']; // L'ordine richiesto
-
-            // Ricostruiamo l'array mantenendo i campi 'hidden' e ordinando i visibili
-            $campi_ordinati = [];
-
-            // 1. Aggiungiamo prima gli hidden (se presenti)
-            foreach ($filtro_config['campi'] as $c) {
-                if (($c['tipo'] ?? '') === 'hidden') $campi_ordinati[] = $c;
-            }
-
-            // 2. Aggiungiamo i visibili nell'ordine specificato
-            foreach ($ordine as $key) {
-                if (isset($map[$key])) $campi_ordinati[] = $map[$key];
-            }
-
-            $filtro_config['campi'] = $campi_ordinati;
+            $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
+                return !in_array($c['name'] ?? '', ['proprietario_nome', 'proprietario_cognome']);
+            });
         }
         include 'filter.php';
     } elseif ($tab === 'file') {
@@ -60,6 +47,8 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
             'min_size' => $minSize,
             'max_size' => $maxSize ?: 100
         ]);
+        
+        // Rimuoviamo il campo del proprietario visto che i file mostrati sono già filtrati per l'utente corrente
         if (isset($filtro_config['campi'])) {
             $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
                 return ($c['name'] ?? '') !== 'proprietario_file';
@@ -144,7 +133,6 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $dati = [];
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $g) {
-            // ... all'interno del foreach per i gruppi
             $icona = ((int)$g['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
             $dati[] = [
                 'Nome Gruppo' => $icona . "<a href='gruppi.php?codice={$g['id_gruppo']}'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>",
@@ -187,7 +175,6 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $dati = [];
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $b) {
-            // ... all'interno del foreach per le bacheche
             $icona = ((int)$b['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
             $dati[] = [
                 'Nome Bacheca' => $icona . "<a href='bacheche.php?vista=dettaglio&bacheca=" . urlencode($b['Nome Bacheca']) . "&owner={$b['id_proprietario']}'>" . htmlspecialchars($b['Nome Bacheca']) . "</a>",
