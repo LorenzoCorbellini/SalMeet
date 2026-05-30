@@ -250,7 +250,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $stmt->execute($params);
 
         $testoPerPagina = ($totale > $limit) ? " (<strong>$limit</strong> per pagina)" : "";
-        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>File dell'utente trovati: <strong>$totale</strong>{$testoPerPagina}</p></div>";
+        echo "<div class='table-top-bar'><p class='zero-margin'>File caricati dall'utente trovati: <strong>$totale</strong>{$testoPerPagina}</p></div>";
         
         if ($totale > 0) {
             $dati = [];
