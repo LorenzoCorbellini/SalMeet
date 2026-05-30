@@ -62,7 +62,7 @@ if (!$isAjax):
 
                         // Usa il filtro centralizzato 'file', passandogli min e max calcolati
                         $filtro_config = getFiltroConfig('file', [
-                            'gruppo' => $idGruppo, 
+                            'gruppo' => $idGruppo,
                             'tab' => 'file',
                             'min_size' => $minSize,
                             'max_size' => $maxSize ?: 100
@@ -84,7 +84,7 @@ if (!$isAjax):
                 // =========================================================
                 // ROUTING VISTE: DETTAGLIO GRUPPO E GLOBALE
                 // =========================================================
-                
+
                 // Cattura l'URL attuale per navigare indietro correttamente da Utenti
                 $current_url = $_SERVER['REQUEST_URI'];
 
@@ -120,7 +120,7 @@ if (!$isAjax):
                         $ownerId = (int)$infoGruppo['ownerId'];
 
                         if ($tab_corrente === 'info') {
-                            $stmtFile = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo WHERE codGruppo = :id");
+                            $stmtFile = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo WHERE codgruppo = :id");
                             $stmtFile->execute([':id' => $idGruppo]);
                             $numFile = $stmtFile->fetchColumn();
 
@@ -133,10 +133,15 @@ if (!$isAjax):
                             echo "<div class='tab-info-card'>
                                     <p class='info-card-text'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>
                                     <p class='info-card-text'><strong>Data Creazione:</strong> " . formattaData($infoGruppo['dataCreazione']) . "</p>
-                                    <p class='info-card-text'><strong>Numero di membri del gruppo:</strong> " . $numMembri . "</p>
-                                    <p class='info-card-text-last'><strong>Numero di file totali caricati nel gruppo:</strong> " . $numFile . "</p>
+                                    <p class='info-card-text'>
+                                        <strong>Numero di membri del gruppo:</strong> 
+                                        <a href='gruppi.php?gruppo={$idGruppo}&tab=membri'>{$numMembri}</a>
+                                    </p>
+                                    <p class='info-card-text-last'>
+                                        <strong>Numero di file totali caricati nel gruppo:</strong> 
+                                        <a href='gruppi.php?gruppo={$idGruppo}&tab=file'>{$numFile}</a>
+                                    </p>
                                 </div>";
-
                         } elseif ($tab_corrente === 'membri') {
                             $limit = 20;
                             list($limit, $np, $start_from) = getPaginationParams($limit);
@@ -186,10 +191,10 @@ if (!$isAjax):
                                 $datiMembri = [];
                                 foreach ($membriRaw as $membro) {
                                     $linkMembro = "utenti.php?utente=" . urlencode($membro['codice']) . "&return_to=" . urlencode($current_url);
-                                    
+
                                     $iconaCorona = ((int)$membro['codice'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
-                                    $htmlMembroNickname = "<a href='{$linkMembro}'>" .$iconaCorona. htmlspecialchars($membro['nickname']) . "</a>";
+                                    $htmlMembroNickname = "<a href='{$linkMembro}'>" . $iconaCorona . htmlspecialchars($membro['nickname']) . "</a>";
 
                                     $datiMembri[] = [
                                         'Nickname' => $htmlMembroNickname,
@@ -214,15 +219,14 @@ if (!$isAjax):
                             } else {
                                 echo "<p class='info-risultati'>Nessun membro trovato nel gruppo con i filtri selezionati.</p>";
                             }
-
                         } elseif ($tab_corrente === 'file') {
                             $limit = 20;
                             list($limit, $np, $start_from) = getPaginationParams($limit);
 
                             // Rimossi 'cognome' e 'nome' dall'ordinamento
                             $allowed_sorts = [
-                                'file' => 'f.titolo', 
-                                'nickname' => 'uProp.nickname', 
+                                'file' => 'f.titolo',
+                                'nickname' => 'uProp.nickname',
                                 'dimensione' => 'f.dimensione'
                             ];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'file', 'ASC');
@@ -234,7 +238,7 @@ if (!$isAjax):
                                 $whereSql .= " AND f.titolo LIKE :titolo_file";
                                 $params[':titolo_file'] = '%' . $_GET['file'] . '%';
                             }
-                            
+
                             // Ricerca Rapida/Globale allineata per il proprietario del file
                             $ricercaProprietarioFile = isset($_GET['proprietario_file']) ? trim($_GET['proprietario_file']) : '';
                             if ($ricercaProprietarioFile !== '') {
@@ -304,12 +308,12 @@ if (!$isAjax):
 
                                     $file_link = htmlspecialchars($file['URL']);
 
-                                    $titolo_html = "<a href='{$file_link}' target='_blank' class='file-link'>" . 
-                                                   "<img src='" . htmlspecialchars($icon_path) . "' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" . 
-                                                   htmlspecialchars($file['titolo']) . "</a>";
+                                    $titolo_html = "<a href='{$file_link}' target='_blank' class='file-link'>" .
+                                        "<img src='" . htmlspecialchars($icon_path) . "' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
+                                        htmlspecialchars($file['titolo']) . "</a>";
 
                                     $owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']) . "&return_to=" . urlencode($current_url);
-                                    
+
                                     $iconaCorona = ((int)$file['caricatoDa'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
                                     $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($file['nickname']) . "</a>" . $iconaCorona;
@@ -336,11 +340,9 @@ if (!$isAjax):
                                 echo "<p class='info-risultati'>Nessun file condiviso trovato nel gruppo con i filtri selezionati.</p>";
                             }
                         }
-
                     } else {
                         echo "<p class='info-risultati'>Gruppo non trovato.</p>";
                     }
-
                 } else {
                     // =========================================================
                     // ELENCO GLOBALE GRUPPI
@@ -362,7 +364,7 @@ if (!$isAjax):
                         $where[] = "Gruppo.nome LIKE :nome";
                         $params[':nome'] = '%' . $_GET['nome'] . '%';
                     }
-                    
+
                     // Ricerca Rapida/Globale allineata per il proprietario del gruppo
                     $ricercaProprietario = isset($_GET['proprietario']) ? trim($_GET['proprietario']) : '';
                     if ($ricercaProprietario !== '') {
