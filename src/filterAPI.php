@@ -131,6 +131,11 @@ function getRegoleFiltroSQL(string $entita): array
             ],
             'data_nascita' => ['colonna' => 'u.dataNascita', 'operatore' => '=', 'formato' => 'val'],
         ],
+        'gruppi' => [
+            'nome'         => ['colonna' => 'g.nome', 'operatore' => 'LIKE', 'formato' => '%val%'],
+            'proprietario' => ['colonna' => 'u.nickname', 'operatore' => 'LIKE', 'formato' => '%val%'],
+            'data'         => ['colonna' => 'g.dataCreazione', 'operatore' => '>=', 'formato' => 'val'],
+        ],
         'file' => [
             'file'              => ['colonna' => 'fm.nome',       'operatore' => 'LIKE', 'formato' => '%val%'],
             'proprietario_file' => ['colonna' => 'u.nickname',    'operatore' => 'LIKE', 'formato' => '%val%'],
