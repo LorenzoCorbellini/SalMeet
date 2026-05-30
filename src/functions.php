@@ -54,7 +54,7 @@ function stampaTabella(array $righe, array $htmlColumns = [], array $customHeade
 
 function getTabella(array $righe, array $htmlColumns = [], array $customHeaders = []): string {
     if (empty($righe)) {
-        return "<p class='info-risultati'>Nessun risultato trovato.</p>";
+        return "<p class='info-risultati'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
     }
 
     $html = "<table border='1'><tr>";

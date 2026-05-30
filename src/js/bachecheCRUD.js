@@ -471,7 +471,7 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
                         renderizzaRisultatiCentrali(data.utenti);
                     } else {
                         resultsTitle.textContent = 'Risultati (0)';
-                        resultsDiv.innerHTML = `<p class="swal-multi-msg-error">${data.messaggio || 'Nessun risultato trovato.'}</p>`;
+                        resultsDiv.innerHTML = `<p class="swal-multi-msg-error">${data.messaggio || 'Nessun risultato trovato con i criteri di ricerca selezionati.'}</p>`;
                     }
                 } catch (err) {
                     resultsTitle.textContent = 'Errore';
