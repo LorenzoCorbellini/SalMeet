@@ -147,18 +147,14 @@ if (!$isAjax):
                             $whereSql = "";
                             $params = [':id' => $idGruppo];
 
-                            // Allineato al filtro utenti: la chiave generata è 'utente'
-                            if (!empty($_GET['utente'])) {
-                                $whereSql .= " AND u.nickname LIKE :nickname";
-                                $params[':nickname'] = '%' . $_GET['utente'] . '%';
-                            }
-                            if (!empty($_GET['nome'])) {
-                                $whereSql .= " AND u.nome LIKE :nome";
-                                $params[':nome'] = '%' . $_GET['nome'] . '%';
-                            }
-                            if (!empty($_GET['cognome'])) {
-                                $whereSql .= " AND u.cognome LIKE :cognome";
-                                $params[':cognome'] = '%' . $_GET['cognome'] . '%';
+                            $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
+                            if ($ricercaGlobale !== '') {
+                                $whereSql .= " AND (
+                                    u.nickname LIKE :rg 
+                                    OR CONCAT(u.nome, ' ', u.cognome) LIKE :rg 
+                                    OR CONCAT(u.cognome, ' ', u.nome) LIKE :rg
+                                )";
+                                $params[':rg'] = '%' . $ricercaGlobale . '%';
                             }
                             if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {
                                 $whereSql .= " AND u.dataNascita >= :data_nascita";
@@ -224,8 +220,6 @@ if (!$isAjax):
                             $allowed_sorts = [
                                 'file' => 'f.titolo', 
                                 'nickname' => 'uProp.nickname', 
-                                'cognome' => 'uProp.cognome', 
-                                'nome' => 'uProp.nome', 
                                 'dimensione' => 'f.dimensione'
                             ];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'file', 'ASC');
@@ -237,10 +231,17 @@ if (!$isAjax):
                                 $whereSql .= " AND f.titolo LIKE :titolo_file";
                                 $params[':titolo_file'] = '%' . $_GET['file'] . '%';
                             }
-                            if (!empty($_GET['proprietario_file'])) {
-                                $whereSql .= " AND uProp.nickname LIKE :nickname";
-                                $params[':nickname'] = '%' . $_GET['proprietario_file'] . '%';
+                            
+                            $ricercaProprietarioFile = isset($_GET['proprietario_file']) ? trim($_GET['proprietario_file']) : '';
+                            if ($ricercaProprietarioFile !== '') {
+                                $whereSql .= " AND (
+                                    uProp.nickname LIKE :rp_file 
+                                    OR CONCAT(uProp.nome, ' ', uProp.cognome) LIKE :rp_file 
+                                    OR CONCAT(uProp.cognome, ' ', uProp.nome) LIKE :rp_file
+                                )";
+                                $params[':rp_file'] = '%' . $ricercaProprietarioFile . '%';
                             }
+
                             if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
                                 $whereSql .= " AND f.dimensione >= :dmin";
                                 $params[':dmin'] = (float)$_GET['dimensione_min'];
@@ -311,8 +312,6 @@ if (!$isAjax):
                                     $datiFiles[] = [
                                         'File' => $titolo_html,
                                         'Nickname' => $htmlOwner,
-                                        'Cognome' => htmlspecialchars($file['cognome']),
-                                        'Nome' => htmlspecialchars($file['nome']),
                                         // Usiamo la funzione nativa che genera l'html standard corretto
                                         'Dimensione' => formatFileSizeHtml((float)$file['dimensione'])
                                     ];
@@ -321,13 +320,10 @@ if (!$isAjax):
                                 $customHeaders = generaIntestazioniOrdinabili([
                                     'File'       => 'file',
                                     'Nickname'   => 'nickname',
-                                    'Cognome'    => 'cognome',
-                                    'Nome'       => 'nome',
                                     'Dimensione' => 'dimensione'
                                 ], $sort_col, $sort_dir);
 
                                 echo '<div class="table-container">';
-                                // Inseriamo 'Dimensione' tra le colonne html per permettere al div di renderizzare correttamente
                                 stampaTabella($datiFiles, ['File', 'Nickname', 'Dimensione'], $customHeaders);
                                 echo '</div>';
                                 echo getPagesNav($np, $numero_pagine, 1);
@@ -361,10 +357,17 @@ if (!$isAjax):
                         $where[] = "Gruppo.nome LIKE :nome";
                         $params[':nome'] = '%' . $_GET['nome'] . '%';
                     }
-                    if (!empty($_GET['proprietario'])) {
-                        $where[] = "Utente.nickname LIKE :proprietario";
-                        $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
+
+                    $ricercaProprietario = isset($_GET['proprietario']) ? trim($_GET['proprietario']) : '';
+                    if ($ricercaProprietario !== '') {
+                        $where[] = "(
+                            Utente.nickname LIKE :rp 
+                            OR CONCAT(Utente.nome, ' ', Utente.cognome) LIKE :rp 
+                            OR CONCAT(Utente.cognome, ' ', Utente.nome) LIKE :rp
+                        )";
+                        $params[':rp'] = '%' . $ricercaProprietario . '%';
                     }
+
                     if (!empty($_GET['data'])) {
                         if (isDataValidaRange($_GET['data'])) {
                             $where[] = "Gruppo.dataCreazione >= :data";
