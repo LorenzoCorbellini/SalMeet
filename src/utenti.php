@@ -112,20 +112,13 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
           </div>";
     } elseif ($tab_corrente === 'gruppi') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'g.nome', 'proprietario' => 'u.nickname', 'data' => 'g.dataCreazione'], 'data', 'DESC');
+        
+        $filtri = applicaFiltriDinamici($_GET, 'gruppi');
+        $params = array_merge([':c' => $idUtente], $filtri['parametri']);
+        
         $where = ["uag.codUtente = :c"];
-        $params = [':c' => $idUtente];
-
-        if (!empty($_GET['nome'])) {
-            $where[] = "g.nome LIKE :nome";
-            $params[':nome'] = '%' . $_GET['nome'] . '%';
-        }
-        if (!empty($_GET['proprietario'])) {
-            $where[] = "u.nickname LIKE :prop";
-            $params[':prop'] = '%' . $_GET['proprietario'] . '%';
-        }
-        if (!empty($_GET['data']) && isDataValidaRange($_GET['data'])) {
-            $where[] = "g.dataCreazione >= :data";
-            $params[':data'] = $_GET['data'];
+        if (!empty($filtri['sql'])) {
+            $where[] = preg_replace('/^\s*AND\s*/', '', $filtri['sql']);
         }
 
         $tabella = "UtenteAutorizzatoGruppo uag JOIN Gruppo g ON uag.codGruppo = g.codice JOIN Utente u ON g.creatoDa = u.codice";
@@ -137,38 +130,44 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $dati = [];
 
-       foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $g) {
-            $icona = ((int)$g['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
-            $dati[] = [
-                // CORREZIONE QUI: cambiato '?codice=' in '?gruppo=' e aggiunto '&tab=info'
-                'Nome Gruppo' => $icona . "<a href='gruppi.php?gruppo={$g['id_gruppo']}&tab=info'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>",
-                'Proprietario' => "<a href='utenti.php?utente={$g['id_proprietario']}'>" . htmlspecialchars($g['Proprietario']) . "</a>",
-                'Data Creazione' => htmlspecialchars($g['Data Creazione'] ?? '')
-            ];
+        $testoPerPagina = ($totale > $limit) ? " (<strong>$limit</strong> per pagina)" : "";
+        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$totale</strong> gruppi{$testoPerPagina}</p></div>";
+        
+        if ($totale > 0) {
+            $dati = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $g) {
+                $icona = ((int)$g['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
+                $dati[] = [
+                    'Nome Gruppo' => $icona . "<a href='gruppi.php?gruppo={$g['id_gruppo']}&tab=info'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>",
+                    'Proprietario' => "<a href='utenti.php?utente={$g['id_proprietario']}'>" . htmlspecialchars($g['Proprietario']) . "</a>",
+                    'Data Creazione' => htmlspecialchars($g['Data Creazione'] ?? '')
+                ];
+            }
+
+            echo '<div class="table-container">';
+            stampaTabella($dati, ['Nome Gruppo', 'Proprietario'], generaIntestazioniOrdinabili(['Nome Gruppo' => 'nome', 'Proprietario' => 'proprietario', 'Data Creazione' => 'data'], $sort_col, $sort_dir));
+            echo '</div>';
+            
+            echo "<div class='pagination-spacer'>";
+            echo getPagesNav($np, $npagine, 1);
+            echo "</div>";
+        } else {
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
         }
-
-        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$totale</strong> gruppi (<strong>$limit</strong> per pagina)</p></div>";
-        echo '<div class="table-container">';
-        stampaTabella($dati, ['Nome Gruppo', 'Proprietario'], generaIntestazioniOrdinabili(['Nome Gruppo' => 'nome', 'Proprietario' => 'proprietario', 'Data Creazione' => 'data'], $sort_col, $sort_dir));
-        echo '</div>' . getPagesNav($np, $npagine, 1);
+        
     } elseif ($tab_corrente === 'bacheche') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'uab.nomeBacheca', 'proprietario' => 'u.nickname', 'data' => 'b.dataCreazione'], 'data', 'DESC');
+        
+        $filtri = applicaFiltriDinamici($_GET, 'bacheche');
+        $params = array_merge([':c' => $idUtente], $filtri['parametri']);
+        
         $where = ["uab.utenteAutorizzato = :c", "uab.autorizzato = 1"];
-        $params = [':c' => $idUtente];
-
-        if (!empty($_GET['titolo'])) {
-            $where[] = "uab.nomeBacheca LIKE :tit";
-            $params[':tit'] = '%' . $_GET['titolo'] . '%';
-        }
-        if (!empty($_GET['proprietario'])) {
-            $where[] = "u.nickname LIKE :prop";
-            $params[':prop'] = '%' . $_GET['proprietario'] . '%';
-        }
-        if (!empty($_GET['data']) && isDataValidaRange($_GET['data'])) {
-            $where[] = "b.dataCreazione >= :data";
-            $params[':data'] = $_GET['data'];
+        if (!empty($filtri['sql'])) {
+            $where[] = preg_replace('/^\s*AND\s*/', '', $filtri['sql']);
         }
 
         $tabella = "UtenteAutorizzatoBacheca uab JOIN Bacheca b ON uab.nomeBacheca = b.nome AND uab.codUtente = b.codiceUtente JOIN Utente u ON b.codiceUtente = u.codice";
@@ -180,41 +179,52 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $dati = [];
 
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $b) {
-            $icona = ((int)$b['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
-            $dati[] = [
-                'Nome Bacheca' => $icona . "<a href='bacheche.php?vista=dettaglio&bacheca=" . urlencode($b['Nome Bacheca']) . "&owner={$b['id_proprietario']}'>" . htmlspecialchars($b['Nome Bacheca']) . "</a>",
-                'Proprietario' => "<a href='utenti.php?utente={$b['id_proprietario']}'>" . htmlspecialchars($b['Proprietario']) . "</a>",
-                'Data Creazione' => htmlspecialchars($b['Data Creazione'] ?? '')
-            ];
+        $testoPerPagina = ($totale > $limit) ? " (<strong>$limit</strong> per pagina)" : "";
+        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>$totale</strong> bacheche{$testoPerPagina}</p></div>";
+        
+        if ($totale > 0) {
+            $dati = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $b) {
+                $icona = ((int)$b['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
+                $dati[] = [
+                    'Nome Bacheca' => $icona . "<a href='bacheche.php?vista=dettaglio&bacheca=" . urlencode($b['Nome Bacheca']) . "&owner={$b['id_proprietario']}'>" . htmlspecialchars($b['Nome Bacheca']) . "</a>",
+                    'Proprietario' => "<a href='utenti.php?utente={$b['id_proprietario']}'>" . htmlspecialchars($b['Proprietario']) . "</a>",
+                    'Data Creazione' => htmlspecialchars($b['Data Creazione'] ?? '')
+                ];
+            }
+
+            echo '<div class="table-container">';
+            stampaTabella($dati, ['Nome Bacheca', 'Proprietario'], generaIntestazioniOrdinabili(['Nome Bacheca' => 'nome', 'Proprietario' => 'proprietario', 'Data Creazione' => 'data'], $sort_col, $sort_dir));
+            echo '</div>';
+            
+            echo "<div class='pagination-spacer'>";
+            echo getPagesNav($np, $npagine, 1);
+            echo "</div>";
+        } else {
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
         }
-
-        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>$totale</strong> bacheche (<strong>$limit</strong> per pagina)</p></div>";
-        echo '<div class="table-container">';
-        stampaTabella($dati, ['Nome Bacheca', 'Proprietario'], generaIntestazioniOrdinabili(['Nome Bacheca' => 'nome', 'Proprietario' => 'proprietario', 'Data Creazione' => 'data'], $sort_col, $sort_dir));
-        echo '</div>' . getPagesNav($np, $npagine, 1);
+        
     } elseif ($tab_corrente === 'file') {
-        list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['file' => 'titolo', 'dimensione' => 'dimensione'], 'file', 'ASC');
-        $where = ["caricatoDa = :c"];
-        $params = [':c' => $idUtente];
-
-        if (!empty($_GET['file'])) {
-            $where[] = "titolo LIKE :file";
-            $params[':file'] = '%' . $_GET['file'] . '%';
-        }
-        if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
-            $where[] = "dimensione >= :dmin";
-            $params[':dmin'] = (float)$_GET['dimensione_min'];
-        }
-        if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
-            $where[] = "dimensione <= :dmax";
-            $params[':dmax'] = (float)$_GET['dimensione_max'];
+        list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['file' => 'fm.titolo', 'dimensione' => 'fm.dimensione'], 'file', 'ASC');
+        
+        $filtri = applicaFiltriDinamici($_GET, 'file');
+        // Riassegnazione nome -> titolo per compatibilità DB / Interfaccia filtro
+        $filtri['sql'] = str_replace('fm.nome', 'fm.titolo', $filtri['sql']);
+        
+        $params = array_merge([':c' => $idUtente], $filtri['parametri']);
+        
+        $where = ["fm.caricatoDa = :c"];
+        if (!empty($filtri['sql'])) {
+            $where[] = preg_replace('/^\s*AND\s*/', '', $filtri['sql']);
         }
 
+        // Il checkbox per filetype richiede integrazione logica manuale come in tutte le altre viste
         $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
-        if (!empty($_GET['filetype'])) {
+        if (!empty($_GET['filetype']) && is_array($_GET['filetype'])) {
             $selectedTypes = array_filter((array)$_GET['filetype'], fn($t) => isset($filetypes[$t]));
             if ($selectedTypes) {
                 $placeholders = [];
@@ -222,32 +232,51 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
                     $placeholders[] = ":ft_$i";
                     $params[":ft_$i"] = $type;
                 }
-                $where[] = 'tipo IN (' . implode(', ', $placeholders) . ')';
+                $where[] = 'fm.tipo IN (' . implode(', ', $placeholders) . ')';
             }
         }
 
-        $totale = getNumberOfRecords($pdo, "FileMultimediale", $where, $params);
+        $tabella = "FileMultimediale fm LEFT JOIN Utente u ON fm.caricatoDa = u.codice";
+        $totale = getNumberOfRecords($pdo, $tabella, $where, $params);
         $npagine = getNumberOfPages($totale, $limit);
 
-        $sql = "SELECT url, tipo, titolo AS `File`, dimensione AS `Dimensione` FROM FileMultimediale WHERE " . implode(" AND ", $where) . " ORDER BY $sql_sort $sort_dir LIMIT $start_from, $limit";
+        $sql = "SELECT fm.url, fm.tipo, fm.titolo AS `File`, fm.dimensione AS `Dimensione` 
+                FROM FileMultimediale fm 
+                LEFT JOIN Utente u ON fm.caricatoDa = u.codice 
+                WHERE " . implode(" AND ", $where) . " 
+                ORDER BY $sql_sort $sort_dir LIMIT $start_from, $limit";
+                
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
 
-        $dati = [];
-        $icons = ['immagine' => 'images/image.png', 'video' => 'images/video.png', 'audio' => 'images/headphones.png', 'default' => 'images/document.png'];
+        $testoPerPagina = ($totale > $limit) ? " (<strong>$limit</strong> per pagina)" : "";
+        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$totale</strong> file condivisi{$testoPerPagina}</p></div>";
+        
+        if ($totale > 0) {
+            $dati = [];
+            $icons = ['immagine' => 'images/image.png', 'video' => 'images/video.png', 'audio' => 'images/headphones.png', 'default' => 'images/document.png'];
 
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $f) {
-            $icon = $icons[strtolower($f['tipo'])] ?? $icons['default'];
-            $dati[] = [
-                'File' => "<a href='" . htmlspecialchars($f['url']) . "' target='_blank' class='file-link'><img src='{$icon}' class='icona icona-filetype' style='vertical-align:middle;'>" . htmlspecialchars($f['File']) . "</a>",
-                'Dimensione' => formatFileSizeHtml((int)$f['Dimensione'])
-            ];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $f) {
+                $icon = $icons[strtolower($f['tipo'])] ?? $icons['default'];
+                $dati[] = [
+                    'File' => "<a href='" . htmlspecialchars($f['url']) . "' target='_blank' class='file-link'><img src='{$icon}' class='icona icona-filetype' style='vertical-align:middle;'>" . htmlspecialchars($f['File']) . "</a>",
+                    'Dimensione' => formatFileSizeHtml((int)$f['Dimensione'])
+                ];
+            }
+
+            echo '<div class="table-container">';
+            stampaTabella($dati, ['File', 'Dimensione'], generaIntestazioniOrdinabili(['File' => 'file', 'Dimensione' => 'dimensione'], $sort_col, $sort_dir));
+            echo '</div>';
+            
+            echo "<div class='pagination-spacer'>";
+            echo getPagesNav($np, $npagine, 1);
+            echo "</div>";
+        } else {
+            echo '<div class="table-container table-container-empty">';
+            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
+            echo '</div>';
+            echo "<div class='pagination-spacer'></div>";
         }
-
-        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$totale</strong> file condivisi (<strong>$limit</strong> per pagina)</p></div>";
-        echo '<div class="table-container">';
-        stampaTabella($dati, ['File', 'Dimensione'], generaIntestazioniOrdinabili(['File' => 'file', 'Dimensione' => 'dimensione'], $sort_col, $sort_dir));
-        echo '</div>' . getPagesNav($np, $npagine, 1);
     }
 
     if (!$isAjax) echo '</div>';
@@ -259,48 +288,20 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
 function renderElencoUtenti($pdo, $isAjax)
 {
     list($limit, $np, $start_from) = getPaginationParams(20);
-    list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nickname' => 'nickname', 'nome' => 'nome', 'cognome' => 'cognome', 'data' => 'dataNascita'], 'nickname', 'ASC');
+    list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data' => 'u.dataNascita'], 'nickname', 'ASC');
 
-    /*$where = [];
-    $params = [];
-    if (!empty($_GET['utente'])) {
-        $where[] = "nickname LIKE :u";
-        $params[':u'] = '%' . $_GET['utente'] . '%';
-    }
-    if (!empty($_GET['nome'])) {
-        $where[] = "nome LIKE :n";
-        $params[':n'] = '%' . $_GET['nome'] . '%';
-    }
-    if (!empty($_GET['cognome'])) {
-        $where[] = "cognome LIKE :c";
-        $params[':c'] = '%' . $_GET['cognome'] . '%';
-    }*/
-
+    $filtri = applicaFiltriDinamici($_GET, 'utenti');
     $where = [];
-    $params = [];
+    $params = $filtri['parametri'];
 
-    //Puliamo l'input: trim() rimuove gli spazi inseriti per sbaglio all'inizio o alla fine
-    $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
-
-    if ($ricercaGlobale !== '') {
-        // 2. CONCAT unisce nome e cognome per permettere la ricerca dell'intero nome!
-        $where[] = "(
-            nickname LIKE :rg 
-            OR CONCAT(nome, ' ', cognome) LIKE :rg 
-            OR CONCAT(cognome, ' ', nome) LIKE :rg
-        )";
-        $params[':rg'] = '%' . $ricercaGlobale . '%';
+    if (!empty($filtri['sql'])) {
+        $where[] = preg_replace('/^\s*AND\s*/', '', $filtri['sql']);
     }
 
-    if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {
-        $where[] = "dataNascita >= :d";
-        $params[':d'] = $_GET['data_nascita'];
-    }
-
-    $totale = getNumberOfRecords($pdo, "Utente", $where, $params);
+    $totale = getNumberOfRecords($pdo, "Utente u", $where, $params);
     $npagine = getNumberOfPages($totale, $limit);
 
-    $sql = "SELECT codice, nickname, nome AS Nome, cognome AS Cognome, dataNascita AS `Data di Nascita` FROM Utente";
+    $sql = "SELECT u.codice, u.nickname, u.nome AS Nome, u.cognome AS Cognome, u.dataNascita AS `Data di Nascita` FROM Utente u";
     if ($where) $sql .= " WHERE " . implode(" AND ", $where);
     $sql .= " ORDER BY $sql_sort $sort_dir LIMIT $start_from, $limit";
 
@@ -309,21 +310,33 @@ function renderElencoUtenti($pdo, $isAjax)
 
     if (!$isAjax) echo '<div id="ajax-results">';
 
-    echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$totale</strong> utenti (<strong>$limit</strong> per pagina)</p></div>";
+    $testoPerPagina = ($totale > $limit) ? " (<strong>$limit</strong> per pagina)" : "";
+    echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$totale</strong> utenti{$testoPerPagina}</p></div>";
 
-    $dati = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $dati[] = [
-            'Nickname' => "<a href='?utente={$r['codice']}' class='row-link' title='Visualizza profilo'>" . htmlspecialchars($r['nickname']) . "</a>",
-            'Nome' => htmlspecialchars($r['Nome']),
-            'Cognome' => htmlspecialchars($r['Cognome']),
-            'Data di Nascita' => htmlspecialchars($r['Data di Nascita'])
-        ];
+    if ($totale > 0) {
+        $dati = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $dati[] = [
+                'Nickname' => "<a href='?utente={$r['codice']}' class='row-link' title='Visualizza profilo'>" . htmlspecialchars($r['nickname']) . "</a>",
+                'Nome' => htmlspecialchars($r['Nome']),
+                'Cognome' => htmlspecialchars($r['Cognome']),
+                'Data di Nascita' => htmlspecialchars($r['Data di Nascita'])
+            ];
+        }
+
+        echo '<div class="table-container">';
+        stampaTabella($dati, ['Nickname'], generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data di Nascita' => 'data'], $sort_col, $sort_dir));
+        echo '</div>';
+        
+        echo "<div class='pagination-spacer'>";
+        echo getPagesNav($np, $npagine, 1);
+        echo "</div>";
+    } else {
+        echo '<div class="table-container table-container-empty">';
+        echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
+        echo '</div>';
+        echo "<div class='pagination-spacer'></div>";
     }
-
-    echo '<div class="table-container">';
-    stampaTabella($dati, ['Nickname'], generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data di Nascita' => 'data'], $sort_col, $sort_dir));
-    echo '</div>' . getPagesNav($np, $npagine, 1);
 
     if (!$isAjax) echo '</div>';
 }
