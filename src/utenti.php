@@ -47,7 +47,7 @@ function renderFiltroSidebarUtenti($pdo, $idUtente, $tab)
             'min_size' => $minSize,
             'max_size' => $maxSize ?: 100
         ]);
-        
+
         // Rimuoviamo il campo del proprietario visto che i file mostrati sono già filtrati per l'utente corrente
         if (isset($filtro_config['campi'])) {
             $filtro_config['campi'] = array_filter($filtro_config['campi'], function ($c) {
@@ -95,14 +95,21 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $dataFormattata = formattaData($infoUtente['dataNascita']);
 
         echo "<div class='tab-info-card'>
-                <p class='info-card-text'><strong>Nickname:</strong> " . htmlspecialchars($infoUtente['nickname']) . "</p>
-                <p class='info-card-text'><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>
-                <p class='info-card-text'><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>
-                <p class='info-card-text'><strong>Data di Nascita:</strong> {$dataFormattata}</p>
-                <p class='info-card-text'><strong>Numero di gruppi a cui appartiene:</strong> {$numGruppi}</p>
-                <p class='info-card-text'><strong>Numero di bacheche a cui appartiene:</strong> {$numBacheche}</p>
-                <p class='info-card-text-last'><strong>Numero di file caricati:</strong> {$numFile}</p>
-              </div>";
+            <p class='info-card-text'><strong>Nickname:</strong> " . htmlspecialchars($infoUtente['nickname']) . "</p>
+            <p class='info-card-text'><strong>Nome:</strong> " . htmlspecialchars($infoUtente['nome']) . "</p>
+            <p class='info-card-text'><strong>Cognome:</strong> " . htmlspecialchars($infoUtente['cognome']) . "</p>
+            <p class='info-card-text'><strong>Data di Nascita:</strong> {$dataFormattata}</p>
+            
+            <p class='info-card-text'><strong>Numero di gruppi a cui appartiene:</strong> 
+                <a href='?utente={$idUtente}&tab=gruppi'>{$numGruppi}</a>
+            </p>
+            <p class='info-card-text'><strong>Numero di bacheche a cui appartiene:</strong> 
+                <a href='?utente={$idUtente}&tab=bacheche'>{$numBacheche}</a>
+            </p>
+            <p class='info-card-text-last'><strong>Numero di file caricati:</strong> 
+                <a href='?utente={$idUtente}&tab=file'>{$numFile}</a>
+            </p>
+          </div>";
     } elseif ($tab_corrente === 'gruppi') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'g.nome', 'proprietario' => 'u.nickname', 'data' => 'g.dataCreazione'], 'data', 'DESC');
         $where = ["uag.codUtente = :c"];
@@ -270,7 +277,7 @@ function renderElencoUtenti($pdo, $isAjax)
 
     $where = [];
     $params = [];
-    
+
     //Puliamo l'input: trim() rimuove gli spazi inseriti per sbaglio all'inizio o alla fine
     $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
 
