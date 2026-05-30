@@ -272,16 +272,16 @@ function renderElencoUtenti($pdo, $isAjax)
     $params = [];
     
     //Puliamo l'input: trim() rimuove gli spazi inseriti per sbaglio all'inizio o alla fine
-    $ricerca = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
+    $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
 
-    if ($ricerca !== '') {
+    if ($ricercaGlobale !== '') {
         // 2. CONCAT unisce nome e cognome per permettere la ricerca dell'intero nome!
         $where[] = "(
             nickname LIKE :rg 
             OR CONCAT(nome, ' ', cognome) LIKE :rg 
             OR CONCAT(cognome, ' ', nome) LIKE :rg
         )";
-        $params[':rg'] = '%' . $ricerca . '%';
+        $params[':rg'] = '%' . $ricercaGlobale . '%';
     }
 
     if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {

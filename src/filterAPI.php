@@ -18,6 +18,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
     foreach ($parametriExtra as $name => $value) {
         $campiBase[] = ['tipo' => 'hidden', 'name' => $name, 'value' => $value, 'label' => ''];
     }
+        echo "";
 
     switch ($entita) {
         //filtro bacheche
@@ -50,7 +51,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
             return [
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo', 'placeholder' => 'es. Cantastorie del mezzogiorno, Eredi del pas...'],
-                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Ricerca Rapida Proprietario', 'placeholder' => 'Nome, cognome o nickname...'],
+                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Ricerca Rapida Utente', 'placeholder' => 'Nome, cognome o nickname...'],
                     ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo'],
                 ])
             ];
