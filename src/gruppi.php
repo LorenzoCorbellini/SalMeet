@@ -102,8 +102,8 @@ if (!$isAjax):
                     $infoGruppo = $stmtGruppo->fetch(PDO::FETCH_ASSOC);
 
                     if ($infoGruppo) {
-                        echo "<p><a href='gruppi.php'>&larr; Torna all'elenco gruppi</a></p>";
-                        echo "<h2>" . htmlspecialchars($infoGruppo['nome']) . "</h2>";
+                        echo "<a href='gruppi.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
+                        echo "<h2>Dettaglio Gruppo: " . htmlspecialchars($infoGruppo['nome']) . "</h2>";
 
                         $urlInfo   = "?gruppo=" . urlencode($idGruppo) . "&tab=info";
                         $urlMembri = "?gruppo=" . urlencode($idGruppo) . "&tab=membri";
