@@ -189,7 +189,7 @@ if (!$isAjax):
                                     
                                     $iconaCorona = ((int)$membro['codice'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
-                                    $htmlMembroNickname = "<a href='{$linkMembro}'>" . htmlspecialchars($membro['nickname']) . "</a>" . $iconaCorona;
+                                    $htmlMembroNickname = "<a href='{$linkMembro}'>" .$iconaCorona. htmlspecialchars($membro['nickname']) . "</a>";
 
                                     $datiMembri[] = [
                                         'Nickname' => $htmlMembroNickname,

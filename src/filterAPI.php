@@ -40,7 +40,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                     /*['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname Utente', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
                     ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Utente', 'placeholder' => 'es. Mario, Luca...'],
                     ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome Utente', 'placeholder' => 'es. Rossi, Verdi...'],*/
-                    ['tipo' => 'text', 'name' => 'ricerca_globale', 'label' => 'Ricerca Rapida', 'placeholder' => 'Nome, cognome o nickname...'],
+                    ['tipo' => 'text', 'name' => 'ricerca_globale', 'label' => 'Ricerca Rapida Utente', 'placeholder' => 'Nome, cognome o nickname...'],
                     ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nato dopo'],
                 ])
             ];
@@ -49,9 +49,9 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'gruppi':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo:', 'placeholder' => 'es. Cantastorie del mezzogiorno, Eredi del pas...'],
-                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Nickname Proprietario:', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
-                    ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo:'],
+                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo', 'placeholder' => 'es. Cantastorie del mezzogiorno, Eredi del pas...'],
+                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Ricerca Rapida Proprietario', 'placeholder' => 'Nome, cognome o nickname...'],
+                    ['tipo' => 'date', 'name' => 'data',         'label' => 'Creata dopo'],
                 ])
             ];
             
@@ -62,7 +62,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
             return [
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'file',              'label' => 'Nome File:', 'placeholder' => 'es. Vlog dal campeggio, Uccello in vol...'],
-                    ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Nickname Proprietario:', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
+                    ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Ricerca Rapida Proprietario:', 'placeholder' => 'Nome, cognome o nickname...'],
                     [
                         'tipo' => 'checkbox-group',
                         'name' => 'filetype',
