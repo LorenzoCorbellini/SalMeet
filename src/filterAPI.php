@@ -62,7 +62,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
             $maxSize = $parametriExtra['max_size'] ?? 100;
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'file',              'label' => 'Nome File:', 'placeholder' => 'es. Vlog dal campeggio'],
+                    ['tipo' => 'text', 'name' => 'file',              'label' => 'Nome File', 'placeholder' => 'es. Vlog dal campeggio'],
                     [
                         'tipo' => 'checkbox-group',
                         'name' => 'filetype',
@@ -83,7 +83,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                         'value_min' => (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') ? (int)$_GET['dimensione_min'] : $minSize,
                         'value_max' => (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') ? (int)$_GET['dimensione_max'] : $maxSize
                     ],
-                    ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Utente Proprietario:', 'placeholder' => 'Nome Cognome / Nickname'],
+                    ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome Cognome / Nickname'],
                 ])
             ];
 
