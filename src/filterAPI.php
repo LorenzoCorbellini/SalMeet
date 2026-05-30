@@ -87,6 +87,14 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 ])
             ];
 
+            case 'file_bacheche':
+            return [
+                'campi' => array_merge($campiBase, [
+                    ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca', 'placeholder' => 'es. Botanica di notte'],
+                    ['tipo' => 'text', 'name' => 'ricerca_proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome Cognome / Nickname'],
+                ])
+            ];
+
             //filtro vuoto
         default:
             return [
@@ -142,7 +150,14 @@ function getRegoleFiltroSQL(string $entita): array
             'proprietario_file' => ['colonna' => 'u.nickname',    'operatore' => 'LIKE', 'formato' => '%val%'],
             'dimensione_min'    => ['colonna' => 'fm.dimensione', 'operatore' => '>=',   'formato' => 'val'],
             'dimensione_max'    => ['colonna' => 'fm.dimensione', 'operatore' => '<=',   'formato' => 'val'],
-        ]
+        ],
+        'file_bacheche' => [
+            'titolo'               => ['colonna' => 'pb.nomeBacheca', 'operatore' => 'LIKE', 'formato' => '%val%'],
+            'ricerca_proprietario' => [
+                'tipo'    => 'ricerca_multipla',
+                'colonne' => ['u.nickname', 'u.nome', 'u.cognome'] 
+            ],
+        ],
     ];
 
     return $mappe[$entita] ?? [];

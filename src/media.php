@@ -184,28 +184,46 @@ function getMediaFileDettaglio(PDO $pdo, string $file_id): ?array {
 	return $result ?: null;
 }
 
-function getGruppiDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC'): array {
-	$stmt = $pdo->prepare(
-		"SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId
+function getGruppiDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC', array $where = [], array $params = []): array {
+	$sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId
 		 FROM Gruppo g
 		 JOIN Utente u ON g.creatoDa = u.codice
 		 JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
-		 WHERE ag.file = :file_id
-		 ORDER BY {$sql_sort} {$sort_dir}"
-	);
-	$stmt->execute([':file_id' => $file_id]);
+		 WHERE ag.file = :file_id";
+	
+	// Aggiungi condizioni aggiuntive di filtro se presenti
+	if ($where) {
+		$sql .= " AND " . implode(" AND ", $where);
+	}
+	
+	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+	
+	// Aggiungi il parametro per file_id
+	$params[':file_id'] = $file_id;
+	
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getBachecheDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC'): array {
-	$stmt = $pdo->prepare(
-		"SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId
+function getBachecheDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC', array $where = [], array $params = []): array {
+	$sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId
 		 FROM FilePubblicatoBacheca pb
 		 JOIN Utente u ON pb.codUtente = u.codice
-		 WHERE pb.file = :file_id
-		 ORDER BY {$sql_sort} {$sort_dir}"
-	);
-	$stmt->execute([':file_id' => $file_id]);
+		 WHERE pb.file = :file_id";
+	
+	// Aggiungi condizioni aggiuntive di filtro se presenti
+	if ($where) {
+		$sql .= " AND " . implode(" AND ", $where);
+	}
+	
+	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+	
+	// Aggiungi il parametro per file_id
+	$params[':file_id'] = $file_id;
+	
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -257,7 +275,16 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 			} elseif ($activeTab === 'gruppi') {
 			$allowed_sorts_f = ['nomeGruppo' => 'g.nome', 'proprietario' => 'u.nickname'];
 			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeGruppo', 'ASC');
-			$groups = getGruppiDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f);
+			
+			// Applica i filtri se presenti
+			$filtri_result = applicaFiltriDinamici($_GET, 'gruppi');
+			$where_f = [];
+			$params_f = $filtri_result['parametri'];
+			if ($filtri_result['sql']) {
+				$where_f[] = ltrim($filtri_result['sql'], " AND ");
+			}
+			
+			$groups = getGruppiDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f, $where_f, $params_f);
 			if (empty($groups)) {
 				$contentHtml .= "<p class='info-risultati'>Nessun gruppo trovato per questo file.</p>";
 			} else {
@@ -276,7 +303,16 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 		} elseif ($activeTab === 'bacheche') {
 			$allowed_sorts_f = ['nomeBacheca' => 'pb.nomeBacheca', 'proprietario' => 'u.nickname'];
 			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeBacheca', 'ASC');
-			$bacheche = getBachecheDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f);
+			
+			// Applica i filtri se presenti
+			$filtri_result = applicaFiltriDinamici($_GET, 'file_bacheche');
+			$where_f = [];
+			$params_f = $filtri_result['parametri'];
+			if ($filtri_result['sql']) {
+				$where_f[] = ltrim($filtri_result['sql'], " AND ");
+			}
+			
+			$bacheche = getBachecheDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f, $where_f, $params_f);
 			if (empty($bacheche)) {
 				$contentHtml .= "<p class='info-risultati'>Nessuna bacheca trovata per questo file.</p>";
 			} else {
@@ -325,6 +361,10 @@ function setupFiltroConfig(PDO $pdo, string $activeTab)
 {
 	if(!isset($activeTab)) $entita = 'file';
 
+	// Recupera i parametri di routing per mantenere il contesto di dettaglio
+	$mediaParams = getParametriRichiestaMedia();
+	$isDetailView = $mediaParams['vista'] === 'dettaglio' && !empty($mediaParams['file_id']);
+
 	if ($activeTab === 'file') {
 		$entita = 'file';
 		$parametriExtra = [];
@@ -333,11 +373,21 @@ function setupFiltroConfig(PDO $pdo, string $activeTab)
 		$entita = 'vuoto';
 		$parametriExtra = [];
 	} else if ($activeTab === 'bacheche') {
-		$entita = 'bacheche';
-		$parametriExtra = [];
+		$entita = $isDetailView ? 'file_bacheche' : 'bacheche';
+		// Preserva i parametri di routing nel dettaglio del file
+		$parametriExtra = $isDetailView ? [
+			'vista' => 'dettaglio',
+			'file_id' => $mediaParams['file_id'],
+			'tab' => 'bacheche'
+		] : [];
 	} else if ($activeTab === 'gruppi') {
 		$entita = 'gruppi';
-		$parametriExtra = [];
+		// Preserva i parametri di routing nel dettaglio del file
+		$parametriExtra = $isDetailView ? [
+			'vista' => 'dettaglio',
+			'file_id' => $mediaParams['file_id'],
+			'tab' => 'gruppi'
+		] : [];
 	} else {
 		$entita = 'vuoto';
 		$parametriExtra = [];
