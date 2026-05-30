@@ -139,10 +139,11 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $stmt->execute($params);
         $dati = [];
 
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $g) {
+       foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $g) {
             $icona = ((int)$g['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
             $dati[] = [
-                'Nome Gruppo' => $icona . "<a href='gruppi.php?codice={$g['id_gruppo']}'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>",
+                // CORREZIONE QUI: cambiato '?codice=' in '?gruppo=' e aggiunto '&tab=info'
+                'Nome Gruppo' => $icona . "<a href='gruppi.php?gruppo={$g['id_gruppo']}&tab=info'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>",
                 'Proprietario' => "<a href='utenti.php?utente={$g['id_proprietario']}'>" . htmlspecialchars($g['Proprietario']) . "</a>",
                 'Data Creazione' => htmlspecialchars($g['Data Creazione'] ?? '')
             ];
