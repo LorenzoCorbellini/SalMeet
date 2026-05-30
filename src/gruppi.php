@@ -185,7 +185,7 @@ if (!$isAjax):
                             $membriRaw = $stmtMembri->fetchAll(PDO::FETCH_ASSOC);
 
                             $testoPerPagina = ($totale > $recordsPerPage) ? " (<strong>{$recordsPerPage}</strong> per pagina)" : "";
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>{$totale}</strong> membri{$testoPerPagina}</p></div>";
+                            echo "<div class='table-top-bar'><p class='zero-margin'>Utenti trovati nel gruppo: <strong>{$totale}</strong> {$testoPerPagina}</p></div>";
 
                             if (!empty($membriRaw)) {
                                 $datiMembri = [];
@@ -290,7 +290,7 @@ if (!$isAjax):
                             $filesRaw = $stmtFile->fetchAll(PDO::FETCH_ASSOC);
 
                             $testoPerPagina = ($totale > $recordsPerPage) ? " (<strong>{$recordsPerPage}</strong> per pagina)" : "";
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>{$totale}</strong> file condivisi{$testoPerPagina}</p></div>";
+                            echo "<div class='table-top-bar'><p class='zero-margin'>File trovati nel gruppo: <strong>{$totale}</strong>{$testoPerPagina}</p></div>";
 
                             if (!empty($filesRaw)) {
                                 $datiFiles = [];
