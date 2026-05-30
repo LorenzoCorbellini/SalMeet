@@ -184,26 +184,26 @@ function getMediaFileDettaglio(PDO $pdo, string $file_id): ?array {
 	return $result ?: null;
 }
 
-function getGruppiDelFile(PDO $pdo, string $file_id): array {
+function getGruppiDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC'): array {
 	$stmt = $pdo->prepare(
 		"SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId
 		 FROM Gruppo g
 		 JOIN Utente u ON g.creatoDa = u.codice
 		 JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
 		 WHERE ag.file = :file_id
-		 ORDER BY g.nome"
+		 ORDER BY {$sql_sort} {$sort_dir}"
 	);
 	$stmt->execute([':file_id' => $file_id]);
 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getBachecheDelFile(PDO $pdo, string $file_id): array {
+function getBachecheDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC'): array {
 	$stmt = $pdo->prepare(
 		"SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId
 		 FROM FilePubblicatoBacheca pb
 		 JOIN Utente u ON pb.codUtente = u.codice
 		 WHERE pb.file = :file_id
-		 ORDER BY pb.nomeBacheca"
+		 ORDER BY {$sql_sort} {$sort_dir}"
 	);
 	$stmt->execute([':file_id' => $file_id]);
 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -212,8 +212,11 @@ function getBachecheDelFile(PDO $pdo, string $file_id): array {
 function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool $isAjax)
 {
 	$file = getMediaFileDettaglio($pdo, $file_id);
+	$contentHtml  = "<a href='media.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
+	$contentHtml .= "<h2>" . htmlspecialchars($file['title']) . "</h2>";
+	
 	if (!$file) {
-		$contentHtml = "<div class='info-risultati'>File non trovato.</div>";
+		$contentHtml .= "<div class='info-risultati'>File non trovato.</div>";
 		if ($isAjax) {
 			echo $contentHtml;
 			exit;
@@ -230,6 +233,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 		$urlGruppi = '?' . http_build_query(array_merge($baseParams, ['tab' => 'gruppi']));
 		$urlBacheche = '?' . http_build_query(array_merge($baseParams, ['tab' => 'bacheche']));
 
+		
 		$tabsHtml = "<div class='detail-tabs-header'>
 			<div class='bacheca-tabs tabs-reset'>
 				<a href='" . htmlspecialchars($urlInfo) . "' class='" . ($activeTab === 'info' ? 'active' : '') . "'>Informazioni</a>
@@ -238,26 +242,27 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 			</div>
 		</div>";
 
-		$btnIndietro = "<a href='media.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
-		$contentHtml = $btnIndietro . $tabsHtml;
+		$contentHtml .= $tabsHtml;
 
 		if ($activeTab === 'info') {
 			$ownerLink = "utenti.php?utente=" . urlencode((int)$file['owner_id']);
 			$contentHtml .= "<div class='tab-info-card'>
-				<h2>" . htmlspecialchars($file['title']) . "</h2>
-				<p><strong>Proprietario:</strong> <a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($file['owner_nickname']) . "</a></p>
-				<p><strong>Nome:</strong> " . htmlspecialchars($file['owner_name']) . "</p>
-				<p><strong>Cognome:</strong> " . htmlspecialchars($file['owner_surname']) . "</p>
-				<p><strong>Tipo file:</strong> " . htmlspecialchars($file['type']) . "</p>
-				<p><strong>Dimensione:</strong> " . htmlspecialchars(formatFileSize($file['size'])) . "</p>
-				<p><a href='" . htmlspecialchars($file['url']) . "' target='_blank'>Apri file</a></p>
+			<p><strong>Proprietario:</strong> <a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($file['owner_nickname']) . "</a></p>
+			<p><strong>Nome:</strong> " . htmlspecialchars($file['owner_name']) . "</p>
+			<p><strong>Cognome:</strong> " . htmlspecialchars($file['owner_surname']) . "</p>
+			<p><strong>Tipo file:</strong> " . htmlspecialchars($file['type']) . "</p>
+			<p><strong>Dimensione:</strong> " . htmlspecialchars(formatFileSize($file['size'])) . "</p>
+			<p><a href='" . htmlspecialchars($file['url']) . "' target='_blank'>Apri file</a></p>
 			</div>";
-		} elseif ($activeTab === 'gruppi') {
-			$groups = getGruppiDelFile($pdo, $file_id);
+			} elseif ($activeTab === 'gruppi') {
+			$allowed_sorts_f = ['nomeGruppo' => 'g.nome', 'proprietario' => 'u.nickname'];
+			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeGruppo', 'ASC');
+			$groups = getGruppiDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f);
 			if (empty($groups)) {
 				$contentHtml .= "<p class='info-risultati'>Nessun gruppo trovato per questo file.</p>";
 			} else {
 				$datiGruppi = [];
+				$customHeaders_f = generaIntestazioniOrdinabili(['Nome Gruppo' => 'nomeGruppo', 'Proprietario' => 'proprietario'], $sort_col_f, $sort_dir_f);
 				foreach ($groups as $group) {
 					$groupLink = "gruppi.php?gruppo=" . urlencode($group['gruppoId']);
 					$ownerLink = "utenti.php?utente=" . urlencode($group['ownerId']);
@@ -266,14 +271,17 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($group['Proprietario']) . "</a>"
 					];
 				}
-				$contentHtml .= "<div class='table-container'>" . getTabella($datiGruppi, ['Nome Gruppo', 'Proprietario']) . "</div>";
+				$contentHtml .= "<div class='table-container'>" . getTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders_f) . "</div>";
 			}
-		} else {
-			$bacheche = getBachecheDelFile($pdo, $file_id);
+		} elseif ($activeTab === 'bacheche') {
+			$allowed_sorts_f = ['nomeBacheca' => 'pb.nomeBacheca', 'proprietario' => 'u.nickname'];
+			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeBacheca', 'ASC');
+			$bacheche = getBachecheDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f);
 			if (empty($bacheche)) {
 				$contentHtml .= "<p class='info-risultati'>Nessuna bacheca trovata per questo file.</p>";
 			} else {
 				$datiBacheche = [];
+				$customHeaders_f = generaIntestazioniOrdinabili(['Nome Bacheca' => 'nomeBacheca', 'Proprietario' => 'proprietario'], $sort_col_f, $sort_dir_f);
 				foreach ($bacheche as $bacheca) {
 					$bachecaLink = "bacheche.php?vista=dettaglio&bacheca=" . urlencode($bacheca['Nome Bacheca']) . "&owner=" . urlencode($bacheca['ownerId']);
 					$ownerLink = "utenti.php?utente=" . urlencode($bacheca['ownerId']);
@@ -282,7 +290,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($bacheca['Proprietario']) . "</a>"
 					];
 				}
-				$contentHtml .= "<div class='table-container'>" . getTabella($datiBacheche, ['Nome Bacheca', 'Proprietario']) . "</div>";
+				$contentHtml .= "<div class='table-container'>" . getTabella($datiBacheche, ['Nome Bacheca', 'Proprietario'], $customHeaders_f) . "</div>";
 			}
 		}
 	}
