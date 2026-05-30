@@ -142,8 +142,8 @@ if (!$isAjax):
                                     </p>
                                 </div>";
                         } elseif ($tab_corrente === 'membri') {
-                            $limit = 20;
-                            list($limit, $np, $start_from) = getPaginationParams($limit);
+                            $recordsPerPage = 20;
+                            list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
                             $allowed_sorts = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data' => 'u.dataNascita'];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nickname', 'ASC');
@@ -151,7 +151,7 @@ if (!$isAjax):
                             $whereSql = "";
                             $params = [':id' => $idGruppo];
 
-                            // Ricerca Rapida/Globale allineata ai nuovi filtri
+                            // Ricerca Rapida/Globale allineata ai filtri utenti di filterAPI.php
                             $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
                             if ($ricercaGlobale !== '') {
                                 $whereSql .= " AND (
@@ -184,7 +184,8 @@ if (!$isAjax):
                             $stmtMembri->execute($params);
                             $membriRaw = $stmtMembri->fetchAll(PDO::FETCH_ASSOC);
 
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>{$totale}</strong> membri (<strong>{$limit}</strong> per pagina)</p></div>";
+                            $testoPerPagina = ($totale > $recordsPerPage) ? " (<strong>{$recordsPerPage}</strong> per pagina)" : "";
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>{$totale}</strong> membri{$testoPerPagina}</p></div>";
 
                             if (!empty($membriRaw)) {
                                 $datiMembri = [];
@@ -214,15 +215,19 @@ if (!$isAjax):
                                 echo '<div class="table-container">';
                                 stampaTabella($datiMembri, ['Nickname'], $customHeaders);
                                 echo '</div>';
+                                echo "<div class='pagination-spacer'>";
                                 echo getPagesNav($np, $numero_pagine, 1);
+                                echo "</div>";
                             } else {
-                                echo "<p class='info-risultati'>Nessun membro trovato nel gruppo con i filtri selezionati.</p>";
+                                echo '<div class="table-container table-container-empty">';
+                                echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
+                                echo '</div>';
+                                echo "<div class='pagination-spacer'></div>";
                             }
                         } elseif ($tab_corrente === 'file') {
-                            $limit = 20;
-                            list($limit, $np, $start_from) = getPaginationParams($limit);
+                            $recordsPerPage = 20;
+                            list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
-                            // Rimossi 'cognome' e 'nome' dall'ordinamento
                             $allowed_sorts = [
                                 'file' => 'f.titolo',
                                 'nickname' => 'uProp.nickname',
@@ -238,15 +243,10 @@ if (!$isAjax):
                                 $params[':titolo_file'] = '%' . $_GET['file'] . '%';
                             }
 
-                            // Ricerca Rapida/Globale allineata per il proprietario del file
-                            $ricercaProprietarioFile = isset($_GET['proprietario_file']) ? trim($_GET['proprietario_file']) : '';
-                            if ($ricercaProprietarioFile !== '') {
-                                $whereSql .= " AND (
-                                    uProp.nickname LIKE :rpf 
-                                    OR CONCAT(uProp.nome, ' ', uProp.cognome) LIKE :rpf 
-                                    OR CONCAT(uProp.cognome, ' ', uProp.nome) LIKE :rpf
-                                )";
-                                $params[':rpf'] = '%' . $ricercaProprietarioFile . '%';
+                            // Filtro proprietario_file allineato al dizionario di filterAPI.php
+                            if (!empty($_GET['proprietario_file'])) {
+                                $whereSql .= " AND uProp.nickname LIKE :proprietario_file";
+                                $params[':proprietario_file'] = '%' . $_GET['proprietario_file'] . '%';
                             }
 
                             if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
@@ -277,7 +277,6 @@ if (!$isAjax):
 
                             $numero_pagine = getNumberOfPages($totale, $limit);
 
-                            // Rimossi cognome e nome dalla query
                             $stmtFile = $pdo->prepare("
                                 SELECT f.numero, f.titolo, f.tipo, uProp.codice as caricatoDa, uProp.nickname, f.dimensione, f.URL 
                                 FROM FileAssociatoGruppo fag 
@@ -290,7 +289,8 @@ if (!$isAjax):
                             $stmtFile->execute($params);
                             $filesRaw = $stmtFile->fetchAll(PDO::FETCH_ASSOC);
 
-                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>{$totale}</strong> file condivisi (<strong>{$limit}</strong> per pagina)</p></div>";
+                            $testoPerPagina = ($totale > $recordsPerPage) ? " (<strong>{$recordsPerPage}</strong> per pagina)" : "";
+                            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>{$totale}</strong> file condivisi{$testoPerPagina}</p></div>";
 
                             if (!empty($filesRaw)) {
                                 $datiFiles = [];
@@ -317,7 +317,6 @@ if (!$isAjax):
 
                                     $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($file['nickname']) . "</a>" . $iconaCorona;
 
-                                    // Rimosse le chiavi Cognome e Nome dall'array
                                     $datiFiles[] = [
                                         'File' => $titolo_html,
                                         'Nickname' => $htmlOwner,
@@ -334,9 +333,14 @@ if (!$isAjax):
                                 echo '<div class="table-container">';
                                 stampaTabella($datiFiles, ['File', 'Nickname', 'Dimensione'], $customHeaders);
                                 echo '</div>';
+                                echo "<div class='pagination-spacer'>";
                                 echo getPagesNav($np, $numero_pagine, 1);
+                                echo "</div>";
                             } else {
-                                echo "<p class='info-risultati'>Nessun file condiviso trovato nel gruppo con i filtri selezionati.</p>";
+                                echo '<div class="table-container table-container-empty">';
+                                echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
+                                echo '</div>';
+                                echo "<div class='pagination-spacer'></div>";
                             }
                         }
                     } else {
@@ -346,8 +350,8 @@ if (!$isAjax):
                     // =========================================================
                     // ELENCO GLOBALE GRUPPI
                     // =========================================================
-                    $limit = 20;
-                    list($limit, $np, $start_from) = getPaginationParams($limit);
+                    $recordsPerPage = 20;
+                    list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
                     $allowed_sorts = [
                         'nome' => 'Gruppo.nome',
@@ -364,15 +368,10 @@ if (!$isAjax):
                         $params[':nome'] = '%' . $_GET['nome'] . '%';
                     }
 
-                    // Ricerca Rapida/Globale allineata per il proprietario del gruppo
-                    $ricercaProprietario = isset($_GET['proprietario']) ? trim($_GET['proprietario']) : '';
-                    if ($ricercaProprietario !== '') {
-                        $where[] = "(
-                            Utente.nickname LIKE :proprietario 
-                            OR CONCAT(Utente.nome, ' ', Utente.cognome) LIKE :proprietario 
-                            OR CONCAT(Utente.cognome, ' ', Utente.nome) LIKE :proprietario
-                        )";
-                        $params[':proprietario'] = '%' . $ricercaProprietario . '%';
+                    // Filtro proprietario allineato al dizionario di filterAPI.php
+                    if (!empty($_GET['proprietario'])) {
+                        $where[] = "Utente.nickname LIKE :proprietario";
+                        $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
                     }
 
                     if (!empty($_GET['data'])) {
@@ -403,8 +402,9 @@ if (!$isAjax):
                     $stmt->execute($params);
                     $datiOriginale = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                    $testoPerPagina = ($totaleRisultati > $recordsPerPage) ? " (<strong>{$recordsPerPage}</strong> per pagina)" : "";
                     echo "<div class='table-top-bar'>";
-                    echo "<p class='info-risultati zero-margin'>Trovati <strong>{$totaleRisultati}</strong> gruppi (<strong>{$limit}</strong> per pagina)</p>";
+                    echo "<p class='info-risultati zero-margin'>Trovati <strong>{$totaleRisultati}</strong> gruppi{$testoPerPagina}</p>";
                     echo "</div>";
 
                     if ($datiOriginale) {
@@ -419,7 +419,6 @@ if (!$isAjax):
                             $datiGruppi[] = [
                                 'Nome Gruppo'    => $htmlNomeGruppo,
                                 'Proprietario'   => $htmlProprietario,
-                                // Passando la data cruda, stampaTabella le assegnerà la class='data' e la formatterà nativamente
                                 'Data Creazione' => $riga['Data Creazione']
                             ];
                         }
@@ -434,9 +433,14 @@ if (!$isAjax):
                         stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
                         echo '</div>';
 
+                        echo "<div class='pagination-spacer'>";
                         echo getPagesNav($np, $numero_pagine, 1);
+                        echo "</div>";
                     } else {
-                        echo "<p class='info-risultati'>Nessun gruppo trovato.</p>";
+                        echo '<div class="table-container table-container-empty">';
+                        echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
+                        echo '</div>';
+                        echo "<div class='pagination-spacer'></div>";
                     }
                 }
                 ?>
