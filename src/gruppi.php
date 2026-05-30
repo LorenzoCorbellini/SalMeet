@@ -147,6 +147,7 @@ if (!$isAjax):
                             $whereSql = "";
                             $params = [':id' => $idGruppo];
 
+                            // Ricerca Rapida/Globale allineata ai nuovi filtri
                             $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
                             if ($ricercaGlobale !== '') {
                                 $whereSql .= " AND (
@@ -156,6 +157,7 @@ if (!$isAjax):
                                 )";
                                 $params[':rg'] = '%' . $ricercaGlobale . '%';
                             }
+
                             if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {
                                 $whereSql .= " AND u.dataNascita >= :data_nascita";
                                 $params[':data_nascita'] = $_GET['data_nascita'];
@@ -217,6 +219,7 @@ if (!$isAjax):
                             $limit = 20;
                             list($limit, $np, $start_from) = getPaginationParams($limit);
 
+                            // Rimossi 'cognome' e 'nome' dall'ordinamento
                             $allowed_sorts = [
                                 'file' => 'f.titolo', 
                                 'nickname' => 'uProp.nickname', 
@@ -232,14 +235,15 @@ if (!$isAjax):
                                 $params[':titolo_file'] = '%' . $_GET['file'] . '%';
                             }
                             
+                            // Ricerca Rapida/Globale allineata per il proprietario del file
                             $ricercaProprietarioFile = isset($_GET['proprietario_file']) ? trim($_GET['proprietario_file']) : '';
                             if ($ricercaProprietarioFile !== '') {
                                 $whereSql .= " AND (
-                                    uProp.nickname LIKE :rp_file 
-                                    OR CONCAT(uProp.nome, ' ', uProp.cognome) LIKE :rp_file 
-                                    OR CONCAT(uProp.cognome, ' ', uProp.nome) LIKE :rp_file
+                                    uProp.nickname LIKE :rpf 
+                                    OR CONCAT(uProp.nome, ' ', uProp.cognome) LIKE :rpf 
+                                    OR CONCAT(uProp.cognome, ' ', uProp.nome) LIKE :rpf
                                 )";
-                                $params[':rp_file'] = '%' . $ricercaProprietarioFile . '%';
+                                $params[':rpf'] = '%' . $ricercaProprietarioFile . '%';
                             }
 
                             if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
@@ -270,8 +274,9 @@ if (!$isAjax):
 
                             $numero_pagine = getNumberOfPages($totale, $limit);
 
+                            // Rimossi cognome e nome dalla query
                             $stmtFile = $pdo->prepare("
-                                SELECT f.numero, f.titolo, f.tipo, uProp.codice as caricatoDa, uProp.nickname, uProp.cognome, uProp.nome, f.dimensione, f.URL 
+                                SELECT f.numero, f.titolo, f.tipo, uProp.codice as caricatoDa, uProp.nickname, f.dimensione, f.URL 
                                 FROM FileAssociatoGruppo fag 
                                 JOIN FileMultimediale f ON fag.file = f.numero 
                                 JOIN Utente uProp ON uProp.codice=f.caricatoDa 
@@ -309,10 +314,10 @@ if (!$isAjax):
 
                                     $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($file['nickname']) . "</a>" . $iconaCorona;
 
+                                    // Rimosse le chiavi Cognome e Nome dall'array
                                     $datiFiles[] = [
                                         'File' => $titolo_html,
                                         'Nickname' => $htmlOwner,
-                                        // Usiamo la funzione nativa che genera l'html standard corretto
                                         'Dimensione' => formatFileSizeHtml((float)$file['dimensione'])
                                     ];
                                 }
@@ -357,15 +362,16 @@ if (!$isAjax):
                         $where[] = "Gruppo.nome LIKE :nome";
                         $params[':nome'] = '%' . $_GET['nome'] . '%';
                     }
-
+                    
+                    // Ricerca Rapida/Globale allineata per il proprietario del gruppo
                     $ricercaProprietario = isset($_GET['proprietario']) ? trim($_GET['proprietario']) : '';
                     if ($ricercaProprietario !== '') {
                         $where[] = "(
-                            Utente.nickname LIKE :rp 
-                            OR CONCAT(Utente.nome, ' ', Utente.cognome) LIKE :rp 
-                            OR CONCAT(Utente.cognome, ' ', Utente.nome) LIKE :rp
+                            Utente.nickname LIKE :proprietario 
+                            OR CONCAT(Utente.nome, ' ', Utente.cognome) LIKE :proprietario 
+                            OR CONCAT(Utente.cognome, ' ', Utente.nome) LIKE :proprietario
                         )";
-                        $params[':rp'] = '%' . $ricercaProprietario . '%';
+                        $params[':proprietario'] = '%' . $ricercaProprietario . '%';
                     }
 
                     if (!empty($_GET['data'])) {
