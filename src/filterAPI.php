@@ -18,7 +18,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
     foreach ($parametriExtra as $name => $value) {
         $campiBase[] = ['tipo' => 'hidden', 'name' => $name, 'value' => $value, 'label' => ''];
     }
-        echo "";
+    echo "";
 
     switch ($entita) {
         //filtro bacheche
@@ -55,7 +55,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                     ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome Cognome / Nickname'],
                 ])
             ];
-            
+
             //filtro file multimediali
         case 'file':
             $minSize = $parametriExtra['min_size'] ?? 0;
@@ -87,7 +87,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 ])
             ];
 
-            case 'file_bacheche':
+        case 'file_bacheche':
             return [
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca', 'placeholder' => 'es. Botanica di notte'],
@@ -129,7 +129,7 @@ function getRegoleFiltroSQL(string $entita): array
             'titolo'               => ['colonna' => 'b.nome', 'operatore' => 'LIKE', 'formato' => '%val%'],
             'ricerca_proprietario' => [
                 'tipo'    => 'ricerca_multipla',
-                'colonne' => ['u.nickname', 'u.nome', 'u.cognome'] 
+                'colonne' => ['u.nickname', 'u.nome', 'u.cognome']
             ],
             'data' => ['colonna' => 'b.dataCreazione', 'operatore' => '>=', 'formato' => 'val'],
         ],
@@ -150,7 +150,10 @@ function getRegoleFiltroSQL(string $entita): array
         ],
         'file' => [
             'file'              => ['colonna' => 'fm.nome',       'operatore' => 'LIKE', 'formato' => '%val%'],
-            'proprietario_file' => ['colonna' => 'u.nickname',    'operatore' => 'LIKE', 'formato' => '%val%'],
+            'proprietario_file' => [
+                'tipo'    => 'ricerca_multipla',
+                'colonne' => ['u.nickname', 'u.nome', 'u.cognome']
+            ],
             'dimensione_min'    => ['colonna' => 'fm.dimensione', 'operatore' => '>=',   'formato' => 'val'],
             'dimensione_max'    => ['colonna' => 'fm.dimensione', 'operatore' => '<=',   'formato' => 'val'],
         ],
@@ -158,7 +161,7 @@ function getRegoleFiltroSQL(string $entita): array
             'titolo'               => ['colonna' => 'pb.nomeBacheca', 'operatore' => 'LIKE', 'formato' => '%val%'],
             'ricerca_proprietario' => [
                 'tipo'    => 'ricerca_multipla',
-                'colonne' => ['u.nickname', 'u.nome', 'u.cognome'] 
+                'colonne' => ['u.nickname', 'u.nome', 'u.cognome']
             ],
         ],
     ];
@@ -189,12 +192,12 @@ function applicaFiltriDinamici(array $inputs, string $entita): array
 
                 foreach ($parole as $indexParola => $parola) {
                     $subCondizioniOR = [];
-                    
+
                     // Cicliamo le colonne e creiamo un parametro al 100% univoco
                     foreach ($regola['colonne'] as $indexColonna => $colonna) {
                         // Creiamo un nome parametro che include sia l'indice della parola che quello della colonna
                         $paramName = ":rg_{$chiaveInput}_{$indexParola}_{$indexColonna}";
-                        
+
                         $subCondizioniOR[] = "$colonna LIKE $paramName";
                         // Assegniamo il valore al suo parametro univoco
                         $parametri[$paramName] = "%" . $parola . "%";
@@ -214,7 +217,7 @@ function applicaFiltriDinamici(array $inputs, string $entita): array
             // =========================================================
             $colonna = $regola['colonna'] ?? '';
             $operatore = $regola['operatore'] ?? '=';
-            
+
             $placeholder = ":" . str_replace('.', '_', $chiaveInput);
 
             if (($regola['formato'] ?? '') === '%val%') {
