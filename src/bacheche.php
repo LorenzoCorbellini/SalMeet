@@ -346,8 +346,13 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $params[':file'] = '%' . $_GET['file'] . '%';
     }
     if (!empty($_GET['proprietario_file'])) {
-        $whereSql .= " AND u.nickname LIKE :proprietario_file";
-        $params[':proprietario_file'] = '%' . $_GET['proprietario_file'] . '%';
+        $proprietario = trim($_GET['proprietario_file']);
+        $whereSql .= " AND (
+            u.nickname LIKE :proprietario_file 
+            OR CONCAT(u.nome, ' ', u.cognome) LIKE :proprietario_file 
+            OR CONCAT(u.cognome, ' ', u.nome) LIKE :proprietario_file
+        )";
+        $params[':proprietario_file'] = '%' . $proprietario . '%';
     }
     if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
         $whereSql .= " AND fm.dimensione >= :dimensione_min";
