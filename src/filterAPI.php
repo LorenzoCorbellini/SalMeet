@@ -142,7 +142,10 @@ function getRegoleFiltroSQL(string $entita): array
         ],
         'gruppi' => [
             'nome'         => ['colonna' => 'g.nome', 'operatore' => 'LIKE', 'formato' => '%val%'],
-            'proprietario' => ['colonna' => 'u.nickname', 'operatore' => 'LIKE', 'formato' => '%val%'],
+            'proprietario' => [
+                'tipo'    => 'ricerca_multipla',
+                'colonne' => ['u.nickname', 'u.nome', 'u.cognome']
+            ],
             'data'         => ['colonna' => 'g.dataCreazione', 'operatore' => '>=', 'formato' => 'val'],
         ],
         'file' => [

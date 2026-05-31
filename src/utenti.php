@@ -88,6 +88,8 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
             <a href='{$base}file' class='" . ($tab_corrente === 'file' ? 'active' : '') . "'>File Condivisi</a>
           </div></div>";
 
+        //TAB INFORMAZIONI
+
     if ($tab_corrente === 'info') {
         $numFile = getNumberOfRecords($pdo, "FileMultimediale", ["caricatoDa = :c"], [':c' => $idUtente]);
         $numGruppi = getNumberOfRecords($pdo, "UtenteAutorizzatoGruppo", ["codUtente = :c"], [':c' => $idUtente]);
@@ -110,6 +112,9 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
                 <a href='?utente={$idUtente}&tab=file'>{$numFile}</a>
             </p>
           </div>";
+
+            //TAB GRUPPI
+
     } elseif ($tab_corrente === 'gruppi') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'g.nome', 'proprietario' => 'u.nickname', 'data' => 'g.dataCreazione'], 'data', 'DESC');
         
@@ -158,6 +163,8 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
             echo '</div>';
             echo "<div class='pagination-spacer'></div>";
         }
+
+                //TAB BACHECHE
         
     } elseif ($tab_corrente === 'bacheche') {
         list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['nome' => 'uab.nomeBacheca', 'proprietario' => 'u.nickname', 'data' => 'b.dataCreazione'], 'data', 'DESC');
