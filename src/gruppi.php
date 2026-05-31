@@ -148,24 +148,10 @@ if (!$isAjax):
                             $allowed_sorts = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data' => 'u.dataNascita'];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nickname', 'ASC');
 
-                            $whereSql = "";
-                            $params = [':id' => $idGruppo];
-
-                            // Ricerca Rapida/Globale allineata ai filtri utenti di filterAPI.php
-                            $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
-                            if ($ricercaGlobale !== '') {
-                                $whereSql .= " AND (
-                                    u.nickname LIKE :rg 
-                                    OR CONCAT(u.nome, ' ', u.cognome) LIKE :rg 
-                                    OR CONCAT(u.cognome, ' ', u.nome) LIKE :rg
-                                )";
-                                $params[':rg'] = '%' . $ricercaGlobale . '%';
-                            }
-
-                            if (!empty($_GET['data_nascita']) && isDataValidaRange($_GET['data_nascita'])) {
-                                $whereSql .= " AND u.dataNascita >= :data_nascita";
-                                $params[':data_nascita'] = $_GET['data_nascita'];
-                            }
+                            // Utilizzo del filtro dinamico centralizzato
+                            $filtri = applicaFiltriDinamici($_GET, 'utenti');
+                            $params = array_merge([':id' => $idGruppo], $filtri['parametri']);
+                            $whereSql = $filtri['sql'];
 
                             $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoGruppo uag JOIN Utente u ON uag.codUtente = u.codice WHERE uag.codGruppo = :id" . $whereSql);
                             $stmtCount->execute($params);
@@ -229,37 +215,22 @@ if (!$isAjax):
                             list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
                             $allowed_sorts = [
-                                'file' => 'f.titolo',
-                                'nickname' => 'uProp.nickname',
-                                'dimensione' => 'f.dimensione'
+                                'file' => 'fm.titolo',
+                                'nickname' => 'u.nickname',
+                                'dimensione' => 'fm.dimensione'
                             ];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'file', 'ASC');
 
-                            $whereSql = "";
-                            $params = [':codice' => $idGruppo];
+                            // Utilizzo del filtro dinamico centralizzato
+                            $filtri = applicaFiltriDinamici($_GET, 'file');
+                            // Riassegnazione fm.nome -> fm.titolo per compatibilità DB / Interfaccia filtro
+                            $filtri['sql'] = str_replace('fm.nome', 'fm.titolo', $filtri['sql']);
 
-                            if (!empty($_GET['file'])) {
-                                $whereSql .= " AND f.titolo LIKE :titolo_file";
-                                $params[':titolo_file'] = '%' . $_GET['file'] . '%';
-                            }
-
-                            // Filtro proprietario_file allineato al dizionario di filterAPI.php
-                            if (!empty($_GET['proprietario_file'])) {
-                                $whereSql .= " AND uProp.nickname LIKE :proprietario_file";
-                                $params[':proprietario_file'] = '%' . $_GET['proprietario_file'] . '%';
-                            }
-
-                            if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
-                                $whereSql .= " AND f.dimensione >= :dmin";
-                                $params[':dmin'] = (float)$_GET['dimensione_min'];
-                            }
-                            if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
-                                $whereSql .= " AND f.dimensione <= :dmax";
-                                $params[':dmax'] = (float)$_GET['dimensione_max'];
-                            }
+                            $params = array_merge([':codice' => $idGruppo], $filtri['parametri']);
+                            $whereSql = $filtri['sql'];
 
                             $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
-                            if (!empty($_GET['filetype'])) {
+                            if (!empty($_GET['filetype']) && is_array($_GET['filetype'])) {
                                 $selectedTypes = array_filter((array)$_GET['filetype'], fn($t) => isset($filetypes[$t]));
                                 if ($selectedTypes) {
                                     $placeholders = [];
@@ -267,21 +238,22 @@ if (!$isAjax):
                                         $placeholders[] = ":ft_$i";
                                         $params[":ft_$i"] = $type;
                                     }
-                                    $whereSql .= ' AND f.tipo IN (' . implode(', ', $placeholders) . ')';
+                                    $whereSql .= ' AND fm.tipo IN (' . implode(', ', $placeholders) . ')';
                                 }
                             }
 
-                            $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo fag JOIN FileMultimediale f ON fag.file = f.numero JOIN Utente uProp ON uProp.codice=f.caricatoDa WHERE fag.codGruppo = :codice" . $whereSql);
+                            // Gli alias devono allinearsi a fm e u come in filterAPI
+                            $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo fag JOIN FileMultimediale fm ON fag.file = fm.numero JOIN Utente u ON u.codice = fm.caricatoDa WHERE fag.codGruppo = :codice" . $whereSql);
                             $stmtCount->execute($params);
                             $totale = $stmtCount->fetchColumn();
 
                             $numero_pagine = getNumberOfPages($totale, $limit);
 
                             $stmtFile = $pdo->prepare("
-                                SELECT f.numero, f.titolo, f.tipo, uProp.codice as caricatoDa, uProp.nickname, f.dimensione, f.URL 
+                                SELECT fm.numero, fm.titolo, fm.tipo, u.codice as caricatoDa, u.nickname, fm.dimensione, fm.URL 
                                 FROM FileAssociatoGruppo fag 
-                                JOIN FileMultimediale f ON fag.file = f.numero 
-                                JOIN Utente uProp ON uProp.codice=f.caricatoDa 
+                                JOIN FileMultimediale fm ON fag.file = fm.numero 
+                                JOIN Utente u ON u.codice = fm.caricatoDa 
                                 WHERE fag.codGruppo = :codice {$whereSql}
                                 ORDER BY {$sql_sort} {$sort_dir}
                                 LIMIT {$start_from}, {$limit}
@@ -354,41 +326,30 @@ if (!$isAjax):
                     list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
                     $allowed_sorts = [
-                        'nome' => 'Gruppo.nome',
-                        'data' => 'Gruppo.dataCreazione',
-                        'Proprietario' => 'Utente.nickname',
+                        'nome' => 'g.nome',
+                        'data' => 'g.dataCreazione',
+                        'Proprietario' => 'u.nickname',
                     ];
                     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nome', 'ASC');
 
+                    // Utilizzo del filtro dinamico centralizzato per l'elenco dei Gruppi
+                    $filtri = applicaFiltriDinamici($_GET, 'gruppi');
                     $where = [];
-                    $params = [];
+                    $params = $filtri['parametri'];
 
-                    if (!empty($_GET['nome'])) {
-                        $where[] = "Gruppo.nome LIKE :nome";
-                        $params[':nome'] = '%' . $_GET['nome'] . '%';
+                    if (!empty($filtri['sql'])) {
+                        $where[] = preg_replace('/^\s*AND\s*/', '', $filtri['sql']);
                     }
 
-                    // Filtro proprietario allineato al dizionario di filterAPI.php
-                    if (!empty($_GET['proprietario'])) {
-                        $where[] = "Utente.nickname LIKE :proprietario";
-                        $params[':proprietario'] = '%' . $_GET['proprietario'] . '%';
-                    }
-
-                    if (!empty($_GET['data'])) {
-                        if (isDataValidaRange($_GET['data'])) {
-                            $where[] = "Gruppo.dataCreazione >= :data";
-                            $params[':data'] = $_GET['data'];
-                        }
-                    }
-
-                    $tabella_count = "Gruppo JOIN Utente ON Gruppo.creatoDa = Utente.codice";
+                    // Alias aggiunti per le tabelle conformi con filterAPI (g, u)
+                    $tabella_count = "Gruppo g JOIN Utente u ON g.creatoDa = u.codice";
                     $totaleRisultati = getNumberOfRecords($pdo, $tabella_count, $where, $params);
                     $numero_pagine = getNumberOfPages($totaleRisultati, $limit);
 
                     $sql = "
-                        SELECT Gruppo.codice as 'gruppoId', Gruppo.nome as 'Nome Gruppo', Gruppo.dataCreazione as 'Data Creazione', Utente.nickname as 'Proprietario', Utente.codice as 'ownerId'
-                        FROM Gruppo
-                        JOIN Utente ON Gruppo.creatoDa = Utente.codice
+                        SELECT g.codice as 'gruppoId', g.nome as 'Nome Gruppo', g.dataCreazione as 'Data Creazione', u.nickname as 'Proprietario', u.codice as 'ownerId'
+                        FROM Gruppo g
+                        JOIN Utente u ON g.creatoDa = u.codice
                     ";
 
                     if (!empty($where)) {
