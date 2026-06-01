@@ -342,6 +342,15 @@ a.page-item.active:hover {
 
 .checkbox-group {
     margin-top: 6px;
+    padding-inline-start: 0;
+}
+
+.checkbox-group > legend {
+    font-weight: 510;
+    color: var(--text-dark);
+    margin-inline-start: 0;
+    padding-inline-start: 1px;
+    text-align: left;
 }
 
 #filtro label.checkbox-label {
