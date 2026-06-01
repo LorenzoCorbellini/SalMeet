@@ -550,7 +550,7 @@ list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 	'File' => 'fmm.titolo',
 	'owner' => 'u.nickname',
 	'size' => 'fmm.dimensione'
-], 'File', 'DESC');
+], 'File', 'ASC');
 
 $customHeaders = generaIntestazioniOrdinabili([
 	'File'   => 'File',
