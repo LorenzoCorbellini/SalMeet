@@ -2,6 +2,32 @@
 // =========================================================
 // UTILITIES DI BASE
 // =========================================================
+
+/**
+ * Calcola la dimensione massima di file presenti nel database
+ * @param int|null $fallback Valore di fallback se la query fallisce
+ * @return int Dimensione massima in MB oppure il fallback
+ */
+function getMaxFileSizeFromDb(?int $fallback = null): int
+{
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->query("SELECT MAX(dimensione) as max_size FROM FileMultimediale");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result && $result['max_size'] !== null) {
+            return (int)$result['max_size'];
+        }
+    } catch (PDOException $e) {
+        // Se c'è un errore, usa il fallback
+        error_log("Errore nel calcolo dimensione massima file: " . $e->getMessage());
+    }
+    
+    // Fallback a 2000 MB se la query fallisce o non ci sono file
+    return $fallback ?? 2000;
+}
+
 function isData(string $val): bool
 {
     return (bool) preg_match('/^\d{4}-\d{2}-\d{2}/', $val);
@@ -284,7 +310,7 @@ function getLeftArrow(): string {
  * @return string La stringa formattata contenente il valore numerico e l'unità di misura (es. "4.25 MB").
  */
 function formatFileSize(int $filesize): string {
-    $units = array('MB', 'GB', 'TB');
+    $units = array('B', 'KB', 'MB', 'GB', 'TB');
     $formattedSize = $filesize;
 	$index = 0;
     for ($i = 0; $filesize >= 1000 && $i < count($units) - 1; $i++) {
@@ -294,6 +320,29 @@ function formatFileSize(int $filesize): string {
     }
 
     return $formattedSize . ' ' . $units[$index];
+}
+
+/**
+ * Converte una dimensione numerica in una struttura leggibile composta da valore e unità.
+ *
+ * @param int $filesize Dimensione del file in unità base (ad esempio byte o kilobyte
+ *                      a seconda del contesto del database).
+ * @return array{size: float|int, unit: string} Restituisce un array associativo contenente:
+ *         - 'size': il valore numerico convertito e arrotondato a 2 decimali,
+ *                   oppure l'intero originale se non è necessaria la conversione.
+ *         - 'unit': l'unità di misura corrispondente ('B', 'KB', 'MB', 'GB', 'TB').
+ */
+function formatFileSize2(int $filesize): array {
+    $units = array('B', 'KB', 'MB', 'GB', 'TB');
+    $formattedSize = $filesize;
+    $index = 0;
+    for ($i = 0; $filesize >= 1000 && $i < count($units) - 1; $i++) {
+        $filesize /= 1000;
+        $formattedSize = round($filesize, 2);
+        $index++;
+    }
+
+    return ['size' => $formattedSize, 'unit' => $units[$index]];
 }
 
 /**
@@ -308,7 +357,7 @@ function formatFileSize(int $filesize): string {
  */
 function formatFileSizeHtml(int $size): string {
     $size_formatted = formatFileSize($size);
-    return "<div id='file_size' title='$size MB'>$size_formatted</div>";
+    return "<div id='file_size' title='$size B'>$size_formatted</div>";
 }
 
 // =========================================================

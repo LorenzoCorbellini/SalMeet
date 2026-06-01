@@ -55,12 +55,14 @@ if (!empty($reset_params)) {
 
                 $val_min = isset($_GET[$campo['name_min']]) && $_GET[$campo['name_min']] !== '' ? (int)$_GET[$campo['name_min']] : (int)($campo['value_min'] ?? $min);
                 $val_max = isset($_GET[$campo['name_max']]) && $_GET[$campo['name_max']] !== '' ? (int)$_GET[$campo['name_max']] : (int)($campo['value_max'] ?? $max);
+                $val_min_t = formatFileSize2($val_min);
+                $val_max_t = formatFileSize2($val_max);
             ?>
                 <label style="margin-bottom: 5px; display: block;">
                     <?= $label ?>:
                     <span style="font-weight: bold; color: var(--primary-dark);">
-                        <span id="val_<?= $name_min ?>"><?= $val_min ?></span> -
-                        <span id="val_<?= $name_max ?>"><?= $val_max ?></span> MB
+                        <span id="val_<?= $name_min ?>"><?= htmlspecialchars($val_min_t['size'] . ' ' . $val_min_t['unit']) ?></span> -
+                        <span id="val_<?= $name_max ?>"><?= htmlspecialchars($val_max_t['size'] . ' ' . $val_max_t['unit']) ?></span>
                     </span>
                 </label>
 

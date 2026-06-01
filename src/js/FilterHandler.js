@@ -1,17 +1,32 @@
-function controlloSliderMin(sliderMin, idMax) {
-    const sliderMax = document.getElementById(idMax);
-    if (parseInt(sliderMin.value) > parseInt(sliderMax.value)) {
-        sliderMin.value = sliderMax.value;
-    }
-    document.getElementById('val_' + sliderMin.id).innerText = sliderMin.value;
-}
+// function controlloSliderMin(sliderMin, idMax) {
+//     const sliderMax = document.getElementById(idMax);
+//     if (parseInt(sliderMin.value) > parseInt(sliderMax.value)) {
+//         sliderMin.value = sliderMax.value;
+//     }
+//     document.getElementById('val_' + sliderMin.id).innerText = sliderMin.value;
+// }
 
-function controlloSliderMax(sliderMax, idMin) {
-    const sliderMin = document.getElementById(idMin);
-    if (parseInt(sliderMax.value) < parseInt(sliderMin.value)) {
-        sliderMax.value = sliderMin.value;
+// function controlloSliderMax(sliderMax, idMin) {
+//     const sliderMin = document.getElementById(idMin);
+//     if (parseInt(sliderMax.value) < parseInt(sliderMin.value)) {
+//         sliderMax.value = sliderMin.value;
+//     }
+//     document.getElementById('val_' + sliderMax.id).innerText = sliderMax.value;
+// }
+
+function formatFileSize(value) {
+    let size = parseFloat(value);
+    if (Number.isNaN(size)) return value;
+
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let index = 0;
+
+    while (size >= 1000 && index < units.length - 1) {
+        size /= 1000;
+        index += 1;
     }
-    document.getElementById('val_' + sliderMax.id).innerText = sliderMax.value;
+
+    return `${Math.round(size * 100) / 100} ${units[index]}`;
 }
 
 function aggiornaDoppioSlider() {
@@ -34,8 +49,8 @@ function aggiornaDoppioSlider() {
         else inputMax.value = minVal;
     }
 
-    if (txtMin) txtMin.innerText = inputMin.value;
-    if (txtMax) txtMax.innerText = inputMax.value;
+    if (txtMin) txtMin.innerText = formatFileSize(inputMin.value);
+    if (txtMax) txtMax.innerText = formatFileSize(inputMax.value);
 
     const pctMin = ((inputMin.value - minAttr) / (maxAttr - minAttr)) * 100;
     const pctMax = ((inputMax.value - minAttr) / (maxAttr - minAttr)) * 100;

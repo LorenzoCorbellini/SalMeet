@@ -59,7 +59,8 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
             //filtro file multimediali
         case 'file':
             $minSize = $parametriExtra['min_size'] ?? 0;
-            $maxSize = $parametriExtra['max_size'] ?? 2000; // Dovremmo mettere la dimensione massima tra tutti i file del db
+            // Calcola la dimensione massima dal database
+            $maxSize = getMaxFileSizeFromDb($parametriExtra['max_size'] ?? null);
             return [
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'file',              'label' => 'Nome File', 'placeholder' => 'es. Vlog dal campeggio'],
