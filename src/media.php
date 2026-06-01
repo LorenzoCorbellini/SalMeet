@@ -185,7 +185,7 @@ function getMediaFileDettaglio(PDO $pdo, string $file_id): ?array {
 }
 
 function getGruppiDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC', array $where = [], array $params = []): array {
-	$sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId
+	$sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId, g.dataCreazione AS dataCreazione
 		 FROM Gruppo g
 		 JOIN Utente u ON g.creatoDa = u.codice
 		 JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
@@ -207,9 +207,10 @@ function getGruppiDelFile(PDO $pdo, string $file_id, string $sql_sort, string $s
 }
 
 function getBachecheDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC', array $where = [], array $params = []): array {
-	$sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId
+	$sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId, b.dataCreazione AS dataCreazione
 		 FROM FilePubblicatoBacheca pb
 		 JOIN Utente u ON pb.codUtente = u.codice
+		 JOIN Bacheca b ON pb.nomeBacheca = b.nome
 		 WHERE pb.file = :file_id";
 	
 	// Aggiungi condizioni aggiuntive di filtro se presenti
@@ -273,7 +274,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 			<p><a href='" . htmlspecialchars($file['url']) . "' target='_blank'>Apri file</a></p>
 			</div>";
 			} elseif ($activeTab === 'gruppi') {
-			$allowed_sorts_f = ['nomeGruppo' => 'g.nome', 'proprietario' => 'u.nickname'];
+			$allowed_sorts_f = ['nomeGruppo' => 'g.nome', 'proprietario' => 'u.nickname', 'dataCreazione' => 'g.dataCreazione'];
 			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeGruppo', 'ASC');
 			
 			// Applica i filtri se presenti
@@ -289,19 +290,20 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 				$contentHtml .= "<p class='info-risultati'>Nessun gruppo trovato per questo file.</p>";
 			} else {
 				$datiGruppi = [];
-				$customHeaders_f = generaIntestazioniOrdinabili(['Nome Gruppo' => 'nomeGruppo', 'Proprietario' => 'proprietario'], $sort_col_f, $sort_dir_f);
+				$customHeaders_f = generaIntestazioniOrdinabili(['Nome Gruppo' => 'nomeGruppo', 'Proprietario' => 'proprietario', 'Data Creazione' => 'dataCreazione'], $sort_col_f, $sort_dir_f);
 				foreach ($groups as $group) {
 					$groupLink = "gruppi.php?gruppo=" . urlencode($group['gruppoId']);
 					$ownerLink = "utenti.php?utente=" . urlencode($group['ownerId']);
 					$datiGruppi[] = [
 						'Nome Gruppo' => "<a href='" . htmlspecialchars($groupLink) . "'>" . htmlspecialchars($group['Nome Gruppo']) . "</a>",
-						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($group['Proprietario']) . "</a>"
+						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($group['Proprietario']) . "</a>",
+						'Data Creazione' => $group['dataCreazione']
 					];
 				}
 				$contentHtml .= "<div class='table-container'>" . getTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders_f) . "</div>";
 			}
 		} elseif ($activeTab === 'bacheche') {
-			$allowed_sorts_f = ['nomeBacheca' => 'pb.nomeBacheca', 'proprietario' => 'u.nickname'];
+			$allowed_sorts_f = ['nomeBacheca' => 'pb.nomeBacheca', 'proprietario' => 'u.nickname', 'dataCreazione' => 'b.dataCreazione'];
 			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeBacheca', 'ASC');
 			
 			// Applica i filtri se presenti
@@ -317,13 +319,14 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 				$contentHtml .= "<p class='info-risultati'>Nessuna bacheca trovata per questo file.</p>";
 			} else {
 				$datiBacheche = [];
-				$customHeaders_f = generaIntestazioniOrdinabili(['Nome Bacheca' => 'nomeBacheca', 'Proprietario' => 'proprietario'], $sort_col_f, $sort_dir_f);
+				$customHeaders_f = generaIntestazioniOrdinabili(['Nome Bacheca' => 'nomeBacheca', 'Proprietario' => 'proprietario', 'Data Creazione' => 'dataCreazione'], $sort_col_f, $sort_dir_f);
 				foreach ($bacheche as $bacheca) {
 					$bachecaLink = "bacheche.php?vista=dettaglio&bacheca=" . urlencode($bacheca['Nome Bacheca']) . "&owner=" . urlencode($bacheca['ownerId']);
 					$ownerLink = "utenti.php?utente=" . urlencode($bacheca['ownerId']);
 					$datiBacheche[] = [
 						'Nome Bacheca' => "<a href='" . htmlspecialchars($bachecaLink) . "'>" . htmlspecialchars($bacheca['Nome Bacheca']) . "</a>",
-						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($bacheca['Proprietario']) . "</a>"
+						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($bacheca['Proprietario']) . "</a>",
+						'Data Creazione' => $bacheca['dataCreazione']
 					];
 				}
 				$contentHtml .= "<div class='table-container'>" . getTabella($datiBacheche, ['Nome Bacheca', 'Proprietario'], $customHeaders_f) . "</div>";
