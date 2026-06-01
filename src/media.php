@@ -184,48 +184,104 @@ function getMediaFileDettaglio(PDO $pdo, string $file_id): ?array {
 	return $result ?: null;
 }
 
-function getGruppiDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC', array $where = [], array $params = []): array {
-	$sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId, g.dataCreazione AS dataCreazione
-		 FROM Gruppo g
-		 JOIN Utente u ON g.creatoDa = u.codice
-		 JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
-		 WHERE ag.file = :file_id";
-	
-	// Aggiungi condizioni aggiuntive di filtro se presenti
-	if ($where) {
-		$sql .= " AND " . implode(" AND ", $where);
-	}
-	
-	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
-	
-	// Aggiungi il parametro per file_id
-	$params[':file_id'] = $file_id;
-	
-	$stmt = $pdo->prepare($sql);
-	$stmt->execute($params);
-	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+function getGruppiDelFile(PDO $pdo,
+    string $file_id,
+    string $sql_sort,
+    string $sort_dir = 'ASC',
+    array $where = [],
+    array $params = [],
+    int $start_from = 0,
+    int $limit = 0
+): array {
+
+    $sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId, g.dataCreazione AS dataCreazione
+             FROM Gruppo g
+             JOIN Utente u ON g.creatoDa = u.codice
+             JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
+             WHERE ag.file = :file_id";
+
+    if ($where) {
+        $sql .= " AND " . implode(" AND ", $where);
+    }
+
+    $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+
+    if ($limit > 0) {
+        $sql .= " LIMIT " . (int)$start_from . ", " . (int)$limit;
+    }
+
+    $params[':file_id'] = $file_id;
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getBachecheDelFile(PDO $pdo, string $file_id, string $sql_sort, string $sort_dir = 'ASC', array $where = [], array $params = []): array {
-	$sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId, b.dataCreazione AS dataCreazione
-		 FROM FilePubblicatoBacheca pb
-		 JOIN Utente u ON pb.codUtente = u.codice
-		 JOIN Bacheca b ON pb.nomeBacheca = b.nome
-		 WHERE pb.file = :file_id";
-	
-	// Aggiungi condizioni aggiuntive di filtro se presenti
-	if ($where) {
-		$sql .= " AND " . implode(" AND ", $where);
-	}
-	
-	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
-	
-	// Aggiungi il parametro per file_id
-	$params[':file_id'] = $file_id;
-	
-	$stmt = $pdo->prepare($sql);
-	$stmt->execute($params);
-	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+function getNumberOfGruppiDelFile(PDO $pdo, string $file_id, array $where = [], array $params = []): int {
+    $sql = "SELECT COUNT(*) AS totale
+             FROM Gruppo g
+             JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
+			 JOIN Utente u ON u.codice = g.creatoDa
+             WHERE ag.file = :file_id";
+
+    if ($where) {
+        $sql .= " AND " . implode(" AND ", $where);
+    }
+
+    $params[':file_id'] = $file_id;
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return (int)$stmt->fetchColumn();
+}
+
+function getBachecheDelFile(PDO $pdo,
+    string $file_id,
+    string $sql_sort,
+    string $sort_dir = 'ASC',
+    array $where = [],
+    array $params = [],
+    int $start_from = 0,
+    int $limit = 0
+): array {
+
+    $sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId, b.dataCreazione AS dataCreazione
+             FROM FilePubblicatoBacheca pb
+             JOIN Utente u ON pb.codUtente = u.codice
+             JOIN Bacheca b ON pb.nomeBacheca = b.nome
+             WHERE pb.file = :file_id";
+
+    if ($where) {
+        $sql .= " AND " . implode(" AND ", $where);
+    }
+
+    $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+
+    if ($limit > 0) {
+        $sql .= " LIMIT " . (int)$start_from . ", " . (int)$limit;
+    }
+
+    $params[':file_id'] = $file_id;
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getNumberOfBachecheDelFile(PDO $pdo, string $file_id, array $where = [], array $params = []): int {
+    $sql = "SELECT COUNT(*) AS totale
+             FROM FilePubblicatoBacheca pb
+             JOIN Bacheca b ON pb.nomeBacheca = b.nome
+			 JOIN Utente u ON u.codice = pb.codUtente
+             WHERE pb.file = :file_id";
+
+    if ($where) {
+        $sql .= " AND " . implode(" AND ", $where);
+    }
+
+    $params[':file_id'] = $file_id;
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return (int)$stmt->fetchColumn();
 }
 
 function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool $isAjax)
@@ -273,7 +329,9 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 			<p><strong>Dimensione:</strong> " . htmlspecialchars(formatFileSize($file['size'])) . "</p>
 			<p><a href='" . htmlspecialchars($file['url']) . "' target='_blank'>Apri file</a></p>
 			</div>";
-			} elseif ($activeTab === 'gruppi') {
+		} elseif ($activeTab === 'gruppi') {
+			list($limit, $np, $start_from) = getPaginationParams(20);
+
 			$allowed_sorts_f = ['nomeGruppo' => 'g.nome', 'proprietario' => 'u.nickname', 'dataCreazione' => 'g.dataCreazione'];
 			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeGruppo', 'ASC');
 			
@@ -284,13 +342,24 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 			if ($filtri_result['sql']) {
 				$where_f[] = ltrim($filtri_result['sql'], " AND ");
 			}
-			
-			$groups = getGruppiDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f, $where_f, $params_f);
+
+			$totalGroups = getNumberOfGruppiDelFile($pdo, $file_id, $where_f, $params_f);
+			$groups = getGruppiDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f, $where_f, $params_f, $start_from, $limit);
+			$numero_pagine = getNumberOfPages($totalGroups, $limit);
+
 			if (empty($groups)) {
 				$contentHtml .= "<p class='info-risultati'>Nessun gruppo trovato per questo file.</p>";
 			} else {
+				$_GET['tab'] = 'gruppi';
 				$datiGruppi = [];
 				$customHeaders_f = generaIntestazioniOrdinabili(['Nome Gruppo' => 'nomeGruppo', 'Proprietario' => 'proprietario', 'Data Creazione' => 'dataCreazione'], $sort_col_f, $sort_dir_f);
+
+				$contentHtml .= "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>" . $totalGroups . "</strong> gruppi";
+				if ($totalGroups > $limit) {
+					$contentHtml .= " (<strong>" . $limit . "</strong> per pagina)";
+				}
+				$contentHtml .= "</p></div>";
+
 				foreach ($groups as $group) {
 					$groupLink = "gruppi.php?gruppo=" . urlencode($group['gruppoId']);
 					$ownerLink = "utenti.php?utente=" . urlencode($group['ownerId']);
@@ -300,9 +369,13 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 						'Data Creazione' => $group['dataCreazione']
 					];
 				}
+
 				$contentHtml .= "<div class='table-container'>" . getTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders_f) . "</div>";
+				$contentHtml .= "<div class='pagination-spacer'>" . getPagesNav($np, $numero_pagine, 1) . "</div>";
 			}
 		} elseif ($activeTab === 'bacheche') {
+			list($limit, $np, $start_from) = getPaginationParams(20);
+
 			$allowed_sorts_f = ['nomeBacheca' => 'pb.nomeBacheca', 'proprietario' => 'u.nickname', 'dataCreazione' => 'b.dataCreazione'];
 			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeBacheca', 'ASC');
 			
@@ -313,13 +386,24 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 			if ($filtri_result['sql']) {
 				$where_f[] = ltrim($filtri_result['sql'], " AND ");
 			}
-			
-			$bacheche = getBachecheDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f, $where_f, $params_f);
+
+			$totalBacheche = getNumberOfBachecheDelFile($pdo, $file_id, $where_f, $params_f);
+			$bacheche = getBachecheDelFile($pdo, $file_id, $sql_sort_f, $sort_dir_f, $where_f, $params_f, $start_from, $limit);
+			$numero_pagine = getNumberOfPages($totalBacheche, $limit);
+
 			if (empty($bacheche)) {
 				$contentHtml .= "<p class='info-risultati'>Nessuna bacheca trovata per questo file.</p>";
 			} else {
+				$_GET['tab'] = 'bacheche';
 				$datiBacheche = [];
 				$customHeaders_f = generaIntestazioniOrdinabili(['Nome Bacheca' => 'nomeBacheca', 'Proprietario' => 'proprietario', 'Data Creazione' => 'dataCreazione'], $sort_col_f, $sort_dir_f);
+
+				$contentHtml .= "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>" . $totalBacheche . "</strong> bacheche";
+				if ($totalBacheche > $limit) {
+					$contentHtml .= " (<strong>" . $limit . "</strong> per pagina)";
+				}
+				$contentHtml .= "</p></div>";
+
 				foreach ($bacheche as $bacheca) {
 					$bachecaLink = "bacheche.php?vista=dettaglio&bacheca=" . urlencode($bacheca['Nome Bacheca']) . "&owner=" . urlencode($bacheca['ownerId']);
 					$ownerLink = "utenti.php?utente=" . urlencode($bacheca['ownerId']);
@@ -329,7 +413,9 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 						'Data Creazione' => $bacheca['dataCreazione']
 					];
 				}
+
 				$contentHtml .= "<div class='table-container'>" . getTabella($datiBacheche, ['Nome Bacheca', 'Proprietario'], $customHeaders_f) . "</div>";
+				$contentHtml .= "<div class='pagination-spacer'>" . getPagesNav($np, $numero_pagine, 1) . "</div>";
 			}
 		}
 	}
