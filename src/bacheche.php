@@ -406,7 +406,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
     foreach ($file as $f) {
         $tipoStr = strtolower($f['tipo']);
         $icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
-        $title = preg_replace('/\d{3}$/', '', $f['titolo']);
+        $title = $f['titolo'];
 
         $titleJS = htmlspecialchars(addslashes($title), ENT_QUOTES);
         $caricatoDaJS = htmlspecialchars(addslashes($f['nickname']), ENT_QUOTES);
