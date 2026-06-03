@@ -297,8 +297,8 @@ if (!$isAjax):
                                 }
 
                                 $customHeaders = generaIntestazioniOrdinabili([
-                                   'File'       => 'file',
-                                    'Proprietario'   => 'nickname',
+                                    'File'       => 'file',
+                                    'Nickname'   => 'nickname',
                                     'Dimensione' => 'dimensione'
                                 ], $sort_col, $sort_dir);
 
