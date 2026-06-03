@@ -216,7 +216,7 @@ if (!$isAjax):
 
                             $allowed_sorts = [
                                 'file' => 'fm.titolo',
-                                'proprietario' => 'u.nickname',
+                                'nickname' => 'u.nickname',
                                 'dimensione' => 'fm.dimensione'
                             ];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'file', 'ASC');
@@ -291,7 +291,7 @@ if (!$isAjax):
 
                                     $datiFiles[] = [
                                         'File' => $titolo_html,
-                                        'Proprietario' => $htmlOwner,
+                                        'Nickname' => $htmlOwner,
                                         'Dimensione' => formatFileSizeHtml((float)$file['dimensione'])
                                     ];
                                 }
