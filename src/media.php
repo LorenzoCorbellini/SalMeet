@@ -38,7 +38,7 @@ function fetchMediaRecords(PDO $pdo,
         'visual' => "fmm.titolo AS 'File', u.nickname AS 'Proprietario', fmm.dimensione AS 'Dimensione'",
         
         'full'   => "fmm.caricatoDa AS 'owner', fmm.numero AS 'file_id', fmm.titolo AS 'title', 
-                     fmm.dimensione AS 'size', fmm.URL AS 'url', fmm.tipo AS 'type', u.nickname AS 'nickname'"
+                     fmm.dimensione AS 'size', fmm.URL AS 'url', fmm.tipo AS 'type', u.nickname AS 'nickname', u.nome AS owner_name, u.cognome AS owner_surname"
     ];
 
 	$fields = $columns_map[$view_mode];
@@ -144,7 +144,11 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 				. "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
 				. "</div>";
 		$owner_link = "utenti.php?utente=" . (int)$dati_riga['owner'];
-		$owner_html = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
+		$owner_name = trim(($dati_riga['owner_name'] ?? '') . ' ' . ($dati_riga['owner_surname'] ?? ''));
+		$owner_display = $owner_name !== ''
+			? htmlspecialchars($owner_name . ' (@' . $dati_riga['nickname'] .')')
+			: htmlspecialchars('(@' . $dati_riga['nickname'] . ')');
+		$owner_html = "<a href='" . htmlspecialchars($owner_link) . "'>" . $owner_display . "</a>";
 		
 		$size_html = formatFileSizeHtml((int)$dati_riga['size']);
 
@@ -508,8 +512,15 @@ if (!empty($_GET['file'])) {
 
 // Filtro per proprietario
 if (!empty($_GET['proprietario_file'])) {
-	$where[]             = "u.nickname LIKE :proprietario_file";
+	$where[] = "(
+		u.nickname LIKE :proprietario_file OR
+		u.nome LIKE :proprietario_file OR
+		u.cognome LIKE :proprietario_file OR
+		CONCAT(u.nome, ' ', u.cognome) LIKE :proprietario_fullname OR
+		CONCAT(u.cognome, ' ', u.nome) LIKE :proprietario_fullname
+	)";
 	$params[':proprietario_file'] = '%' . $_GET['proprietario_file'] . '%';
+	$params[':proprietario_fullname'] = '%' . $_GET['proprietario_file'] . '%';
 }
 
 if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
