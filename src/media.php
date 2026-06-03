@@ -487,7 +487,13 @@ function setupFiltroConfig(PDO $pdo, string $activeTab)
 	}
 
 	$filtro_config = getFiltroConfig($entita, $parametriExtra);
-	include 'filter.php';
+	if (isset($filtro_config['vuoto']) && $filtro_config['vuoto'] === true) {
+		echo '<div id="filtro" class="filter-empty">';
+		echo '    <p>' . htmlspecialchars($filtro_config['messaggio']) . '</p>';
+		echo '</div>';
+	} else {
+		include 'filter.php';
+	}
 }
 
 /* PAGINAZIONE */
