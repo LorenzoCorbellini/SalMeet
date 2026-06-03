@@ -81,6 +81,8 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                         'name_min' => 'dimensione_min',
                         'name_max' => 'dimensione_max',
                         'label' => 'Dimensione',
+                        'scale' => 'log',
+                        'steps' => 1000,
                         'min' => $minSize,
                         'max' => $maxSize,
                         'value_min' => (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') ? (int)$_GET['dimensione_min'] : $minSize,

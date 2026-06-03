@@ -52,9 +52,18 @@ if (!empty($reset_params)) {
                 $max = (int)($campo['max'] ?? 100);
                 $name_min = htmlspecialchars($campo['name_min']);
                 $name_max = htmlspecialchars($campo['name_max']);
+                $steps = isset($campo['steps']) ? (int)$campo['steps'] : 1000;
+                $scale = $campo['scale'] ?? 'linear';
 
                 $val_min = isset($_GET[$campo['name_min']]) && $_GET[$campo['name_min']] !== '' ? (int)$_GET[$campo['name_min']] : (int)($campo['value_min'] ?? $min);
                 $val_max = isset($_GET[$campo['name_max']]) && $_GET[$campo['name_max']] !== '' ? (int)$_GET[$campo['name_max']] : (int)($campo['value_max'] ?? $max);
+                if ($scale === 'log') {
+                    $slider_min = getLogSliderPosition($val_min, $min, $max, $steps);
+                    $slider_max = getLogSliderPosition($val_max, $min, $max, $steps);
+                } else {
+                    $slider_min = $val_min;
+                    $slider_max = $val_max;
+                }
                 $val_min_t = formatFileSize2($val_min);
                 $val_max_t = formatFileSize2($val_max);
             ?>
@@ -66,21 +75,31 @@ if (!empty($reset_params)) {
                     </span>
                 </label>
 
+                <input type="hidden" name="<?= $name_min ?>" id="<?= $name_min ?>" value="<?= $val_min ?>">
+                <input type="hidden" name="<?= $name_max ?>" id="<?= $name_max ?>" value="<?= $val_max ?>">
                 <div class="multi-range-container" style="margin-bottom: 25px;">
                     <input type="range"
-                        name="<?= $name_min ?>"
-                        id="<?= $name_min ?>"
-                        min="<?= $min ?>"
-                        max="<?= $max ?>"
-                        value="<?= $val_min ?>"
+                        id="<?= $name_min ?>_slider"
+                        data-hidden="<?= $name_min ?>"
+                        data-scale="<?= htmlspecialchars($scale) ?>"
+                        data-min="<?= $min ?>"
+                        data-max="<?= $max ?>"
+                        data-steps="<?= $steps ?>"
+                        min="0"
+                        max="<?= $steps ?>"
+                        value="<?= $slider_min ?>"
                         step="1">
 
                     <input type="range"
-                        name="<?= $name_max ?>"
-                        id="<?= $name_max ?>"
-                        min="<?= $min ?>"
-                        max="<?= $max ?>"
-                        value="<?= $val_max ?>"
+                        id="<?= $name_max ?>_slider"
+                        data-hidden="<?= $name_max ?>"
+                        data-scale="<?= htmlspecialchars($scale) ?>"
+                        data-min="<?= $min ?>"
+                        data-max="<?= $max ?>"
+                        data-steps="<?= $steps ?>"
+                        min="0"
+                        max="<?= $steps ?>"
+                        value="<?= $slider_max ?>"
                         step="1">
                 </div>
 

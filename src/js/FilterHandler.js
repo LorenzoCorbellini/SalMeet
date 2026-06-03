@@ -28,32 +28,73 @@ function formatFileSize(value) {
 
     return `${Math.round(size * 100) / 100} ${units[index]}`;
 }
+ 
+function parseSliderScale(element) {
+    const scale = element.dataset.scale || 'linear';
+    const steps = parseInt(element.dataset.steps, 10) || 1000;
+    const min = parseFloat(element.dataset.min) || 0;
+    const max = parseFloat(element.dataset.max) || 100;
+    return { scale, steps, min, max };
+}
+
+function logPositionToValue(position, min, max, steps) {
+    const effectiveMin = Math.max(1, min);
+    if (position <= 0) return min;
+    if (position >= steps) return max;
+    const logMin = Math.log(effectiveMin);
+    const logMax = Math.log(Math.max(max, effectiveMin + 1));
+    const ratio = position / steps;
+    return Math.round(Math.exp(logMin + (logMax - logMin) * ratio));
+}
+
+function valueToLogPosition(value, min, max, steps) {
+    const effectiveMin = Math.max(1, min);
+    if (value <= min) return 0;
+    if (value >= max) return steps;
+    const logMin = Math.log(effectiveMin);
+    const logMax = Math.log(Math.max(max, effectiveMin + 1));
+    const logValue = Math.log(Math.max(value, effectiveMin));
+    const ratio = (logValue - logMin) / Math.max(1e-9, logMax - logMin);
+    return Math.round(Math.max(0, Math.min(steps, ratio * steps)));
+}
 
 function aggiornaDoppioSlider() {
-    const inputMin = document.getElementById('dimensione_min');
-    const inputMax = document.getElementById('dimensione_max');
+    const inputMin = document.getElementById('dimensione_min_slider');
+    const inputMax = document.getElementById('dimensione_max_slider');
     const container = document.querySelector('.multi-range-container');
 
     const txtMin = document.getElementById('val_dimensione_min');
     const txtMax = document.getElementById('val_dimensione_max');
+    const hiddenMin = document.getElementById('dimensione_min');
+    const hiddenMax = document.getElementById('dimensione_max');
 
     if (!inputMin || !inputMax || !container) return;
 
-    const minVal = parseFloat(inputMin.value);
-    const maxVal = parseFloat(inputMax.value);
     const minAttr = parseFloat(inputMin.min) || 0;
     const maxAttr = parseFloat(inputMin.max) || 100;
+    const minConfig = parseSliderScale(inputMin);
+    const maxConfig = parseSliderScale(inputMax);
+
+    const minVal = minConfig.scale === 'log'
+        ? logPositionToValue(parseFloat(inputMin.value), minConfig.min, minConfig.max, minConfig.steps)
+        : parseFloat(inputMin.value);
+    const maxVal = maxConfig.scale === 'log'
+        ? logPositionToValue(parseFloat(inputMax.value), maxConfig.min, maxConfig.max, maxConfig.steps)
+        : parseFloat(inputMax.value);
 
     if (minVal > maxVal) {
         if (this === inputMin) inputMin.value = maxVal;
         else inputMax.value = minVal;
     }
 
-    if (txtMin) txtMin.innerText = formatFileSize(inputMin.value);
-    if (txtMax) txtMax.innerText = formatFileSize(inputMax.value);
+    if (txtMin) txtMin.innerText = formatFileSize(minVal);
+    if (txtMax) txtMax.innerText = formatFileSize(maxVal);
 
-    const pctMin = ((inputMin.value - minAttr) / (maxAttr - minAttr)) * 100;
-    const pctMax = ((inputMax.value - minAttr) / (maxAttr - minAttr)) * 100;
+    if (hiddenMin) hiddenMin.value = minVal;
+    if (hiddenMax) hiddenMax.value = maxVal;
+
+    const pctMin = ((parseFloat(inputMin.value) - minAttr) / (maxAttr - minAttr)) * 100;
+    const pctMax = ((parseFloat(inputMax.value) - minAttr) / (maxAttr - minAttr)) * 100;
 
     container.style.background = `linear-gradient(
         to right, 
@@ -70,8 +111,8 @@ function aggiornaDoppioSlider() {
 document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Inizializzazione degli Slider grafici
-    const inputMin = document.getElementById('dimensione_min');
-    const inputMax = document.getElementById('dimensione_max');
+    const inputMin = document.getElementById('dimensione_min_slider');
+    const inputMax = document.getElementById('dimensione_max_slider');
 
     if (inputMin && inputMax) {
         inputMin.addEventListener('input', aggiornaDoppioSlider);

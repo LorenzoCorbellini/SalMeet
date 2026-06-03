@@ -363,6 +363,23 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $params[':dimensione_max'] = (float)$_GET['dimensione_max'];
     }
 
+    // Filtra per tipo file (checkbox group 'filetype[]')
+    if (!empty($_GET['filetype']) && is_array($_GET['filetype'])) {
+        $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
+        $selectedTypes = array_filter((array)$_GET['filetype'], function($t) use ($filetypes) {
+            return isset($filetypes[$t]);
+        });
+        if (!empty($selectedTypes)) {
+            $placeholders = [];
+            foreach (array_values($selectedTypes) as $index => $t) {
+                $ph = ':filetype_' . $index;
+                $placeholders[] = $ph;
+                $params[$ph] = $t;
+            }
+            $whereSql .= ' AND fm.tipo IN (' . implode(', ', $placeholders) . ')';
+        }
+    }
+
     $stmtCount = $pdo->prepare("SELECT COUNT(*) " . $baseSql . $whereSql);
     $stmtCount->execute($params);
     $totale = $stmtCount->fetchColumn();

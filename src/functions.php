@@ -369,6 +369,58 @@ function formatFileSize2(int $filesize): array {
 }
 
 /**
+ * Converte un valore reale in una posizione su una scala logaritmica.
+ *
+ * @param int $value Valore reale della dimensione (MB).
+ * @param int $min Valore minimo reale.
+ * @param int $max Valore massimo reale.
+ * @param int $steps Numero di passi della scala.
+ * @return int Posizione dello slider.
+ */
+function getLogSliderPosition(int $value, int $min, int $max, int $steps = 1000): int {
+    if ($steps <= 0 || $max <= $min) {
+        return 0;
+    }
+    $effectiveMin = max(1, $min);
+    if ($value <= $min) {
+        return 0;
+    }
+    $valueClamped = max($value, $effectiveMin);
+    $logMin = log($effectiveMin);
+    $logMax = log(max($max, $effectiveMin + 1));
+    $logValue = log($valueClamped);
+    $ratio = ($logValue - $logMin) / max(1e-9, $logMax - $logMin);
+    return (int) round(max(0, min($steps, $ratio * $steps)));
+}
+
+/**
+ * Converte una posizione dello slider logaritmico in un valore reale.
+ *
+ * @param int $position Posizione dello slider.
+ * @param int $min Valore minimo reale.
+ * @param int $max Valore massimo reale.
+ * @param int $steps Numero di passi della scala.
+ * @return int Valore reale corrispondente.
+ */
+function getLogSliderValue(int $position, int $min, int $max, int $steps = 1000): int {
+    if ($steps <= 0 || $max <= $min) {
+        return $min;
+    }
+    $effectiveMin = max(1, $min);
+    if ($position <= 0) {
+        return $min;
+    }
+    if ($position >= $steps) {
+        return $max;
+    }
+    $logMin = log($effectiveMin);
+    $logMax = log(max($max, $effectiveMin + 1));
+    $ratio = $position / $steps;
+    $value = exp($logMin + ($logMax - $logMin) * $ratio);
+    return (int) round($value);
+}
+
+/**
  * Genera il wrapper HTML per la visualizzazione della dimensione del file nelle tabelle.
  *
  * Restituisce un elemento `<div>` stilizzato con l'identificativo `file_size`. 
