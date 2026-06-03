@@ -291,19 +291,19 @@ if (!$isAjax):
 
                                     $datiFiles[] = [
                                         'File' => $titolo_html,
-                                        'Nickname' => $htmlOwner,
+                                        'Proprietario' => $htmlOwner,
                                         'Dimensione' => formatFileSizeHtml((float)$file['dimensione'])
                                     ];
                                 }
 
                                 $customHeaders = generaIntestazioniOrdinabili([
                                     'File'       => 'file',
-                                    'Nickname'   => 'nickname',
+                                    'Proprietario'   => 'nickname',
                                     'Dimensione' => 'dimensione'
                                 ], $sort_col, $sort_dir);
 
                                 echo '<div class="table-container">';
-                                stampaTabella($datiFiles, ['File', 'Nickname', 'Dimensione'], $customHeaders);
+                                stampaTabella($datiFiles, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
                                 echo '</div>';
                                 echo "<div class='pagination-spacer'>";
                                 echo getPagesNav($np, $numero_pagine, 1);
