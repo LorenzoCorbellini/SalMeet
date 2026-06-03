@@ -28,6 +28,29 @@ function getMaxFileSizeFromDb(?int $fallback = null): int
     return $fallback ?? 2000;
 }
 
+/**
+ * Calcola la dimensione minima dei file presenti nel database
+ * @param int|null $fallback Valore di fallback se la query fallisce
+ * @return int Dimensione minima in MB oppure il fallback
+ */
+function getMinFileSizeFromDb(?int $fallback = null): int
+{
+    global $pdo;
+
+    try {
+        $stmt = $pdo->query("SELECT MIN(dimensione) as min_size FROM FileMultimediale");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result && $result['min_size'] !== null) {
+            return (int)$result['min_size'];
+        }
+    } catch (PDOException $e) {
+        error_log("Errore nel calcolo dimensione minima file: " . $e->getMessage());
+    }
+
+    return $fallback ?? 0;
+}
+
 function isData(string $val): bool
 {
     return (bool) preg_match('/^\d{4}-\d{2}-\d{2}/', $val);
