@@ -515,13 +515,15 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         list($datiRichieste, $countRichieste) = getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_r, $sort_dir_r, $limit, $start_from);
         $numero_pagine = getNumberOfPages($countRichieste, $limit);
 
-        echo "<div class='table-top-bar'>";
-        echo "<p class='zero-margin'>Richieste in attesa trovate: <strong>{$countRichieste}</strong></p>";
-        echo "</div>";
-
         if ($countRichieste > 0) {
             $_GET['tab'] = 'richieste';
             $customHeaders_r = generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data Nascita' => 'data_nascita'], $sort_col_r, $sort_dir_r);
+
+            echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>" . $countRichieste . "</strong> richieste in attesa";
+            if ($countRichieste > $limit) {
+                echo " (<strong>" . $limit . "</strong> per pagina)";
+            }
+            echo "</p></div>";
 
             echo '<div class="table-container">';
             stampaTabella($datiRichieste, ['Nickname', 'Azioni'], $customHeaders_r);
@@ -531,10 +533,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo getPagesNav($np, $numero_pagine, 1);
             echo "</div>";
         } else {
-            echo '<div class="table-container table-container-empty">';
-            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
-            echo '</div>';
-            echo "<div class='pagination-spacer'></div>";
+            echo "<p class='info-risultati'>Nessuna richiesta in attesa trovata per questa bacheca.</p>";
         }
     } elseif ($activeTab === 'utenti') {
         $allowed_sorts_u = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data_nascita' => 'u.dataNascita'];
@@ -543,14 +542,18 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         list($datiUtenti, $countUtenti) = getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_u, $sort_dir_u, $limit, $start_from);
         $numero_pagine = getNumberOfPages($countUtenti, $limit);
 
-        echo "<div class='table-top-bar'>";
-        echo "<p class='zero-margin'>Utenti trovati nella bacheca: <strong>{$countUtenti}</strong></p>";
-        echo getBottoneAggiungiUtentiMultipli($bEnc, $owner);
-        echo "</div>";
-
         if ($countUtenti > 0) {
             $_GET['tab'] = 'utenti';
             $customHeaders_u = generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data Nascita' => 'data_nascita'], $sort_col_u, $sort_dir_u);
+
+            echo "<div class='table-top-bar'>";
+            echo "  <p class='info-risultati zero-margin'>Trovati <strong>" . $countUtenti . "</strong> utenti autorizzati";
+            if ($countUtenti > $limit) {
+                echo " (<strong>" . $limit . "</strong> per pagina)";
+            }
+            echo "  </p>";
+            echo getBottoneAggiungiUtentiMultipli($bEnc, $owner);
+            echo "</div>";
 
             echo '<div class="table-container">';
             stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
@@ -560,10 +563,10 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo getPagesNav($np, $numero_pagine, 1);
             echo "</div>";
         } else {
-            echo '<div class="table-container table-container-empty">';
-            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
-            echo '</div>';
-            echo "<div class='pagination-spacer'></div>";
+            echo "<div class='table-top-bar'>";
+            echo "  <p class='info-risultati zero-margin'>Nessun utente autorizzato trovato per questa bacheca.</p>";
+            echo getBottoneAggiungiUtentiMultipli($bEnc, $owner);
+            echo "</div>";
         }
     } elseif ($activeTab === 'file') {
         $allowed_sorts_f = ['file' => 'fm.titolo', 'proprietario' => 'u.nickname', 'dimensione' => 'fm.dimensione'];
@@ -572,14 +575,18 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f, $limit, $start_from);
         $numero_pagine = getNumberOfPages($countFile, $limit);
 
-        echo "<div class='table-top-bar'>";
-        echo "<p class='zero-margin'>File trovati nella bacheca: <strong>{$countFile}</strong></p>";
-        echo getBottoneAggiungiFileMultipli($bEnc, $owner);
-        echo "</div>";
-
         if ($countFile > 0) {
             $_GET['tab'] = 'file';
             $customHeaders_f = generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione' => 'dimensione'], $sort_col_f, $sort_dir_f);
+
+            echo "<div class='table-top-bar'>";
+            echo "  <p class='info-risultati zero-margin'>Trovati <strong>" . $countFile . "</strong> file condivisi";
+            if ($countFile > $limit) {
+                echo " (<strong>" . $limit . "</strong> per pagina)";
+            }
+            echo "  </p>";
+            echo getBottoneAggiungiFileMultipli($bEnc, $owner);
+            echo "</div>";
 
             echo '<div class="table-container">';
             stampaTabella($datiFile, ['File', 'Proprietario', 'Dimensione', 'Azioni'], $customHeaders_f);
@@ -589,10 +596,10 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo getPagesNav($np, $numero_pagine, 1);
             echo "</div>";
         } else {
-            echo '<div class="table-container table-container-empty">';
-            echo "<p class='empty-message'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
-            echo '</div>';
-            echo "<div class='pagination-spacer'></div>";
+            echo "<div class='table-top-bar'>";
+            echo "  <p class='info-risultati zero-margin'>Nessun file condiviso trovato per questa bacheca.</p>";
+            echo getBottoneAggiungiFileMultipli($bEnc, $owner);
+            echo "</div>";
         }
     }
 
