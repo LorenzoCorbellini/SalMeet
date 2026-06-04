@@ -170,7 +170,7 @@ function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickn
     if (!empty($_GET['cognome'])) {
         $whereSql .= " AND u.cognome LIKE :cognome";
         $params[':cognome'] = '%' . $_GET['cognome'] . '%';
-    }*/    
+    }*/
     $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
     if ($ricercaGlobale !== '') {
         $whereSql .= " AND (
@@ -259,7 +259,7 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
     if (!empty($_GET['cognome'])) {
         $whereSql .= " AND u.cognome LIKE :cognome";
         $params[':cognome'] = '%' . $_GET['cognome'] . '%';
-    }*/    
+    }*/
     $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
     if ($ricercaGlobale !== '') {
         $whereSql .= " AND (
@@ -366,7 +366,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
     // Filtra per tipo file (checkbox group 'filetype[]')
     if (!empty($_GET['filetype']) && is_array($_GET['filetype'])) {
         $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
-        $selectedTypes = array_filter((array)$_GET['filetype'], function($t) use ($filetypes) {
+        $selectedTypes = array_filter((array)$_GET['filetype'], function ($t) use ($filetypes) {
             return isset($filetypes[$t]);
         });
         if (!empty($selectedTypes)) {
@@ -413,7 +413,8 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
 
         $htmlFile = "<div class='file-cell-wrapper'>";
         $htmlFile .= "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipoStr) . "'>";
-        $htmlFile .= "<a href='" . htmlspecialchars($f['URL']) . "' target='_blank'>" . htmlspecialchars($title) . "</a>";
+        $linkMedia = "media.php?vista=dettaglio&file_id=" . urlencode($f['numero']);
+        $htmlFile .= "<a href='" . htmlspecialchars($linkMedia) . "'>" . htmlspecialchars($title) . "</a>";
         $htmlFile .= "</div>";
 
         $owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
@@ -621,7 +622,7 @@ function renderElencoBacheche($pdo, $isAjax)
     }*/
     // Ricerca unificata proprietario (nome, cognome, nick)
     $ricercaProprietario = isset($_GET['ricerca_proprietario']) ? trim($_GET['ricerca_proprietario']) : '';
-    
+
     if ($ricercaProprietario !== '') {
         $where[] = "(
             u.nickname LIKE :rp 
