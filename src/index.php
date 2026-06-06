@@ -28,17 +28,18 @@ $icon_types = [
 foreach ($ultimiFileDati as $file) {
     $tipo = strtolower((string)$file['tipo_file']);
     $icon_path = $icon_types[$tipo] ?? $icon_types['default'];
+    $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipo) . "' style='vertical-align:middle; margin-right:8px;'>";
     
-    $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipo) . "'>";
-    $file_url  = htmlspecialchars((string)($file['url'] ?? '#'));
-    $file_name = htmlspecialchars($file['nome_file']);
-    
-    $htmlNomeFile = "<div class='file-cell-wrapper'>{$file_icon} <a href='{$file_url}'>{$file_name}</a></div>";
+    $owner_name = trim(($file['owner_name'] ?? '') . ' ' . ($file['owner_surname'] ?? ''));
+    $owner_display = $owner_name !== ''
+        ? htmlspecialchars($owner_name . ' (@' . $file['nickname'] . ')')
+        : htmlspecialchars('(@' . $file['nickname'] . ')');
+    $owner_html = "<a href='utenti.php?utente=" . urlencode($file['owner_id']) . "'>" . $owner_display . "</a>";
 
     $ultimiFileFormattati[] = [
-        'Nome File'   => $htmlNomeFile,
-        'Caricato da' => htmlspecialchars((string)$file['autore']),
-        'Dimensione'  => formatFileSizeHtml($file['dimensione']) 
+        'Nome File'    => $file_icon . " <a href='" . htmlspecialchars((string)$file['url']) . "' target='_blank' class='file-link'>" . htmlspecialchars((string)$file['nome_file']) . "</a>",
+        'Proprietario' => $owner_html,
+        'Dimensione'   => formatFileSizeHtml($file['dimensione']),
     ];
 }
 
@@ -49,13 +50,16 @@ $gruppiDati = getUltimiGruppiCreati($pdo, 5);
 $ultimiGruppiFormattati = [];
 
 foreach ($gruppiDati as $gruppo) {
-    $linkGruppo = "gruppi.php?gruppo=" . urlencode($gruppo['gruppoId']);
-    $linkOwner  = "utenti.php?utente=" . urlencode($gruppo['ownerId']);
-    
+    $owner_name = trim(($gruppo['owner_name'] ?? '') . ' ' . ($gruppo['owner_surname'] ?? ''));
+    $owner_display = $owner_name !== ''
+        ? htmlspecialchars($owner_name . ' (@' . $gruppo['nickname'] . ')')
+        : htmlspecialchars('(@' . $gruppo['nickname'] . ')');
+    $owner_html = "<a href='utenti.php?utente=" . urlencode($gruppo['owner_id']) . "'>" . $owner_display . "</a>";
+
     $ultimiGruppiFormattati[] = [
-        'Nome Gruppo'    => "<a href='{$linkGruppo}'>" . htmlspecialchars($gruppo['nome_gruppo']) . "</a>",
-        'Proprietario'   => "<a href='{$linkOwner}'>" . htmlspecialchars((string)$gruppo['proprietario']) . "</a>",
-        'Data Creazione' => formattaData($gruppo['dataCreazione'] ?? '') // <-- Nuova colonna
+        'Nome Gruppo'    => "<a href='gruppi.php?gruppo=" . urlencode($gruppo['gruppoId']) . "'>" . htmlspecialchars((string)$gruppo['nome_gruppo']) . "</a>",
+        'Proprietario'   => $owner_html,
+        'Data Creazione' => $gruppo['dataCreazione']
     ];
 }
 
@@ -65,14 +69,17 @@ foreach ($gruppiDati as $gruppo) {
 $bachecheDati = getUltimeBachecheCreate($pdo, 5);
 $ultimeBachecheFormattate = [];
 
-foreach ($bachecheDati as $bac) {
-    $linkBac = "bacheche.php?vista=dettaglio&bacheca=" . urlencode($bac['nome_bacheca']) . "&owner=" . urlencode($bac['ownerId']);
-    $linkOwner = "utenti.php?utente=" . urlencode($bac['ownerId']);
-    
+foreach ($bachecheDati as $bacheca) {
+    $owner_name = trim(($bacheca['owner_name'] ?? '') . ' ' . ($bacheca['owner_surname'] ?? ''));
+    $owner_display = $owner_name !== ''
+        ? htmlspecialchars($owner_name . ' (@' . $bacheca['nickname'] . ')')
+        : htmlspecialchars('(@' . $bacheca['nickname'] . ')');
+    $owner_html = "<a href='utenti.php?utente=" . urlencode($bacheca['owner_id']) . "'>" . $owner_display . "</a>";
+
     $ultimeBachecheFormattate[] = [
-        'Nome Bacheca'   => "<a href='{$linkBac}'>" . htmlspecialchars($bac['nome_bacheca']) . "</a>",
-        'Proprietario'   => "<a href='{$linkOwner}'>" . htmlspecialchars((string)$bac['proprietario']) . "</a>",
-        'Data Creazione' => formattaData($bac['dataCreazione'] ?? '') // <-- Nuova colonna
+        'Nome Bacheca'   => "<a href='bacheche.php?vista=dettaglio&bacheca=" . urlencode($bacheca['nome_bacheca']) . "&owner=" . urlencode($bacheca['owner_id']) . "'>" . htmlspecialchars((string)$bacheca['nome_bacheca']) . "</a>",
+        'Proprietario'   => $owner_html,
+        'Data Creazione' => $bacheca['dataCreazione']
     ];
 }
 ?>
@@ -134,7 +141,7 @@ foreach ($bachecheDati as $bac) {
                 <div class="table-container">
                     <?php
                     if (!empty($ultimiFileFormattati)) {
-                        stampaTabella($ultimiFileFormattati, ['Nome File', 'Dimensione']); 
+                        stampaTabella($ultimiFileFormattati, ['Nome File', 'Proprietario', 'Dimensione']); 
                     } else {
                         echo "<p class='info-risultati'>Nessun file caricato nel sistema.</p>";
                     }
@@ -142,10 +149,10 @@ foreach ($bachecheDati as $bac) {
                 </div>
 
                 <h3 class="dashboard-section-title" style="margin-top: 40px;">Ultimi Gruppi Creati</h3>
-                <div class="table-container">
+                <div class="table-container dashboard-table">
                     <?php
                     if (!empty($ultimiGruppiFormattati)) {
-                        stampaTabella($ultimiGruppiFormattati, ['Nome Gruppo', 'Proprietario']); 
+                        stampaTabella($ultimiGruppiFormattati, ['Nome Gruppo', 'Proprietario', 'Data Creazione']); 
                     } else {
                         echo "<p class='info-risultati'>Nessun gruppo presente nel sistema.</p>";
                     }
@@ -153,10 +160,10 @@ foreach ($bachecheDati as $bac) {
                 </div>
 
                 <h3 class="dashboard-section-title" style="margin-top: 40px;">Ultime Bacheche Create</h3>
-                <div class="table-container" style="margin-bottom: 40px;">
+                <div class="table-container dashboard-table" style="margin-bottom: 40px;">
                     <?php
                     if (!empty($ultimeBachecheFormattate)) {
-                        stampaTabella($ultimeBachecheFormattate, ['Nome Bacheca', 'Proprietario']); 
+                        stampaTabella($ultimeBachecheFormattate, ['Nome Bacheca', 'Proprietario', 'Data Creazione']); 
                     } else {
                         echo "<p class='info-risultati'>Nessuna bacheca presente nel sistema.</p>";
                     }

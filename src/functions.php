@@ -451,7 +451,8 @@ function getSpazioTotaleOccupato($pdo) {
  * Recupera gli ultimi N file caricati nel sistema.
  */
 function getUltimiFileCaricati($pdo, $limite = 5) {
-    $sql = "SELECT f.titolo AS nome_file, u.nickname AS autore, f.tipo AS tipo_file, f.dimensione, f.URL AS url 
+        $sql = "SELECT f.titolo AS nome_file, f.tipo AS tipo_file, f.dimensione, f.URL AS url, 
+                   u.codice AS owner_id, u.nickname, u.nome AS owner_name, u.cognome AS owner_surname 
             FROM FileMultimediale f 
             LEFT JOIN Utente u ON f.caricatoDa = u.codice 
             ORDER BY f.numero DESC LIMIT :limite";
@@ -468,7 +469,8 @@ function getUltimiFileCaricati($pdo, $limite = 5) {
  */
 function getUltimiGruppiCreati(PDO $pdo, int $limite = 5): array {
     // CORREZIONE: Sostituito g.nome con g.codice per catturare l'ID reale del gruppo
-    $sql = "SELECT g.codice AS gruppoId, g.nome AS nome_gruppo, u.nickname AS proprietario, u.codice AS ownerId, g.dataCreazione 
+    $sql = "SELECT g.codice AS gruppoId, g.nome AS nome_gruppo, g.dataCreazione, 
+                   u.codice AS owner_id, u.nickname, u.nome AS owner_name, u.cognome AS owner_surname 
             FROM Gruppo g 
             LEFT JOIN Utente u ON g.creatoDa = u.codice 
             ORDER BY g.dataCreazione DESC LIMIT :limite";
@@ -484,7 +486,8 @@ function getUltimiGruppiCreati(PDO $pdo, int $limite = 5): array {
  */
 function getUltimeBachecheCreate(PDO $pdo, int $limite = 5): array {
     // Aggiunto b.dataCreazione alla SELECT
-    $sql = "SELECT b.nome AS nome_bacheca, u.nickname AS proprietario, u.codice AS ownerId, b.dataCreazione 
+    $sql = "SELECT b.nome AS nome_bacheca, b.dataCreazione, 
+                   u.codice AS owner_id, u.nickname, u.nome AS owner_name, u.cognome AS owner_surname 
             FROM Bacheca b 
             LEFT JOIN Utente u ON b.codiceUtente = u.codice 
             ORDER BY b.dataCreazione DESC LIMIT :limite";
