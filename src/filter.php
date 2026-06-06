@@ -26,6 +26,8 @@ if (!empty($reset_params)) {
 ?>
 
 <div id="filtro">
+    <h3 class="filter-section-title"><i class="fa-solid fa-filter"></i> Filtri di Ricerca</h3>
+    
     <form method="GET" action="<?= $action ?>">
 
         <?php foreach ($filtro_config['campi'] as $campo):

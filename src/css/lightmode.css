@@ -193,6 +193,11 @@ li.navbar a:hover:not(.active) {
     font-weight: 600;
 }
 
+.filter-section-title i {
+    color: var(--accent);
+    font-size: 1.1em;
+}
+
 /* --- DOPPIO SLIDER CONFIG --- */
 .multi-range-container {
     position: relative;
