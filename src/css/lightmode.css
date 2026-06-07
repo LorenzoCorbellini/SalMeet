@@ -1563,6 +1563,7 @@ div.swal2-container .swal-wide-split .swal2-input {
     margin-bottom: 20px;
     cursor: pointer;
     box-shadow: 0 2px 4px var(--shadow);
+    width: fit-content;
 }
 
 .btn-indietro:hover {
