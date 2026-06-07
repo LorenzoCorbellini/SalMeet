@@ -62,6 +62,27 @@ function formattaData(string $val): string
     return $d ? $d->format('d/m/Y') : htmlspecialchars($val);
 }
 
+function getOwnerSortExpression(string $tableAlias = 'u'): string
+{
+    return "TRIM(REPLACE(REPLACE(REPLACE(CONCAT_WS(' ', {$tableAlias}.nome, {$tableAlias}.cognome, {$tableAlias}.nickname), '@', ''), '(', ''), ')', ''))";
+}
+
+/**
+ * Restituisce la stringa formatta "Nome Cognome (@nickname)" per la colonna Proprietario
+ * @param mixed $nome
+ * @param mixed $cognome
+ * @param string $nickname
+ * @return string
+ */
+function formatOwnerDisplay(?string $nome, ?string $cognome, string $nickname): string
+{
+    $fullName = trim(($nome ?? '') . ' ' . ($cognome ?? ''));
+    $nicknameSpan = "<span class='owner-nickname'>(@" . htmlspecialchars($nickname) . ")</span>";
+    return $fullName !== ''
+        ? htmlspecialchars($fullName) . " " . $nicknameSpan
+        : $nicknameSpan;
+}
+
 /**
  * Verifica che una data sia nel formato corretto e compresa 
  * tra il 1 Gennaio 1900 e il giorno corrente (incluso).

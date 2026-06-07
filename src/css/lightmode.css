@@ -1593,7 +1593,12 @@ div.swal2-container .swal-wide-split .swal2-input {
     color: var(--accent); /* Diventa rossa (o colore d'accento) al passaggio del mouse */
 }
 
-/* MAGIA CSS: Se il placeholder è visibile (quindi l'input è vuoto), nascondi la X */
+/* Se il placeholder è visibile (quindi l'input è vuoto), nascondi la X */
 .input-clearable-wrapper input:placeholder-shown ~ .clear-input-btn {
     display: none;
+}
+
+/* Applica opacità alla stringa (@nickname) nella colonna Proprietario "Nome Cognome (@nickname)" */
+.owner-nickname {
+    opacity: 0.65;
 }

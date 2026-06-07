@@ -144,10 +144,7 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 				. "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
 				. "</div>";
 		$owner_link = "utenti.php?utente=" . (int)$dati_riga['owner'];
-		$owner_name = trim(($dati_riga['owner_name'] ?? '') . ' ' . ($dati_riga['owner_surname'] ?? ''));
-		$owner_display = $owner_name !== ''
-			? htmlspecialchars($owner_name . ' (@' . $dati_riga['nickname'] .')')
-			: htmlspecialchars('(@' . $dati_riga['nickname'] . ')');
+		$owner_display = formatOwnerDisplay($dati_riga['owner_name'] ?? null, $dati_riga['owner_surname'] ?? null, $dati_riga['nickname']);
 		$owner_html = "<a href='" . htmlspecialchars($owner_link) . "'>" . $owner_display . "</a>";
 		
 		$size_html = formatFileSizeHtml((int)$dati_riga['size']);
@@ -565,7 +562,7 @@ if (!empty($_GET['filetype'])) {
 /* SETUP NOMI DELLE COLONNE */
 list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 	'File' => 'fmm.titolo',
-	'owner' => 'u.nickname',
+	'owner' => getOwnerSortExpression(),
 	'size' => 'fmm.dimensione'
 ], 'File', 'ASC');
 

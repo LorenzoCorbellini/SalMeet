@@ -384,7 +384,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
     $stmtCount->execute($params);
     $totale = $stmtCount->fetchColumn();
 
-    $sql = "SELECT fm.numero, fm.titolo, u.codice as caricatoDa, u.nickname, fm.dimensione, fm.URL, fm.tipo " . $baseSql . $whereSql;
+    $sql = "SELECT fm.numero, fm.titolo, u.codice as caricatoDa, u.nickname, u.nome AS owner_nome, u.cognome AS owner_cognome, fm.dimensione, fm.URL, fm.tipo " . $baseSql . $whereSql;
     $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
 
     if ($limit > 0) {
@@ -418,7 +418,8 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         $htmlFile .= "</div>";
 
         $owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
-        $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . htmlspecialchars($f['nickname']) . "</a>";
+        $ownerDisplay = formatOwnerDisplay($f['owner_nome'] ?? null, $f['owner_cognome'] ?? null, $f['nickname']);
+        $htmlOwner = "<a href='" . htmlspecialchars($owner_link) .  "'>" . $ownerDisplay . "</a>";
 
         $azioni = "<div class='cell-center'>
             <span title='Rimuovi da bacheca' class='btn-azione' onclick=\"rimuoviFile('{$bEnc}', {$owner}, {$f['numero']}, '{$titleJS}', '{$caricatoDaJS}')\">
@@ -569,7 +570,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo "</div>";
         }
     } elseif ($activeTab === 'file') {
-        $allowed_sorts_f = ['file' => 'fm.titolo', 'proprietario' => 'u.nickname', 'dimensione' => 'fm.dimensione'];
+        $allowed_sorts_f = ['file' => 'fm.titolo', 'proprietario' => getOwnerSortExpression(), 'dimensione' => 'fm.dimensione'];
         list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'file', 'ASC');
 
         list($datiFile, $countFile) = getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort_f, $sort_dir_f, $limit, $start_from);
@@ -648,7 +649,7 @@ function renderElencoBacheche($pdo, $isAjax)
     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
         'nome'         => 'b.nome',
         'data'         => 'b.dataCreazione',
-        'proprietario' => 'u.nickname',
+        'proprietario' => getOwnerSortExpression(),
     ], 'nome', 'ASC');
 
     $tabella_count = "Bacheca b LEFT JOIN Utente u ON u.codice = b.codiceUtente";
@@ -659,6 +660,8 @@ function renderElencoBacheche($pdo, $isAjax)
         SELECT
             b.codiceUtente AS 'owner',
             b.nome AS 'Nome Bacheca',
+            u.nome AS 'owner_nome',
+            u.cognome AS 'owner_cognome',
             u.nickname AS 'Proprietario',
             b.dataCreazione AS 'Data Creazione'
         FROM Bacheca b
@@ -668,7 +671,7 @@ function renderElencoBacheche($pdo, $isAjax)
     ";
     if ($where) $sql .= " WHERE " . implode(" AND ", $where);
 
-    $sql .= " GROUP BY b.codiceUtente, u.nickname, b.nome, b.dataCreazione ORDER BY {$sql_sort} {$sort_dir}";
+    $sql .= " GROUP BY b.codiceUtente, u.nickname, u.nome, u.cognome, b.nome, b.dataCreazione ORDER BY {$sql_sort} {$sort_dir}";
     $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$start_from;
 
     $stmt = $pdo->prepare($sql);
@@ -698,7 +701,8 @@ function renderElencoBacheche($pdo, $isAjax)
         $htmlNome = "<a href='bacheche.php?" . http_build_query($p) . "'>" . htmlspecialchars($riga['Nome Bacheca']) . "</a>";
 
         $proprietarioLink = "utenti.php?utente=" . urlencode($riga['owner']);
-        $htmlProprietario = "<a href='" . htmlspecialchars($proprietarioLink) . "'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
+        $ownerDisplay = formatOwnerDisplay($riga['owner_nome'] ?? null, $riga['owner_cognome'] ?? null, $riga['Proprietario']);
+        $htmlProprietario = "<a href='" . htmlspecialchars($proprietarioLink) . "'>" . $ownerDisplay . "</a>";
 
         $nomeEnc  = htmlspecialchars(addslashes($riga['Nome Bacheca']), ENT_QUOTES);
         $ownerEnc = (int) $riga['owner'];
