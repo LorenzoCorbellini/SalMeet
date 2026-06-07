@@ -269,7 +269,6 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
                 $linkMedia = "media.php?vista=dettaglio&file_id=" . urlencode($f['numero']);
                 $dati[] = [
                     'File' => "<a href='" . htmlspecialchars($linkMedia) . "' class='file-link'><img src='" . $icon . "' class='icona icona-filetype' style='vertical-align:middle;'>" . htmlspecialchars($f['File']) . "</a>",
-                    'Proprietario' => $ownerDisplay,
                     'Dimensione' => formatFileSizeHtml((int)$f['Dimensione'])
                 ];
             }
