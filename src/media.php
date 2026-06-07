@@ -195,7 +195,7 @@ function getGruppiDelFile(PDO $pdo,
     int $limit = 0
 ): array {
 
-    $sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId, g.dataCreazione AS dataCreazione
+    $sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId, g.dataCreazione AS dataCreazione, u.nome AS unome, u.cognome as ucognome
              FROM Gruppo g
              JOIN Utente u ON g.creatoDa = u.codice
              JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
@@ -245,7 +245,7 @@ function getBachecheDelFile(PDO $pdo,
     int $limit = 0
 ): array {
 
-    $sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId, b.dataCreazione AS dataCreazione
+    $sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId, b.dataCreazione AS dataCreazione, u.nome AS unome, u.cognome as ucognome
              FROM FilePubblicatoBacheca pb
              JOIN Utente u ON pb.codUtente = u.codice
              JOIN Bacheca b ON pb.nomeBacheca = b.nome
@@ -366,7 +366,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 					$ownerLink = "utenti.php?utente=" . urlencode($group['ownerId']);
 					$datiGruppi[] = [
 						'Nome Gruppo' => "<a href='" . htmlspecialchars($groupLink) . "'>" . htmlspecialchars($group['Nome Gruppo']) . "</a>",
-						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($group['Proprietario']) . "</a>",
+						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . formatOwnerDisplay($group['unome'] ?? null, $group['ucognome'] ?? null, $group['Proprietario']) . "</a>",
 						'Data Creazione' => $group['dataCreazione']
 					];
 				}
@@ -410,7 +410,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 					$ownerLink = "utenti.php?utente=" . urlencode($bacheca['ownerId']);
 					$datiBacheche[] = [
 						'Nome Bacheca' => "<a href='" . htmlspecialchars($bachecaLink) . "'>" . htmlspecialchars($bacheca['Nome Bacheca']) . "</a>",
-						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($bacheca['Proprietario']) . "</a>",
+						'Proprietario' => "<a href='" . htmlspecialchars($ownerLink) . "'>" . formatOwnerDisplay($bacheca['unome'] ?? null, $bacheca['ucognome'] ?? null, $bacheca['Proprietario']) . "</a>",
 						'Data Creazione' => $bacheca['dataCreazione']
 					];
 				}

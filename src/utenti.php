@@ -130,7 +130,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $totale = getNumberOfRecords($pdo, $tabella, $where, $params);
         $npagine = getNumberOfPages($totale, $limit);
 
-        $sql = "SELECT g.codice AS id_gruppo, g.nome AS `Nome Gruppo`, u.codice AS id_proprietario, u.nickname AS `Proprietario`, g.dataCreazione AS `Data Creazione` 
+        $sql = "SELECT g.codice AS id_gruppo, g.nome AS `Nome Gruppo`, u.codice AS id_proprietario, u.nickname AS `Proprietario`, g.dataCreazione AS `Data Creazione`, u.nome AS unome, u.cognome AS ucognome
                 FROM $tabella WHERE " . implode(" AND ", $where) . " ORDER BY $sql_sort $sort_dir LIMIT $start_from, $limit";
 
         $stmt = $pdo->prepare($sql);
@@ -145,7 +145,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
                 $icona = ((int)$g['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
                 $dati[] = [
                     'Nome Gruppo' => $icona . "<a href='gruppi.php?gruppo={$g['id_gruppo']}&tab=info'>" . htmlspecialchars($g['Nome Gruppo']) . "</a>",
-                    'Proprietario' => "<a href='utenti.php?utente={$g['id_proprietario']}'>" . htmlspecialchars($g['Proprietario']) . "</a>",
+                    'Proprietario' => "<a href='utenti.php?utente={$g['id_proprietario']}'>" . formatOwnerDisplay($g['unome'] ?? null, $g['ucognome'] ?? null, $g['Proprietario']) . "</a>",
                     'Data Creazione' => htmlspecialchars($g['Data Creazione'] ?? '')
                 ];
             }
@@ -181,7 +181,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $totale = getNumberOfRecords($pdo, $tabella, $where, $params);
         $npagine = getNumberOfPages($totale, $limit);
 
-        $sql = "SELECT b.codiceUtente AS id_proprietario, uab.nomeBacheca AS `Nome Bacheca`, u.nickname AS `Proprietario`, b.dataCreazione AS `Data Creazione` 
+        $sql = "SELECT b.codiceUtente AS id_proprietario, uab.nomeBacheca AS `Nome Bacheca`, u.nickname AS `Proprietario`, b.dataCreazione AS `Data Creazione`, u.nome AS unome, u.cognome AS ucognome
                 FROM $tabella WHERE " . implode(" AND ", $where) . " ORDER BY $sql_sort $sort_dir LIMIT $start_from, $limit";
 
         $stmt = $pdo->prepare($sql);
@@ -196,7 +196,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
                 $icona = ((int)$b['id_proprietario'] === $idUtente) ? "<img src='images/crown.png' alt='Owner' class='owner-crown-icon'> " : "";
                 $dati[] = [
                     'Nome Bacheca' => $icona . "<a href='bacheche.php?vista=dettaglio&bacheca=" . urlencode($b['Nome Bacheca']) . "&owner={$b['id_proprietario']}'>" . htmlspecialchars($b['Nome Bacheca']) . "</a>",
-                    'Proprietario' => "<a href='utenti.php?utente={$b['id_proprietario']}'>" . htmlspecialchars($b['Proprietario']) . "</a>",
+                    'Proprietario' => "<a href='utenti.php?utente={$b['id_proprietario']}'>" . formatOwnerDisplay($b['unome'] ?? null, $b['ucognome'] ?? null, $b['Proprietario']) . "</a>",
                     'Data Creazione' => htmlspecialchars($b['Data Creazione'] ?? '')
                 ];
             }
