@@ -565,7 +565,7 @@ if (!empty($_GET['filetype'])) {
 /* SETUP NOMI DELLE COLONNE */
 list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
 	'File' => 'fmm.titolo',
-	'owner' => 'u.nickname',
+	'owner' => "TRIM(REPLACE(REPLACE(REPLACE(CONCAT_WS(' ', u.nome, u.cognome, u.nickname), '@', ''), '(', ''), ')', ''))",
 	'size' => 'fmm.dimensione'
 ], 'File', 'ASC');
 
