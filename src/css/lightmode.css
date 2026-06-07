@@ -505,6 +505,22 @@ th a.filter__link {
     gap: 6px;
 }
 
+/* 1. Nascondiamo l'icona di base */
+th a.filter__link .icona-ordinamento {
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* 2. Mostriamo la doppia freccia semitrasparente quando si passa sopra col mouse */
+th a.filter__link:hover .icona-ordinamento {
+    opacity: 0.6; /* Un po' trasparente per far capire che è un'azione possibile */
+}
+
+/* 3. Se la colonna è attualmente ordinata (ha la classe .attiva), l'icona è sempre ben visibile */
+th a.filter__link .icona-ordinamento.attiva {
+    opacity: 1;
+}
+
 tr:nth-of-type(even) td {
     background-color: rgba(227, 203, 203, 0.25);
 }

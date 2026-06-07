@@ -194,14 +194,27 @@ function generaIntestazioniOrdinabili(array $colonneOrdinabili, string $sort_col
         $params = $_GET;
         $params['sort'] = $chiaveSort;
 
-        $params['dir'] = ($sort_col === $chiaveSort && $sort_dir === 'ASC') ? 'DESC' : 'ASC';
+        // Controlliamo se questa è la colonna per cui stiamo ordinando ORA
+        if ($sort_col === $chiaveSort) {
+            // Se clicco di nuovo, inverto l'ordinamento
+            $params['dir'] = ($sort_dir === 'ASC') ? 'DESC' : 'ASC';
+            
+            // Icona con freccia SINGOLA (su o giù) e classe 'attiva' per tenerla sempre visibile
+            $classeIcona = ($sort_dir === 'ASC') ? 'fa-sort-up' : 'fa-sort-down';
+            $iconaHTML = "<i class='fa-solid {$classeIcona} icona-ordinamento attiva'></i>";
+        } else {
+            // Se non è ordinata, il prossimo clic ordinerà per ASC
+            $params['dir'] = 'ASC';
+            
+            // Icona DOPPIA freccia e nessuna classe 'attiva' (nascosta di default)
+            $iconaHTML = "<i class='fa-solid fa-sort icona-ordinamento'></i>";
+        }
 
-        // Build query string preserving array parameters as key[] instead of key[0]
         $url = "?" . build_query_preserve_brackets($params);
-        $icona = "<img src='images/bi-directional-arrow.png' alt='Ordina' class='icona-ordinamento'>";
+        
         $customHeaders[$titoloVisibile] = "
-            <a href='{$url}' style='text-decoration: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 100%; height: 100%;'>
-                " . htmlspecialchars($titoloVisibile) . " {$icona}
+            <a href='{$url}' class='filter__link' style='text-decoration: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 100%; height: 100%;'>
+                " . htmlspecialchars($titoloVisibile) . " {$iconaHTML}
             </a>
         ";
     }
