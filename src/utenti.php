@@ -216,7 +216,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         }
         
     } elseif ($tab_corrente === 'file') {
-        list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['file' => 'fm.titolo', 'dimensione' => 'fm.dimensione'], 'file', 'ASC');
+        list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento(['file' => 'fm.titolo', 'proprietario' => getOwnerSortExpression(), 'dimensione' => 'fm.dimensione'], 'file', 'ASC');
         
         $filtri = applicaFiltriDinamici($_GET, 'file');
         // Riassegnazione nome -> titolo per compatibilità DB / Interfaccia filtro
@@ -247,7 +247,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $totale = getNumberOfRecords($pdo, $tabella, $where, $params);
         $npagine = getNumberOfPages($totale, $limit);
 
-        $sql = "SELECT fm.url, fm.tipo, fm.titolo AS `File`, fm.dimensione AS `Dimensione` 
+        $sql = "SELECT fm.url, fm.tipo, fm.titolo AS `File`, fm.dimensione AS `Dimensione`, u.nome AS proprietario_nome, u.cognome AS proprietario_cognome, u.nickname AS proprietario_nickname, fm.numero AS numero 
                 FROM FileMultimediale fm 
                 LEFT JOIN Utente u ON fm.caricatoDa = u.codice 
                 WHERE " . implode(" AND ", $where) . " 
@@ -265,14 +265,17 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
 
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $f) {
                 $icon = $icons[strtolower($f['tipo'])] ?? $icons['default'];
+                $ownerDisplay = formatOwnerDisplay($f['proprietario_nome'] ?? null, $f['proprietario_cognome'] ?? null, $f['proprietario_nickname']);
+                $linkMedia = "media.php?vista=dettaglio&file_id=" . urlencode($f['numero']);
                 $dati[] = [
-                    'File' => "<a href='" . htmlspecialchars($f['url']) . "' target='_blank' class='file-link'><img src='{$icon}' class='icona icona-filetype' style='vertical-align:middle;'>" . htmlspecialchars($f['File']) . "</a>",
+                    'File' => "<a href='" . htmlspecialchars($linkMedia) . "' class='file-link'><img src='" . $icon . "' class='icona icona-filetype' style='vertical-align:middle;'>" . htmlspecialchars($f['File']) . "</a>",
+                    'Proprietario' => $ownerDisplay,
                     'Dimensione' => formatFileSizeHtml((int)$f['Dimensione'])
                 ];
             }
 
             echo '<div class="table-container">';
-            stampaTabella($dati, ['File', 'Dimensione'], generaIntestazioniOrdinabili(['File' => 'file', 'Dimensione' => 'dimensione'], $sort_col, $sort_dir));
+            stampaTabella($dati, ['File', 'Proprietario', 'Dimensione'], generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione' => 'dimensione'], $sort_col, $sort_dir));
             echo '</div>';
             
             echo "<div class='pagination-spacer'>";

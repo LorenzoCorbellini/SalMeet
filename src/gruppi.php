@@ -216,7 +216,7 @@ if (!$isAjax):
 
                             $allowed_sorts = [
                                 'file' => 'fm.titolo',
-                                'nickname' => 'u.nickname',
+                                'proprietario' => getOwnerSortExpression(),
                                 'dimensione' => 'fm.dimensione'
                             ];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'file', 'ASC');
@@ -250,7 +250,7 @@ if (!$isAjax):
                             $numero_pagine = getNumberOfPages($totale, $limit);
 
                             $stmtFile = $pdo->prepare("
-                                SELECT fm.numero, fm.titolo, fm.tipo, u.codice as caricatoDa, u.nickname, fm.dimensione, fm.URL 
+                                SELECT fm.numero, fm.titolo, fm.tipo, u.codice as caricatoDa, u.nickname, u.nome AS owner_nome, u.cognome AS owner_cognome, fm.dimensione, fm.URL 
                                 FROM FileAssociatoGruppo fag 
                                 JOIN FileMultimediale fm ON fag.file = fm.numero 
                                 JOIN Utente u ON u.codice = fm.caricatoDa 
@@ -277,17 +277,19 @@ if (!$isAjax):
                                     $tipoStr = strtolower($file['tipo']);
                                     $icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
 
-                                    $file_link = htmlspecialchars($file['URL']);
+                                    $linkMedia = "media.php?vista=dettaglio&file_id=" . urlencode($file['numero']);
 
-                                    $titolo_html = "<a href='{$file_link}' target='_blank' class='file-link'>" .
+                                    $titolo_html = "<a href='" . htmlspecialchars($linkMedia) . "' class='file-link'>" .
                                         "<img src='" . htmlspecialchars($icon_path) . "' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
                                         htmlspecialchars($file['titolo']) . "</a>";
 
                                     $owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']) . "&return_to=" . urlencode($current_url);
 
+                                    $ownerDisplay = formatOwnerDisplay($file['owner_nome'] ?? null, $file['owner_cognome'] ?? null, $file['nickname']);
+
                                     $iconaCorona = ((int)$file['caricatoDa'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
 
-                                    $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . htmlspecialchars($file['nickname']) . "</a>" . $iconaCorona;
+                                    $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . $ownerDisplay . "</a>" . $iconaCorona;
 
                                     $datiFiles[] = [
                                         'File' => $titolo_html,
@@ -298,7 +300,7 @@ if (!$isAjax):
 
                                 $customHeaders = generaIntestazioniOrdinabili([
                                     'File'       => 'file',
-                                    'Proprietario'   => 'nickname',
+                                    'Proprietario'   => 'proprietario',
                                     'Dimensione' => 'dimensione'
                                 ], $sort_col, $sort_dir);
 
@@ -328,7 +330,7 @@ if (!$isAjax):
                     $allowed_sorts = [
                         'nome' => 'g.nome',
                         'data' => 'g.dataCreazione',
-                        'Proprietario' => 'u.nickname',
+                        'proprietario' => getOwnerSortExpression(),
                     ];
                     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nome', 'ASC');
 
@@ -347,7 +349,7 @@ if (!$isAjax):
                     $numero_pagine = getNumberOfPages($totaleRisultati, $limit);
 
                     $sql = "
-                        SELECT g.codice as 'gruppoId', g.nome as 'Nome Gruppo', g.dataCreazione as 'Data Creazione', u.nickname as 'Proprietario', u.codice as 'ownerId'
+                        SELECT g.codice as 'gruppoId', g.nome as 'Nome Gruppo', g.dataCreazione as 'Data Creazione', u.nome AS owner_nome, u.cognome AS owner_cognome, u.nickname as 'Proprietario', u.codice as 'ownerId'
                         FROM Gruppo g
                         JOIN Utente u ON g.creatoDa = u.codice
                     ";
@@ -375,7 +377,8 @@ if (!$isAjax):
                             $htmlNomeGruppo = "<a href='{$linkGruppo}'>" . htmlspecialchars($riga['Nome Gruppo']) . "</a>";
 
                             $linkOwner = "utenti.php?utente=" . urlencode($riga['ownerId']) . "&return_to=" . urlencode($current_url);
-                            $htmlProprietario = "<a href='{$linkOwner}'>" . htmlspecialchars($riga['Proprietario']) . "</a>";
+                            $ownerDisplay = formatOwnerDisplay($riga['owner_nome'] ?? null, $riga['owner_cognome'] ?? null, $riga['Proprietario']);
+                            $htmlProprietario = "<a href='{$linkOwner}'>" . $ownerDisplay . "</a>";
 
                             $datiGruppi[] = [
                                 'Nome Gruppo'    => $htmlNomeGruppo,
@@ -386,7 +389,7 @@ if (!$isAjax):
 
                         $customHeaders = generaIntestazioniOrdinabili([
                             'Nome Gruppo'    => 'nome',
-                            'Proprietario'   => 'Proprietario',
+                            'Proprietario'   => 'proprietario',
                             'Data Creazione' => 'data'
                         ], $sort_col, $sort_dir);
 
