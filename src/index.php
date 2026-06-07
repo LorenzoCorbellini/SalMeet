@@ -32,7 +32,7 @@ foreach ($ultimiFileDati as $file) {
     
     $owner_name = trim(($file['owner_name'] ?? '') . ' ' . ($file['owner_surname'] ?? ''));
     $owner_display = $owner_name !== ''
-        ? htmlspecialchars($owner_name . ' (@' . $file['nickname'] . ')')
+        ? formatOwnerDisplay($file['owner_name'] ?? null, $file['owner_surname'] ?? null, $file['nickname'])
         : htmlspecialchars('(@' . $file['nickname'] . ')');
     $owner_html = "<a href='utenti.php?utente=" . urlencode($file['owner_id']) . "'>" . $owner_display . "</a>";
 
@@ -52,7 +52,7 @@ $ultimiGruppiFormattati = [];
 foreach ($gruppiDati as $gruppo) {
     $owner_name = trim(($gruppo['owner_name'] ?? '') . ' ' . ($gruppo['owner_surname'] ?? ''));
     $owner_display = $owner_name !== ''
-        ? htmlspecialchars($owner_name . ' (@' . $gruppo['nickname'] . ')')
+        ? formatOwnerDisplay($gruppo['owner_name'] ?? null, $gruppo['owner_surname'] ?? null, $gruppo['nickname'])
         : htmlspecialchars('(@' . $gruppo['nickname'] . ')');
     $owner_html = "<a href='utenti.php?utente=" . urlencode($gruppo['owner_id']) . "'>" . $owner_display . "</a>";
 
@@ -72,7 +72,7 @@ $ultimeBachecheFormattate = [];
 foreach ($bachecheDati as $bacheca) {
     $owner_name = trim(($bacheca['owner_name'] ?? '') . ' ' . ($bacheca['owner_surname'] ?? ''));
     $owner_display = $owner_name !== ''
-        ? htmlspecialchars($owner_name . ' (@' . $bacheca['nickname'] . ')')
+        ? formatOwnerDisplay($bacheca['owner_name'] ?? null, $bacheca['owner_surname'] ?? null, $bacheca['nickname'])
         : htmlspecialchars('(@' . $bacheca['nickname'] . ')');
     $owner_html = "<a href='utenti.php?utente=" . urlencode($bacheca['owner_id']) . "'>" . $owner_display . "</a>";
 
