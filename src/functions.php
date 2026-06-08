@@ -242,67 +242,98 @@ function build_query_preserve_brackets(array $params): string {
 }
 
 /**
- * Genera la struttura HTML per la navigazione delle pagine (paginazione).
- * 
- * Gestisce la visualizzazione dinamica dei numeri di pagina limitando il range visibile
- * attorno alla pagina corrente e inserendo i punti di sospensione (...) per le pagine omesse.
- * Include le frecce di navigazione avanti/indietro se necessario e permette l'allineamento CSS.
+ * Genera la struttura HTML per la navigazione delle pagine (paginazione) a larghezza fissa.
+ * * Mantiene lo stesso numero di elementi sullo schermo sostituendo i link non disponibili
+ * con punti di sospensione o frecce disabilitate, garantendo la stabilità visiva.
  *
  * @param int    $np             Il numero della pagina corrente (1-based).
  * @param int    $pagine_totali  Il numero complessivo di pagine disponibili.
  * @param int    $range          Il numero di pagine da mostrare a sinistra e a destra di quella corrente. Default: 1.
  * @param string $justify        L'allineamento CSS per la proprietà `justify-self`. Default: "auto".
- * 
- * @return string La stringa HTML contenente i link di paginazione, oppure una stringa vuota
- *                se il numero totale di pagine è inferiore o uguale a 1.
+ * * @return string La stringa HTML contenente i link di paginazione, oppure una stringa vuota
+ * se il numero totale di pagine è inferiore o uguale a 1.
  */
-function getPagesNav(int $np,
-    int $pagine_totali,
-    int $range=1,
-    string $justify = "auto",): string {
-    // Se c'è solo una pagina, non serve mostrare la navigazione
-    if ($pagine_totali <= 1 ) {
+function getPagesNav(int $np, int $pagine_totali, int $range = 1, string $justify = "auto"): string {
+    if ($pagine_totali <= 1) {
         return "";
     }
 
     $html = "<div class='pagination-container' style='justify-self: $justify;'>";
     
-    // Valore a sx di $np
-    $start = max(1, $np - $range);
-    // Valore a dx di $np
-    $end = min($np + $range, $pagine_totali);
-
     $prev = $np - 1;
     $next = $np + 1;
-
     $leftArrowHTML = getLeftArrow();
     $rightArrowHTML = getRightArrow();
 
-    // Togliamo 'pagina=n' che sta nella $_GET quando clicchiamo più volte il bottone
     $queryParams = array_diff_key($_GET, ['pagina' => '']);
     $query = http_build_query($queryParams);
+    $queryString = !empty($query) ? "&$query" : "";
 
-    if ($np - 1 > 1) {
-        $html .= "<a href='?pagina=$prev&$query' class='page-item arrow'>$leftArrowHTML</a>";
-        if ($np - 1 > 2) $html .= "<a href='?pagina=1&$query' class='page-item text-muted'>1</a>";
-        else $html .= "<a href='?pagina=1&$query' class='page-item'>1</a>";
-        // if ($np - 1 > 2) $html .= '<span class="page-dots">...</span>';
+    // --- FRECCIA SINISTRA ---
+    if ($np > 1) {
+        $html .= "<a href='?pagina=$prev$queryString' class='page-item arrow'>$leftArrowHTML</a>";
+    } else {
+        $html .= "<span class='page-item arrow disabled'>$leftArrowHTML</span>";
     }
-    for ($i=$start; $i <= $end; $i++) {
-        $active = "";
-        if ($i == $np) $active = "active";
-        $html .= "<a href='?pagina=$i&$query' class='page-item $active'>$i</a>";
+
+    // --- PRIMA PAGINA (1) ---
+    // Se la finestra centrale include già la pagina 1, mostriamo un segnaposto per non duplicarla
+    $start = max(1, $np - $range);
+    if ($start > 1) {
+        $class = 'page-item text-muted';
+        $html .= "<a href='?pagina=1$queryString' class='$class'>1</a>";
+    } else {
+        $html .= "<span class='page-item dots'>.</span>";
     }
-    if ($pagine_totali - $np > 1) {
-        // if ($pagine_totali - $np > 2) $html .= '<span class="page-dots">...</span>';
-        if ($pagine_totali - $np > 2) $html .= "<a href='?pagina=$pagine_totali&$query' class='page-item text-muted'>$pagine_totali</a>";
-        else $html .= "<a href='?pagina=$pagine_totali&$query' class='page-item'>$pagine_totali</a>";
-        $html .= "<a href='?pagina=$next&$query' class='page-item arrow'>$rightArrowHTML</a>";
+
+    // --- PUNTI DI SOSPENSIONE A SINISTRA ---
+    if ($np - $range > 2) {
+        $html .= "<span class='page-item dots'>...</span>";
+    } else {
+        $html .= "<span class='page-item dots'>.</span>";
     }
-    
+
+    // --- FINESTRA CENTRALE (RANGE) ---
+    $centro_start = $np - $range;
+    $centro_end = $np + $range;
+
+    for ($i = $centro_start; $i <= $centro_end; $i++) {
+        if ($i >= 1 && $i <= $pagine_totali) {
+            $active = ($i == $np) ? "active" : "";
+            $html .= "<a href='?pagina=$i$queryString' class='page-item $active'>$i</a>";
+        } else {
+            // Se usciamo dai bordi (es. pagina -1 o oltre il totale), stampiamo un punto vuoto strutturale
+            $html .= "<span class='page-item dots'>.</span>";
+        }
+    }
+
+    // --- PUNTI DI SOSPENSIONE A DESTRA ---
+    if ($pagine_totali - $np - $range > 1) {
+        $html .= "<span class='page-item dots'>...</span>";
+    } else {
+        $html .= "<span class='page-item dots'>.</span>";
+    }
+
+    // --- ULTIMA PAGINA ---
+    $end = min($np + $range, $pagine_totali);
+    if ($end < $pagine_totali) {
+        $class = 'page-item text-muted';
+        $html .= "<a href='?pagina=$pagine_totali$queryString' class='$class'>$pagine_totali</a>";
+    } else {
+        $html .= "<span class='page-item dots'>.</span>";
+    }
+
+    // --- FRECCIA DESTRA ---
+    if ($np < $pagine_totali) {
+        $html .= "<a href='?pagina=$next$queryString' class='page-item arrow'>$rightArrowHTML</a>";
+    } else {
+        $html .= "<span class='page-item arrow disabled'>$rightArrowHTML</span>";
+    }
+
     $html .= "</div>";
     return $html;
 }
+
 // =========================================================
 // ASSISTENTI DI CALCOLO PER LA PAGINAZIONE
 // =========================================================
