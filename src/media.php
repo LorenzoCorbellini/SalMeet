@@ -323,12 +323,12 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 		if ($activeTab === 'info') {
 			$ownerLink = "utenti.php?utente=" . urlencode((int)$file['owner_id']);
 			$contentHtml .= "<div class='tab-info-card'>
-			<p><strong>Proprietario:</strong> <a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($file['owner_nickname']) . "</a></p>
-			<p><strong>Nome:</strong> " . htmlspecialchars($file['owner_name']) . "</p>
-			<p><strong>Cognome:</strong> " . htmlspecialchars($file['owner_surname']) . "</p>
-			<p><strong>Tipo file:</strong> " . htmlspecialchars($file['type']) . "</p>
-			<p><strong>Dimensione:</strong> " . htmlspecialchars(formatFileSize($file['size'])) . "</p>
-			<p><a href='" . htmlspecialchars($file['url']) . "' target='_blank'>Apri file</a></p>
+			<p class='info-card-text'><strong>Proprietario:</strong> <a href='" . htmlspecialchars($ownerLink) . "'>" . htmlspecialchars($file['owner_nickname']) . "</a></p>
+			<p class='info-card-text'><strong>Nome:</strong> " . htmlspecialchars($file['owner_name']) . "</p>
+			<p class='info-card-text'><strong>Cognome:</strong> " . htmlspecialchars($file['owner_surname']) . "</p>
+			<p class='info-card-text'><strong>Tipo file:</strong> " . htmlspecialchars($file['type']) . "</p>
+			<p class='info-card-text'><strong>Dimensione:</strong> " . htmlspecialchars(formatFileSize($file['size'])) . "</p>
+			<p class='info-card-text'><a href='" . htmlspecialchars($file['url']) . "' target='_blank'>Apri file</a></p>
 			</div>";
 		} elseif ($activeTab === 'gruppi') {
 			list($limit, $np, $start_from) = getPaginationParams(20);
