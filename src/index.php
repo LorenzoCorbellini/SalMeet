@@ -59,7 +59,7 @@ foreach ($gruppiDati as $gruppo) {
     $ultimiGruppiFormattati[] = [
         'Nome Gruppo'    => "<a href='gruppi.php?gruppo=" . urlencode($gruppo['gruppoId']) . "'>" . htmlspecialchars((string)$gruppo['nome_gruppo']) . "</a>",
         'Proprietario'   => $owner_html,
-        'Data Creazione' => $gruppo['dataCreazione']
+        'Data Creazione' => formattaData($gruppo['dataCreazione'])
     ];
 }
 
@@ -79,7 +79,7 @@ foreach ($bachecheDati as $bacheca) {
     $ultimeBachecheFormattate[] = [
         'Nome Bacheca'   => "<a href='bacheche.php?vista=dettaglio&bacheca=" . urlencode($bacheca['nome_bacheca']) . "&owner=" . urlencode($bacheca['owner_id']) . "'>" . htmlspecialchars((string)$bacheca['nome_bacheca']) . "</a>",
         'Proprietario'   => $owner_html,
-        'Data Creazione' => $bacheca['dataCreazione']
+        'Data Creazione' => formattaData($bacheca['dataCreazione'])
     ];
 }
 ?>
