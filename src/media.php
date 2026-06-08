@@ -371,7 +371,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 					];
 				}
 
-				$contentHtml .= "<div class='table-container'>" . getTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders_f) . "</div>";
+				$contentHtml .= "<div class='table-container tabella-gruppi'>" . getTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders_f) . "</div>";
 				$contentHtml .= "<div class='pagination-spacer'>" . getPagesNav($np, $numero_pagine, 1) . "</div>";
 			}
 		} elseif ($activeTab === 'bacheche') {
@@ -415,7 +415,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 					];
 				}
 
-				$contentHtml .= "<div class='table-container'>" . getTabella($datiBacheche, ['Nome Bacheca', 'Proprietario'], $customHeaders_f) . "</div>";
+				$contentHtml .= "<div class='table-container tabella-bacheche'>" . getTabella($datiBacheche, ['Nome Bacheca', 'Proprietario'], $customHeaders_f) . "</div>";
 				$contentHtml .= "<div class='pagination-spacer'>" . getPagesNav($np, $numero_pagine, 1) . "</div>";
 			}
 		}
@@ -592,7 +592,7 @@ if ($numero_records >= $limit) $output_html .= " (<strong>$limit</strong> per pa
 $output_html .= "</p>";
 $output_html .= "</div>";
 
-$output_html .= "<div class='table-container'>";
+$output_html .= "<div class='table-container tabella-media'>";
 $output_html .= getTabella($righe, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
 $output_html .= "</div>";
 $output_html .= getPagesNav($np, $numero_pagine, 1);

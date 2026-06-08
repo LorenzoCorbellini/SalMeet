@@ -598,6 +598,32 @@ table .btn-aggiungi img {
     margin: 0;
 }
 
+/* =========================================================
+     STABILIZZAZIONE COLONNE PER PAGINAZIONE AUTOMATICA
+   ========================================================= */
+
+/* --- 1. TABELLA GRUPPI (Nome Gruppo, Proprietario, Data) --- */
+.tabella-gruppi th:nth-child(1) { width: 30%; } /* Nome gruppo più largo */
+.tabella-gruppi th:nth-child(2) { width: 50%; } /* Proprietario */
+.tabella-gruppi th:nth-child(3) { width: 20%; } /* Data */
+
+/* --- 2. TABELLA MEDIA (Icona/File, Proprietario, Dimensione) --- */
+.tabella-media th:nth-child(1) { width: 25%; } /* Il nome del file richiede più spazio */
+.tabella-media th:nth-child(2) { width: 50%; } /* Proprietario */
+.tabella-media th:nth-child(3) { width: 25%; } /* Dimensione file (es. "12.5 MB") */
+
+/* --- 3. TABELLA UTENTI (es. Nickname, Nome, Cognome, Data nascita) --- */
+.tabella-utenti th:nth-child(1) { width: 35%; } /* Nickname */
+.tabella-utenti th:nth-child(2) { width: 25%; } /* Nome */
+.tabella-utenti th:nth-child(3) { width: 25%; } /* Cognome */
+.tabella-utenti th:nth-child(4) { width: 15%; } /* Data nascita */
+
+/* --- 4. TABELLA BACHECHE --- */
+.tabella-bacheche th:nth-child(1) { width: 35%; } /* Nome bacheca */
+.tabella-bacheche th:nth-child(2) { width: 30%; } /* Proprietario */
+.tabella-bacheche th:nth-child(3) { width: 25%; } /* Data creazione */
+.tabella-bacheche th:nth-child(4) { width: 10%; } /* Azioni */
+
 /* --- UTILITY --- */
 .stile1 {
     background: var(--bg-main);

@@ -150,7 +150,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
                 ];
             }
 
-            echo '<div class="table-container">';
+            echo '<div class="table-container tabella-gruppi">';
             stampaTabella($dati, ['Nome Gruppo', 'Proprietario'], generaIntestazioniOrdinabili(['Nome Gruppo' => 'nome', 'Proprietario' => 'proprietario', 'Data Creazione' => 'data'], $sort_col, $sort_dir));
             echo '</div>';
             
@@ -201,7 +201,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
                 ];
             }
 
-            echo '<div class="table-container">';
+            echo '<div class="table-container tabella-bacheche">';
             stampaTabella($dati, ['Nome Bacheca', 'Proprietario'], generaIntestazioniOrdinabili(['Nome Bacheca' => 'nome', 'Proprietario' => 'proprietario', 'Data Creazione' => 'data'], $sort_col, $sort_dir));
             echo '</div>';
             
@@ -273,7 +273,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
                 ];
             }
 
-            echo '<div class="table-container">';
+            echo '<div class="table-container tabella-media">';
             stampaTabella($dati, ['File', 'Proprietario', 'Dimensione'], generaIntestazioniOrdinabili(['File' => 'file', 'Proprietario' => 'proprietario', 'Dimensione' => 'dimensione'], $sort_col, $sort_dir));
             echo '</div>';
             
@@ -333,7 +333,7 @@ function renderElencoUtenti($pdo, $isAjax)
             ];
         }
 
-        echo '<div class="table-container">';
+        echo '<div class="table-container tabella-utenti">';
         stampaTabella($dati, ['Nickname'], generaIntestazioniOrdinabili(['Nickname' => 'nickname', 'Nome' => 'nome', 'Cognome' => 'cognome', 'Data di Nascita' => 'data'], $sort_col, $sort_dir));
         echo '</div>';
         

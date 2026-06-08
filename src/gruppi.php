@@ -198,7 +198,7 @@ if (!$isAjax):
                                     'Data di Nascita' => 'data'
                                 ], $sort_col, $sort_dir);
 
-                                echo '<div class="table-container">';
+                                echo '<div class="table-container tabella-utenti">';
                                 stampaTabella($datiMembri, ['Nickname'], $customHeaders);
                                 echo '</div>';
                                 echo "<div class='pagination-spacer'>";
@@ -304,7 +304,7 @@ if (!$isAjax):
                                     'Dimensione' => 'dimensione'
                                 ], $sort_col, $sort_dir);
 
-                                echo '<div class="table-container">';
+                                echo '<div class="table-container tabella-media">';
                                 stampaTabella($datiFiles, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
                                 echo '</div>';
                                 echo "<div class='pagination-spacer'>";
@@ -393,7 +393,7 @@ if (!$isAjax):
                             'Data Creazione' => 'data'
                         ], $sort_col, $sort_dir);
 
-                        echo '<div class="table-container">';
+                        echo '<div class="table-container tabella-gruppi">';
                         stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
                         echo '</div>';
 

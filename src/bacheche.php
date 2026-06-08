@@ -556,7 +556,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo getBottoneAggiungiUtentiMultipli($bEnc, $owner);
             echo "</div>";
 
-            echo '<div class="table-container">';
+            echo '<div class="table-container tabella-utenti">';
             stampaTabella($datiUtenti, ['Nickname', 'Azioni'], $customHeaders_u);
             echo '</div>';
 
@@ -589,7 +589,7 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
             echo getBottoneAggiungiFileMultipli($bEnc, $owner);
             echo "</div>";
 
-            echo '<div class="table-container">';
+            echo '<div class="table-container tabella-media">';
             stampaTabella($datiFile, ['File', 'Proprietario', 'Dimensione', 'Azioni'], $customHeaders_f);
             echo '</div>';
 
@@ -730,7 +730,7 @@ function renderElencoBacheche($pdo, $isAjax)
         'Data Creazione' => 'data'
     ], $sort_col, $sort_dir);
 
-    echo '<div class="table-container">';
+    echo '<div class="table-container tabella-bacheche">';
     stampaTabella($datiBacheche, ['Proprietario', 'Nome Bacheca', 'Azioni'], $customHeaders);
     echo '</div>';
 
