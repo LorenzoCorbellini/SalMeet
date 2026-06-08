@@ -1584,7 +1584,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     margin-bottom: 40px;
 }
 
-.dashboard-table th:last-child,
 .dashboard-table td:last-child {
     text-align: right;
 }
