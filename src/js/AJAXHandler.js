@@ -17,7 +17,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (isPagination) {
             // Se è la PAGINAZIONE: usiamo AJAX come hai sempre fatto
-            // (aggiorna solo la tabella senza toccare sidebar e filtri)
             e.preventDefault();
             caricaPaginaAjax(url);
         } else if (isTab) {
@@ -48,8 +47,10 @@ function caricaPaginaAjax(url) {
             // Sovrascrive SOLO la tabella o la porzione dei risultati
             content.innerHTML = html;
             
-            // La paginazione normale aggiunge un passo alla cronologia
-            history.pushState(null, "", url);
+            // MODIFICA CRUCIALE: usiamo replaceState invece di pushState.
+            // Sostituisce l'URL corrente senza accumulare step nella cronologia del browser.
+            // Al primo clic su "Indietro", l'utente uscirà completamente dal dettaglio!
+            history.replaceState(null, "", url);
         })
         .catch(error => {
             console.error("Errore AJAX:", error);
