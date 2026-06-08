@@ -1,31 +1,35 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    // Gestione dei link per paginazione e TAB per farli funzionare via AJAX
+    // Gestione dei link per paginazione e TAB
     document.addEventListener("click", function (e) {
         const targetLink = e.target.closest("a");
         if (!targetLink) return;
 
         const url = targetLink.getAttribute("href");
-        if (!url) return;
+        if (!url || url.startsWith("javascript:")) return;
 
         // 1. Controlla se è un link della paginazione
         const isPagination = targetLink.closest(".pagination-container a.page-item");
 
         // 2. Controlla se è un link di una TAB (contiene "tab=")
-        // Assicuriamoci che sia un link interno alla pagina corrente, 
-        // per non bloccare la navigazione da una sezione all'altra
         let paginaCorrente = window.location.pathname.split('/').pop() || 'index.php';
         const isTab = url.includes("tab=") && (url.startsWith("?") || url.includes(paginaCorrente));
 
-        // Se è paginazione O una tab interna, blocchiamo il caricamento normale e usiamo AJAX
-        if (isPagination || isTab) {
+        if (isPagination) {
+            // Se è la PAGINAZIONE: usiamo AJAX come hai sempre fatto
+            // (aggiorna solo la tabella senza toccare sidebar e filtri)
             e.preventDefault();
             caricaPaginaAjax(url);
+        } else if (isTab) {
+            // Se è una TAB: facciamo un caricamento di pagina completo per aggiornare i filtri,
+            // ma usiamo "replace" per NON aggiungere passaggi alla cronologia!
+            e.preventDefault();
+            window.location.replace(url);
         }
     });
 });
 
-// Funzione globale che esegue la chiamata al server (LA TUA FUNZIONA GIA' BENE)
+// Funzione globale che esegue la chiamata al server SOLO per la paginazione
 function caricaPaginaAjax(url) {
     const content = document.getElementById("content");
     if (!content) return;
@@ -44,14 +48,8 @@ function caricaPaginaAjax(url) {
             // Sovrascrive SOLO la tabella o la porzione dei risultati
             content.innerHTML = html;
             
-            // MODIFICA: Controlliamo se l'URL contiene il parametro "tab"
-            if (url.includes('tab=')) {
-                // Se stiamo cambiando tab, sovrascriviamo lo stato corrente senza creare un checkpoint
-                history.replaceState(null, "", url);
-            } else {
-                // Se stiamo cambiando pagina nella paginazione, creiamo un checkpoint normale
-                history.pushState(null, "", url);
-            }
+            // La paginazione normale aggiunge un passo alla cronologia
+            history.pushState(null, "", url);
         })
         .catch(error => {
             console.error("Errore AJAX:", error);
