@@ -26,7 +26,7 @@ if (!empty($reset_params)) {
 ?>
 
 <div id="filtro">
-    <h3 class="filter-section-title"><i class="fa-solid fa-filter"></i> Filtri di Ricerca</h3>
+    <div class="filter-section-title"><i class="fa-solid fa-filter"></i> Filtri di Ricerca</div>
     
     <form method="GET" action="<?= $action ?>">
 

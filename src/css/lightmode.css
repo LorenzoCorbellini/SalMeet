@@ -193,6 +193,18 @@ li.navbar a:hover:not(.active) {
     font-weight: 600;
 }
 
+.filter-section-title {
+    font-size: large; 
+    color: var(--primary-dark); /* Usa il rosso scuro della palette per dare gerarchia */
+    margin: 0 0 20px 0;
+    font-weight: 700; 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .filter-section-title i {
     color: var(--accent);
     font-size: 1.1em;
