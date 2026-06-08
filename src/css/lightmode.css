@@ -586,9 +586,47 @@ table .btn-aggiungi {
 }
 
 table .btn-azione {
+    position: relative;
     width: 28px;
     height: 15px;
     margin: 0 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent; /* Disattiviamo lo sfondo base che era ovale */
+}
+
+table .btn-azione::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;  
+    height: 28px; /* Tondo perfetto che occupa lo spazio vuoto (padding) della cella */
+    border-radius: 50%;
+    background-color: transparent;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    z-index: 0;   
+}
+
+table .btn-azione:hover::before {
+    background-color: rgba(233, 123, 109, 0.35);
+    transform: translate(-50%, -50%) scale(1.05); /* Effetto pop */
+}
+
+/* 3. L'immagine PNG rimane in primo piano e si ingrandisce insieme al cerchio */
+table .btn-azione img {
+    position: relative;
+    z-index: 1; /* Assicura che la PNG sia sopra lo sfondo colorato */
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    transition: transform 0.1s ease;
+}
+
+table .btn-azione:hover img {
+    transform: scale(1.05);
 }
 
 table .btn-azione img,
@@ -727,11 +765,6 @@ tbody tr:hover td:hover {
     width: 16px;
     height: 16px;
     pointer-events: none;
-}
-
-.btn-azione:hover {
-    background-color: rgba(233, 123, 109, 0.35);
-    transform: scale(1.05);
 }
 
 .btn-aggiungi {
