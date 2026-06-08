@@ -137,7 +137,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $stmt->execute($params);
 
         $testoPerPagina = ($totale > $limit) ? " (<strong>$limit</strong> per pagina)" : "";
-        echo "<div class='table-top-bar'><p class='zero-margin'>Gruppi a cui appartiene l'utente trovati: <strong>$totale</strong> {$testoPerPagina}</p></div>";
+        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$totale</strong> gruppi a cui appartiene l'utente {$testoPerPagina}</p></div>";
         
         if ($totale > 0) {
             $dati = [];
@@ -188,7 +188,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $stmt->execute($params);
 
         $testoPerPagina = ($totale > $limit) ? " (<strong>$limit</strong> per pagina)" : "";
-        echo "<div class='table-top-bar'><p class='zero-margin'>Bacheche a cui appartiene l'utente trovate: <strong>$totale</strong> {$testoPerPagina}</p></div>";
+        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovate <strong>$totale</strong> bacheche a cui appartiene l'utente {$testoPerPagina}</p></div>";
         
         if ($totale > 0) {
             $dati = [];
@@ -257,7 +257,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
         $stmt->execute($params);
 
         $testoPerPagina = ($totale > $limit) ? " (<strong>$limit</strong> per pagina)" : "";
-        echo "<div class='table-top-bar'><p class='zero-margin'>File caricati dall'utente trovati: <strong>$totale</strong>{$testoPerPagina}</p></div>";
+        echo "<div class='table-top-bar'><p class='info-risultati zero-margin'>Trovati <strong>$totale</strong> file caricati dall'utente{$testoPerPagina}</p></div>";
         
         if ($totale > 0) {
             $dati = [];
