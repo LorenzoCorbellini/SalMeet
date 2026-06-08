@@ -595,8 +595,7 @@ $output_html .= "</div>";
 $output_html .= "<div class='table-container tabella-media'>";
 $output_html .= getTabella($righe, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
 $output_html .= "</div>";
-$output_html .= getPagesNav($np, $numero_pagine, 1);
-
+$output_html .= "<div class='pagination-spacer'>" . getPagesNav($np, $numero_pagine, 1) . "</div>";
 if (isAjaxRequest()) {
     echo $output_html;
     $pdo = null;
