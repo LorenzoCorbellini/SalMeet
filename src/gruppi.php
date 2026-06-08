@@ -274,14 +274,24 @@ if (!$isAjax):
                                 ];
 
                                 foreach ($filesRaw as $file) {
-                                    $tipoStr = strtolower($file['tipo']);
-                                    $icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
-
-                                    $linkMedia = "media.php?vista=dettaglio&file_id=" . urlencode($file['numero']);
-
-                                    $titolo_html = "<a href='" . htmlspecialchars($linkMedia) . "' class='file-link'>" .
-                                        "<img src='" . htmlspecialchars($icon_path) . "' alt='Icona' style='width:18px; height:18px; margin-right:8px; vertical-align:middle;'>" .
-                                        htmlspecialchars($file['titolo']) . "</a>";
+                                    $tipo_file   = strtolower($file['tipo']);
+                                    $url_file    = $file['URL'];      
+                                    $id_file     = $file['numero'];   
+                                    $titolo_file = $file['titolo'];
+                                    
+                                    $icon_path = $icon_types[$tipo_file] ?? $icon_types['default'];
+                                    $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipo_file) . "'>";
+                                    $detail_link = "media.php?vista=dettaglio&file_id=" . urlencode((int)$id_file);
+                                    
+                                    $follow_link_html = "<a class='media-download-link' href='" . htmlspecialchars($url_file) . "' target='_blank'>"
+                                        . "<img class='media-external-icon' src='images/external-link.png'>"
+                                        . "</a>";
+                                    
+                                    $html_colonna_file = "<div class='media-item'>" 
+                                        . $file_icon 
+                                        . "<a href='" . htmlspecialchars($detail_link) . "'>" . htmlspecialchars($titolo_file) . "</a>"
+                                        . "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
+                                        . "</div>";
 
                                     $owner_link = "utenti.php?utente=" . urlencode($file['caricatoDa']) . "&return_to=" . urlencode($current_url);
 
@@ -292,7 +302,7 @@ if (!$isAjax):
                                     $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . $ownerDisplay . "</a>" . $iconaCorona;
 
                                     $datiFiles[] = [
-                                        'File' => $titolo_html,
+                                        'File' => $html_colonna_file,
                                         'Proprietario' => $htmlOwner,
                                         'Dimensione' => formatFileSizeHtml((float)$file['dimensione'])
                                     ];

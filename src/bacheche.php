@@ -404,18 +404,28 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
 
     $datiFile = [];
     foreach ($file as $f) {
-        $tipoStr = strtolower($f['tipo']);
-        $icon_path = $icon_types[$tipoStr] ?? $icon_types['default'];
-        $title = $f['titolo'];
+        $tipo_file   = strtolower($f['tipo']);
+        $url_file    = $f['URL'];      
+        $id_file     = $f['numero'];   
+        $titolo_file = $f['titolo'];
+        
+        $icon_path = $icon_types[$tipo_file] ?? $icon_types['default'];
+        $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipo_file) . "'>";
+        $detail_link = "media.php?vista=dettaglio&file_id=" . urlencode((int)$id_file);
+        
+        $follow_link_html = "<a class='media-download-link' href='" . htmlspecialchars($url_file) . "' target='_blank'>"
+            . "<img class='media-external-icon' src='images/external-link.png'>"
+            . "</a>";
+        
+        $html_colonna_file = "<div class='media-item'>" 
+            . $file_icon 
+            . "<a href='" . htmlspecialchars($detail_link) . "'>" . htmlspecialchars($titolo_file) . "</a>"
+            . "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
+            . "</div>";
+        // --- FINE BLOCCO COLONNA FILE ---
 
-        $titleJS = htmlspecialchars(addslashes($title), ENT_QUOTES);
+        $titleJS = htmlspecialchars(addslashes($titolo_file), ENT_QUOTES);
         $caricatoDaJS = htmlspecialchars(addslashes($f['nickname']), ENT_QUOTES);
-
-        $htmlFile = "<div class='file-cell-wrapper'>";
-        $htmlFile .= "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipoStr) . "'>";
-        $linkMedia = "media.php?vista=dettaglio&file_id=" . urlencode($f['numero']);
-        $htmlFile .= "<a href='" . htmlspecialchars($linkMedia) . "'>" . htmlspecialchars($title) . "</a>";
-        $htmlFile .= "</div>";
 
         $owner_link = "utenti.php?utente=" . urlencode($f['caricatoDa']);
         $ownerDisplay = formatOwnerDisplay($f['owner_nome'] ?? null, $f['owner_cognome'] ?? null, $f['nickname']);
@@ -428,7 +438,7 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
         </div>";
 
         $datiFile[] = [
-            'File' => $htmlFile,
+            'File' => $html_colonna_file,
             'Proprietario' => $htmlOwner,
             'Dimensione' => formatFileSizeHtml((int)$f['dimensione']),
             'Azioni' => $azioni

@@ -264,11 +264,28 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
             $icons = ['immagine' => 'images/image.png', 'video' => 'images/video.png', 'audio' => 'images/headphones.png', 'default' => 'images/document.png'];
 
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $f) {
-                $icon = $icons[strtolower($f['tipo'])] ?? $icons['default'];
-                $ownerDisplay = formatOwnerDisplay($f['proprietario_nome'] ?? null, $f['proprietario_cognome'] ?? null, $f['proprietario_nickname']);
-                $linkMedia = "media.php?vista=dettaglio&file_id=" . urlencode($f['numero']);
+                $tipo_file   = strtolower($f['tipo']);
+                $url_file    = $f['url'];      
+                $id_file     = $f['numero'];   
+                $titolo_file = $f['File']; // Nella query è estratto come "fm.titolo AS File"
+                
+                $icon_path = $icons[$tipo_file] ?? $icons['default'];
+                $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipo_file) . "'>";
+                $detail_link = "media.php?vista=dettaglio&file_id=" . urlencode((int)$id_file);
+                
+                $follow_link_html = "<a class='media-download-link' href='" . htmlspecialchars($url_file) . "' target='_blank'>"
+                    . "<img class='media-external-icon' src='images/external-link.png'>"
+                    . "</a>";
+                
+                $html_colonna_file = "<div class='media-item'>" 
+                    . $file_icon 
+                    . "<a href='" . htmlspecialchars($detail_link) . "'>" . htmlspecialchars($titolo_file) . "</a>"
+                    . "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
+                    . "</div>";
+                // --- FINE BLOCCO COLONNA FILE ---
+
                 $dati[] = [
-                    'File' => "<a href='" . htmlspecialchars($linkMedia) . "' class='file-link'><img src='" . $icon . "' class='icona icona-filetype' style='vertical-align:middle;'>" . htmlspecialchars($f['File']) . "</a>",
+                    'File' => $html_colonna_file,
                     'Dimensione' => formatFileSizeHtml((int)$f['Dimensione'])
                 ];
             }
