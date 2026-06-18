@@ -8,7 +8,7 @@
  * @param int|null $fallback Valore di fallback se la query fallisce
  * @return int Dimensione massima in MB oppure il fallback
  */
-function getMaxFileSizeFromDb(?int $fallback = null): int
+function getMaxFileSizeFromDb(?int $fallback = 0): int
 {
     global $pdo;
     
@@ -16,16 +16,18 @@ function getMaxFileSizeFromDb(?int $fallback = null): int
         $stmt = $pdo->query("SELECT MAX(dimensione) as max_size FROM FileMultimediale");
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
+        // Se il risultato è NULL (tabella vuota), restituiamo 0 invece di 2000
         if ($result && $result['max_size'] !== null) {
             return (int)$result['max_size'];
         }
+        return 0; 
     } catch (PDOException $e) {
         // Se c'è un errore, usa il fallback
         error_log("Errore nel calcolo dimensione massima file: " . $e->getMessage());
     }
     
-    // Fallback a 2000 MB se la query fallisce o non ci sono file
-    return $fallback ?? 2000;
+    // Fallback in caso di eccezione
+    return $fallback ?? 0;
 }
 
 /**
@@ -33,7 +35,7 @@ function getMaxFileSizeFromDb(?int $fallback = null): int
  * @param int|null $fallback Valore di fallback se la query fallisce
  * @return int Dimensione minima in MB oppure il fallback
  */
-function getMinFileSizeFromDb(?int $fallback = null): int
+function getMinFileSizeFromDb(?int $fallback = 0): int
 {
     global $pdo;
 
@@ -44,6 +46,7 @@ function getMinFileSizeFromDb(?int $fallback = null): int
         if ($result && $result['min_size'] !== null) {
             return (int)$result['min_size'];
         }
+        return 0;
     } catch (PDOException $e) {
         error_log("Errore nel calcolo dimensione minima file: " . $e->getMessage());
     }
@@ -400,11 +403,11 @@ function getLeftArrow(): string {
 function formatFileSize(int $filesize): string {
     $units = array('B', 'KB', 'MB', 'GB', 'TB');
     $formattedSize = $filesize;
-	$index = 0;
+    $index = 0;
     for ($i = 0; $filesize >= 1000 && $i < count($units) - 1; $i++) {
         $filesize /= 1000;
         $formattedSize = round($filesize, 2);
-		$index++;
+        $index++;
     }
 
     return $formattedSize . ' ' . $units[$index];
@@ -414,11 +417,11 @@ function formatFileSize(int $filesize): string {
  * Converte una dimensione numerica in una struttura leggibile composta da valore e unità.
  *
  * @param int $filesize Dimensione del file in unità base (ad esempio byte o kilobyte
- *                      a seconda del contesto del database).
+ * a seconda del contesto del database).
  * @return array{size: float|int, unit: string} Restituisce un array associativo contenente:
- *         - 'size': il valore numerico convertito e arrotondato a 2 decimali,
- *                   oppure l'intero originale se non è necessaria la conversione.
- *         - 'unit': l'unità di misura corrispondente ('B', 'KB', 'MB', 'GB', 'TB').
+ * - 'size': il valore numerico convertito e arrotondato a 2 decimali,
+ * oppure l'intero originale se non è necessaria la conversione.
+ * - 'unit': l'unità di misura corrispondente ('B', 'KB', 'MB', 'GB', 'TB').
  */
 function formatFileSize2(int $filesize): array {
     $units = array('B', 'KB', 'MB', 'GB', 'TB');
@@ -491,8 +494,7 @@ function getLogSliderValue(int $position, int $min, int $max, int $steps = 1000)
  * Restituisce un elemento `<div>` stilizzato con l'identificativo `file_size`. 
  * Include un attributo `title` nativo che mostra il valore grezzo in MB al passaggio 
  * del mouse (tooltip), utile per mantenere l'accessibilità del dato originale.
- * 
- * @param int $size La dimensione grezza del file da passare a {@see formatFileSize()}.
+ * * @param int $size La dimensione grezza del file da passare a {@see formatFileSize()}.
  * @return string Il blocco HTML (`<div>`) pronto per essere renderizzato a schermo.
  */
 function formatFileSizeHtml(int $size): string {

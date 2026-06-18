@@ -58,11 +58,11 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
 
             //filtro file multimediali
         case 'file':
-            // Usa la dimensione minima reale del database per il range iniziale.
-            // Se viene passato un min_size esplicito (es. contesti speciali), lo usa;
-            // altrimenti calcola il valore minimo presente in FileMultimediale.
+            // Usa la dimensione minima e massima passate dal contesto.
+            // Se non passate esplicitamente (es. contesto globale di media.php), usa il database globale.
             $minSize = isset($parametriExtra['min_size']) ? (int)$parametriExtra['min_size'] : getMinFileSizeFromDb();
-            $maxSize = getMaxFileSizeFromDb($parametriExtra['max_size'] ?? null);
+            $maxSize = isset($parametriExtra['max_size']) ? (int)$parametriExtra['max_size'] : getMaxFileSizeFromDb();
+            
             return [
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'file',              'label' => 'Nome File', 'placeholder' => 'es. Vlog dal campeggio'],

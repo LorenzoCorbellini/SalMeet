@@ -119,7 +119,7 @@ function renderFiltroSidebar($pdo, $vista_corrente, $tab_corrente, $bacheca, $ow
             $rangeDati = $stmtRange->fetch(PDO::FETCH_ASSOC);
 
             $minSize = isset($rangeDati['min_dim']) ? floor($rangeDati['min_dim']) : 0;
-            $maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 100;
+            $maxSize = isset($rangeDati['max_dim']) ? ceil($rangeDati['max_dim']) : 0;
             if ($minSize == $maxSize) {
                 $minSize = 0;
             }
@@ -405,20 +405,20 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
     $datiFile = [];
     foreach ($file as $f) {
         $tipo_file   = strtolower($f['tipo']);
-        $url_file    = $f['URL'];      
-        $id_file     = $f['numero'];   
+        $url_file    = $f['URL'];
+        $id_file     = $f['numero'];
         $titolo_file = $f['titolo'];
-        
+
         $icon_path = $icon_types[$tipo_file] ?? $icon_types['default'];
         $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipo_file) . "'>";
         $detail_link = "media.php?vista=dettaglio&file_id=" . urlencode((int)$id_file);
-        
+
         $follow_link_html = "<a class='media-download-link' href='" . htmlspecialchars($url_file) . "' target='_blank'>"
             . "<img class='media-external-icon' src='images/external-link.png'>"
             . "</a>";
-        
-        $html_colonna_file = "<div class='media-item'>" 
-            . $file_icon 
+
+        $html_colonna_file = "<div class='media-item'>"
+            . $file_icon
             . "<a href='" . htmlspecialchars($detail_link) . "'>" . htmlspecialchars($titolo_file) . "</a>"
             . "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
             . "</div>";

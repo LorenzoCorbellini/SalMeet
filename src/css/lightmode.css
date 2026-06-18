@@ -268,6 +268,9 @@ li.navbar a:hover:not(.active) {
     background: transparent !important;
     border: none;
 }
+.multi-range-container input[type="range"] {
+    transition: z-index 0.1s ease;
+}
 
 /* --- INPUT --- */
 #filtro input[type="text"],
@@ -355,6 +358,7 @@ a.page-item.active:hover {
     width: 15px;
     height: 15px;
     margin-right: 8px;
+    cursor: pointer; /* Ora solo il box ha la manina */
 }
 
 .checkbox-group {
@@ -374,6 +378,8 @@ a.page-item.active:hover {
     display: flex;
     align-items: center;
     gap: 8px;
+    cursor: default; /* Il cursore resta normale sul testo */
+    user-select: none; /* Impedisce comunque la selezione del testo */
 }
 
 /* --- BOTTONI FILTRO --- */
