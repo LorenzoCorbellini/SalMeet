@@ -16,7 +16,7 @@ function getMaxFileSizeFromDb(?int $fallback = 0): int
         $stmt = $pdo->query("SELECT MAX(dimensione) as max_size FROM FileMultimediale");
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        // Se il risultato è NULL (tabella vuota), restituiamo 0 invece di 2000
+        // Se il risultato è NULL (tabella vuota), restituiamo 0
         if ($result && $result['max_size'] !== null) {
             return (int)$result['max_size'];
         }
@@ -216,7 +216,7 @@ function generaIntestazioniOrdinabili(array $colonneOrdinabili, string $sort_col
         $url = "?" . build_query_preserve_brackets($params);
         
         $customHeaders[$titoloVisibile] = "
-            <a href='{$url}' class='filter__link' style='text-decoration: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 100%; height: 100%;'>
+            <a href='{$url}' class='filter__link'>
                 " . htmlspecialchars($titoloVisibile) . " {$iconaHTML}
             </a>
         ";
@@ -261,6 +261,7 @@ function getPagesNav(int $np, int $pagine_totali, int $range = 1, string $justif
         return "";
     }
 
+    //Stile dinamico inline
     $html = "<div class='pagination-container' style='justify-self: $justify;'>";
     
     $prev = $np - 1;

@@ -1172,6 +1172,17 @@ div.swal2-container .swal-wide-split .swal2-input {
     line-height: 1.3;
 }
 
+.swal-multi-row-radio {
+    cursor: pointer;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.swal-multi-radio-input {
+    cursor: pointer;
+    margin: 0;
+}
+
 /* Bottoni Più (+) e Meno (-) */
 .swal-multi-btn-add,
 .swal-multi-btn-del {

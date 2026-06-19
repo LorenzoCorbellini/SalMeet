@@ -320,8 +320,8 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false, nome
                             data.utenti.forEach(u => {
                                 const infoData = u.data_formattata ? ` ${u.data_formattata}` : '';
                                 html += `
-                                    <label class="swal-multi-row" style="cursor: pointer; justify-content: flex-start; gap: 10px;">
-                                        <input type="radio" name="swal-user-radio" value="${u.codice}" data-nickname="${u.nickname}" style="cursor: pointer; margin:0;">
+                                    <label class="swal-multi-row swal-multi-row-radio">
+                                        <input type="radio" name="swal-user-radio" value="${u.codice}" data-nickname="${u.nickname}" class="swal-multi-radio-input">
                                         <div>
                                             <strong>${u.nickname}</strong> 
                                             <div class="swal-multi-row-subtext">${u.nome} ${u.cognome}${infoData}</div>
