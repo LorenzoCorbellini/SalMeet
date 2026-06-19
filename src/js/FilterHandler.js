@@ -303,4 +303,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // =========================================================
+    // GESTIONE SLIDER SINGOLO E TASTO REIMPOSTA
+    // =========================================================
+    
+    // 1. Aggiorna il testo dei range singoli (es. MB)
+    const singleRanges = document.querySelectorAll('.js-sync-range');
+    singleRanges.forEach(range => {
+        range.addEventListener('input', function() {
+            const targetId = this.dataset.target;
+            const textElement = document.getElementById(targetId);
+            if (textElement) {
+                textElement.innerText = this.value;
+            }
+        });
+    });
+
+    // 2. Reindirizzamento del tasto "Reimposta"
+    const resetBtn = document.querySelector('.js-reset-btn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            const url = this.dataset.resetUrl;
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    }
+
 });

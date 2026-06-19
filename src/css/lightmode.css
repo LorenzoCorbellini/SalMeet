@@ -210,13 +210,36 @@ li.navbar a:hover:not(.active) {
     font-size: 1.1em;
 }
 
+/* Etichetta principale del range (es. "Dimensione:") */
+.filter-range-label {
+    margin-bottom: 5px;
+    display: block;
+}
+
+/* I numerini dei valori (es. "0 B - 100 MB" in grassetto e colorati) */
+.filter-range-value {
+    font-weight: bold;
+    color: var(--primary-dark);
+}
+
+/* Aggiungiamo lo spazio sotto il contenitore del doppio slider */
+#filtro .multi-range-container {
+    margin-bottom: 25px;
+}
+
+/* Stile per lo slider singolo (quello classico) */
+input[type="range"].filter-range-single {
+    width: 100%;
+    accent-color: var(--primary);
+    margin-bottom: 10px;
+}
+
 /* --- DOPPIO SLIDER CONFIG --- */
 .multi-range-container {
     position: relative;
     width: 100%;
     height: 6px;
-    background: #e5e7eb;
-    /* Colore grigio di sfondo base */
+    background: var(--border-soft);
     border-radius: 3px;
     margin: 20px 0 15px 0;
 }

@@ -69,9 +69,9 @@ if (!empty($reset_params)) {
                 $val_min_t = formatFileSize2($val_min);
                 $val_max_t = formatFileSize2($val_max);
             ?>
-                <label style="margin-bottom: 5px; display: block;">
+                <label class="filter-range-label">
                     <?= $label ?>:
-                    <span style="font-weight: bold; color: var(--primary-dark);">
+                    <span class="filter-range-value">
                         <span id="val_<?= $name_min ?>"><?= htmlspecialchars($val_min_t['size'] . ' ' . $val_min_t['unit']) ?></span> -
                         <span id="val_<?= $name_max ?>"><?= htmlspecialchars($val_max_t['size'] . ' ' . $val_max_t['unit']) ?></span>
                     </span>
@@ -79,7 +79,8 @@ if (!empty($reset_params)) {
 
                 <input type="hidden" name="<?= $name_min ?>" id="<?= $name_min ?>" value="<?= $val_min ?>">
                 <input type="hidden" name="<?= $name_max ?>" id="<?= $name_max ?>" value="<?= $val_max ?>">
-                <div class="multi-range-container" style="margin-bottom: 25px;">
+                
+                <div class="multi-range-container">
                     <input type="range"
                         id="<?= $name_min ?>_slider"
                         data-hidden="<?= $name_min ?>"
@@ -111,8 +112,9 @@ if (!empty($reset_params)) {
                 $current_val = (isset($_GET[$name]) && $_GET[$name] !== '') ? htmlspecialchars($_GET[$name]) : ($campo['default'] ?? $max);
             ?>
                 <label for="<?= $name ?>">
-                    <?= $label ?>: <span id="val_<?= $name ?>" style="font-weight: bold; color: var(--primary-dark);"><?= $current_val ?></span> MB
+                    <?= $label ?>: <span id="val_<?= $name ?>" class="filter-range-value"><?= $current_val ?></span> MB
                 </label>
+                
                 <input type="range"
                     name="<?= $name ?>"
                     id="<?= $name ?>"
@@ -120,8 +122,8 @@ if (!empty($reset_params)) {
                     max="<?= $max ?>"
                     value="<?= $current_val ?>"
                     step="1"
-                    style="width: 100%; accent-color: var(--primary); margin-bottom: 10px;"
-                    oninput="document.getElementById('val_<?= $name ?>').innerText = this.value">
+                    class="filter-range-single js-sync-range"
+                    data-target="val_<?= $name ?>">
 
             <?php elseif ($campo['tipo'] === 'date'):
                 $max_date = date('Y-m-d');
@@ -202,8 +204,7 @@ if (!empty($reset_params)) {
             <?php endif; ?>
         <?php endforeach; ?>
 
-        <button type="button" class="reset"
-            onclick="window.location='<?= htmlspecialchars($reset_url) ?>'">
+        <button type="button" class="reset js-reset-btn" data-reset-url="<?= htmlspecialchars($reset_url) ?>">
             Reimposta
         </button>
     </form>

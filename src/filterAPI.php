@@ -28,9 +28,6 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                     ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca', 'placeholder' => 'es. Botanica di notte'],
                     ['tipo' => 'date', 'name' => 'data',                 'label' => 'Creata dopo'],
                     ['tipo' => 'text', 'name' => 'ricerca_proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome Cognome / Nickname'],
-                    /*['tipo' => 'text', 'name' => 'proprietario',         'label' => 'Nickname Proprietario', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
-                    ['tipo' => 'text', 'name' => 'proprietario_nome',    'label' => 'Nome Proprietario', 'placeholder' => 'es. Mario, Anna...'],
-                    ['tipo' => 'text', 'name' => 'proprietario_cognome', 'label' => 'Cognome Proprietario', 'placeholder' => 'es. Rossi, Bianchi...'],*/
                 ])
             ];
 
@@ -38,9 +35,6 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
         case 'utenti':
             return [
                 'campi' => array_merge($campiBase, [
-                    /*['tipo' => 'text', 'name' => 'utente',       'label' => 'Nickname Utente', 'placeholder' => 'es. mrossi, giuse_verdi99...'],
-                    ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Utente', 'placeholder' => 'es. Mario, Luca...'],
-                    ['tipo' => 'text', 'name' => 'cognome',      'label' => 'Cognome Utente', 'placeholder' => 'es. Rossi, Verdi...'],*/
                     ['tipo' => 'text', 'name' => 'ricerca_globale', 'label' => 'Utente', 'placeholder' => 'Nome Cognome / Nickname'],
                     ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nato dopo'],
                 ])
@@ -117,19 +111,6 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
 function getRegoleFiltroSQL(string $entita): array
 {
     $mappe = [
-        /*'bacheche' => [
-            'titolo'               => ['colonna' => 'b.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
-            'proprietario'         => ['colonna' => 'u.nickname',      'operatore' => 'LIKE', 'formato' => '%val%'],
-            'proprietario_nome'    => ['colonna' => 'u.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
-            'proprietario_cognome' => ['colonna' => 'u.cognome',       'operatore' => 'LIKE', 'formato' => '%val%'],
-            'data'                 => ['colonna' => 'b.dataCreazione', 'operatore' => '>=',   'formato' => 'val'],
-        ],
-        'utenti' => [
-            'utente'        => ['colonna' => 'u.nickname',      'operatore' => 'LIKE', 'formato' => '%val%'],
-            'nome'          => ['colonna' => 'u.nome',          'operatore' => 'LIKE', 'formato' => '%val%'],
-            'cognome'       => ['colonna' => 'u.cognome',       'operatore' => 'LIKE', 'formato' => '%val%'],
-            'data_nascita'  => ['colonna' => 'u.dataNascita',   'operatore' => '>=',   'formato' => 'val'],
-        ],*/
         'bacheche' => [
             'titolo'               => ['colonna' => 'b.nome', 'operatore' => 'LIKE', 'formato' => '%val%'],
             'ricerca_proprietario' => [
