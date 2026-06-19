@@ -1,36 +1,50 @@
+/**
+ * @file AJAXHandler.js
+ * @description Gestisce le richieste asincrone per la paginazione e la navigazione a schede (TAB), 
+ * intercettando gli eventi di click ed evitando i ricaricamenti non necessari della pagina o l'inquinamento della cronologia.
+ */
+
 document.addEventListener("DOMContentLoaded", function () {
 
-    // Gestione dei link per paginazione e TAB
+    /**
+     * Event listener globale delegato per intercettare i click sui link.
+     * Valuta dinamicamente il contesto del link cliccato (paginazione vs tab) 
+     * e indirizza il flusso verso un caricamento AJAX o una sostituzione dell'URL.
+     * * @param {MouseEvent} e - L'evento di click nativo del browser.
+     */
     document.addEventListener("click", function (e) {
         const targetLink = e.target.closest("a");
+        
         if (!targetLink) return;
 
         const url = targetLink.getAttribute("href");
+        
         if (!url || url.startsWith("javascript:")) return;
 
-        // 1. Controlla se è un link della paginazione
         const isPagination = targetLink.closest(".pagination-container a.page-item");
-
-        // 2. Controlla se è un link di una TAB (contiene "tab=")
+        
         let paginaCorrente = window.location.pathname.split('/').pop() || 'index.php';
         const isTab = url.includes("tab=") && (url.startsWith("?") || url.includes(paginaCorrente));
 
         if (isPagination) {
-            // Se è la PAGINAZIONE: usiamo AJAX come hai sempre fatto
             e.preventDefault();
             caricaPaginaAjax(url);
         } else if (isTab) {
-            // Se è una TAB: facciamo un caricamento di pagina completo per aggiornare i filtri,
-            // ma usiamo "replace" per NON aggiungere passaggi alla cronologia!
             e.preventDefault();
             window.location.replace(url);
         }
     });
 });
 
-// Funzione globale che esegue la chiamata al server SOLO per la paginazione
+/**
+ * Esegue una richiesta asincrona al server tramite Fetch API per aggiornare 
+ * il contenitore principale della pagina con i nuovi risultati della paginazione.
+ * Aggiorna l'URL del browser tramite History API senza alterare la cronologia di navigazione.
+ * * @param {string} url - Il percorso di destinazione contenente i parametri della query per la paginazione.
+ */
 function caricaPaginaAjax(url) {
     const content = document.getElementById("content");
+    
     if (!content) return;
 
     fetch(url, {
@@ -39,20 +53,17 @@ function caricaPaginaAjax(url) {
         },
         credentials: "same-origin"
     })
-        .then(response => {
-            if (!response.ok) throw new Error("Errore nel caricamento dei dati");
-            return response.text();
-        })
-        .then(html => {
-            // Sovrascrive SOLO la tabella o la porzione dei risultati
-            content.innerHTML = html;
-            
-            // MODIFICA CRUCIALE: usiamo replaceState invece di pushState.
-            // Sostituisce l'URL corrente senza accumulare step nella cronologia del browser.
-            // Al primo clic su "Indietro", l'utente uscirà completamente dal dettaglio!
-            history.replaceState(null, "", url);
-        })
-        .catch(error => {
-            console.error("Errore AJAX:", error);
-        });
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Errore nel caricamento dei dati");
+        }
+        return response.text();
+    })
+    .then(html => {
+        content.innerHTML = html;
+        history.replaceState(null, "", url);
+    })
+    .catch(error => {
+        console.error("Errore AJAX:", error);
+    });
 }

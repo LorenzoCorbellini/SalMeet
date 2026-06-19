@@ -1,5 +1,20 @@
+/**
+ * @file bachecheCRUD.js
+ * @description Gestisce la logica lato client per le operazioni CRUD (Create, Read, Update, Delete) 
+ * e le interazioni utente relative all'entità "Bacheca". Fa largo uso di interfacce modali 
+ * tramite la libreria SweetAlert2 e comunica con il backend tramite chiamate asincrone (Fetch API).
+ */
+
 const API_URL = 'bachecheAPI.php';
 
+/**
+ * Funzione centralizzata per l'invio di richieste AJAX verso il backend.
+ * Si occupa di inviare i dati in formato JSON, parsare la risposta e gestire 
+ * in automatico i popup di notifica (successo/errore) e i ricaricamenti/reindirizzamenti di pagina.
+ * * @param {Object} bodyData - Oggetto contenente le chiavi e i valori da inviare al server.
+ * @param {string} [messaggioSuccesso] - Testo formattato in HTML da mostrare nel popup in caso di esito positivo.
+ * @param {string} [urlRedirect=null] - URL opzionale verso cui reindirizzare l'utente a operazione conclusa (di default ricarica la pagina corrente).
+ */
 function eseguiRichiesta(bodyData, messaggioSuccesso, urlRedirect = null) {
     fetch(API_URL, {
         method: 'POST',
@@ -48,16 +63,20 @@ function eseguiRichiesta(bodyData, messaggioSuccesso, urlRedirect = null) {
         });
 }
 
-// =========================================================
-// BACHECHE: AGGIUNGI, RINOMINA, ELIMINA
-// =========================================================
+/**
+ * Avvia il processo di creazione di una nuova bacheca.
+ * Mostra un modale per l'inserimento del nome (con validazione) e successivamente
+ * richiama l'interfaccia di selezione utente per assegnare un proprietario.
+ * * @async
+ * @returns {Promise<void>}
+ */
 async function aggiungiBacheca() {
     const { value: nomeBacheca } = await Swal.fire({
         title: 'Nuova Bacheca',
         input: 'text',
         inputLabel: 'Inserisci il nome della nuova bacheca:',
         inputAttributes: {
-            maxlength: 45 // Impedisce la digitazione oltre i 45 caratteri
+            maxlength: 45
         },
         heightAuto: false,
         scrollbarPadding: false,
@@ -88,6 +107,15 @@ async function aggiungiBacheca() {
     }
 }
 
+/**
+ * Mostra un popup interattivo per consentire la ridenominazione di una bacheca.
+ * Aggiorna in modo dinamico i parametri dell'URL per riflettere il nuovo nome 
+ * senza causare disallineamenti di navigazione in caso di ricaricamento.
+ * * @async
+ * @param {string} nomeBacheca - Il nome attuale della bacheca.
+ * @param {number|string} owner - L'ID dell'utente proprietario.
+ * @returns {Promise<void>}
+ */
 async function rinominaBacheca(nomeBacheca, owner) {
     const { value: nuovoNome } = await Swal.fire({
         title: 'Rinomina Bacheca',
@@ -95,7 +123,7 @@ async function rinominaBacheca(nomeBacheca, owner) {
         inputLabel: 'Inserisci il nuovo nome:',
         inputValue: nomeBacheca,
         inputAttributes: {
-            maxlength: 45 // Impedisce la digitazione oltre i 45 caratteri
+            maxlength: 45
         },
         heightAuto: false,
         scrollbarPadding: false,
@@ -132,6 +160,13 @@ async function rinominaBacheca(nomeBacheca, owner) {
     }
 }
 
+/**
+ * Chiede all'utente una conferma esplicita per procedere all'eliminazione
+ * definitiva e irreversibile di una bacheca dal sistema.
+ * * @param {string} nomeBacheca - Il nome della bacheca da eliminare.
+ * @param {number|string} idOwner - L'identificativo del proprietario.
+ * @param {string} nicknameOwner - Il nickname visuale del proprietario (usato a scopo informativo nel popup).
+ */
 function eliminaBacheca(nomeBacheca, idOwner, nicknameOwner) {
     Swal.fire({
         title: 'Elimina Bacheca',
@@ -154,10 +189,14 @@ function eliminaBacheca(nomeBacheca, idOwner, nicknameOwner) {
     });
 }
 
-// =========================================================
-// GESTIONE RICHIESTE PENDENTI (Accetta / Rifiuta)
-// =========================================================
-
+/**
+ * Trasmette al server la volontà di approvare una richiesta di accesso pendente 
+ * pervenuta da un utente terzo verso la bacheca specificata.
+ * * @param {string} nomeBacheca - Il nome della bacheca interessata.
+ * @param {number|string} owner - L'ID dell'utente proprietario.
+ * @param {number|string} utenteTarget - L'ID dell'utente di cui accettare la richiesta.
+ * @param {string} nickname - Il nickname del richiedente da notificare visivamente a schermo.
+ */
 function accettaRichiesta(nomeBacheca, owner, utenteTarget, nickname) {
     eseguiRichiesta({
         azione: 'accetta_richiesta',
@@ -167,6 +206,14 @@ function accettaRichiesta(nomeBacheca, owner, utenteTarget, nickname) {
     }, `La richiesta di accesso di <b class="swal-text-bold">${nickname}</b> è stata accettata.`);
 }
 
+/**
+ * Previa conferma, rifiuta ed elimina definitivamente dal server una richiesta 
+ * di accesso pendente.
+ * * @param {string} nomeBacheca - Il nome della bacheca interessata.
+ * @param {number|string} owner - L'ID dell'utente proprietario.
+ * @param {number|string} utenteTarget - L'ID dell'utente di cui declinare la richiesta.
+ * @param {string} nickname - Il nickname del richiedente da notificare visivamente a schermo.
+ */
 function rifiutaRichiesta(nomeBacheca, owner, utenteTarget, nickname) {
     Swal.fire({
         title: 'Rifiuta Richiesta',
@@ -190,9 +237,17 @@ function rifiutaRichiesta(nomeBacheca, owner, utenteTarget, nickname) {
     });
 }
 
-// =========================================================
-// GESTIONE UTENTE PROPRIETARIO
-// =========================================================
+/**
+ * Genera un modale avanzato diviso in due sezioni. A sinistra propone filtri per cercare 
+ * dinamicamente un utente (es. tramite nickname o anagrafica). A destra carica e mostra i risultati.
+ * Invia richieste asincrone all'API per filtrare in tempo reale in base a quanto digitato.
+ * * @async
+ * @param {string} titoloPopup - Intestazione mostrata nel modale.
+ * @param {boolean} [returnFullObject=false] - Se abilitato, la Promessa si risolve passando l'intero oggetto (ID e nickname). Altrimenti restituisce solo l'ID utente.
+ * @param {string} [nomeBacheca=null] - Parametro opzionale per segnalare al DB di escludere gli utenti che già sono nella bacheca indicata.
+ * @param {number|string} [owner=null] - Parametro opzionale per identificare ed escludere il proprietario dalla ricerca.
+ * @returns {Promise<number|string|Object|null>} Restituisce l'entità selezionata oppure null se l'utente annulla l'azione.
+ */
 async function cercaESelezionaUtente(titoloPopup, returnFullObject = false, nomeBacheca = null, owner = null) {
     const oggi = new Date();
     const yyyy = oggi.getFullYear();
@@ -315,7 +370,6 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false, nome
                                 countSpan.innerHTML = `Risultati (${data.utenti.length})`;
                             }
 
-                            // Generazione righe iniettate direttamente nel contenitore flessibile
                             let html = '';
                             data.utenti.forEach(u => {
                                 const infoData = u.data_formattata ? ` ${u.data_formattata}` : '';
@@ -365,9 +419,15 @@ async function cercaESelezionaUtente(titoloPopup, returnFullObject = false, nome
     });
 }
 
-// =========================================================
-// AGGIUNGI PIÙ UTENTI ALLA VOLTA
-// =========================================================
+/**
+ * Gestisce l'aggiunta massiva di utenti a una bacheca. Apre un modale a 3 colonne che permette di:
+ * 1. Filtrare gli utenti; 2. Visualizzarli nel box centrale; 3. Spostarli (aggiungendo o togliendo) 
+ * verso un carrello temporaneo (la terza colonna) conservandone lo stato all'interno di una mappa (Map).
+ * * @async
+ * @param {string} nomeBacheca - Il nome della bacheca di destinazione.
+ * @param {number|string} owner - L'ID del proprietario della bacheca.
+ * @returns {Promise<void>}
+ */
 async function aggiungiUtentiMultipli(nomeBacheca, owner) {
     const oggi = new Date();
     const yyyy = oggi.getFullYear();
@@ -501,7 +561,6 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
                         <button type="button" class="swal-multi-btn-add">+</button>
                     `;
 
-                    // L'evento ora è chiuso in una "bolla" protetta, la variabile 'u' non la perde mai!
                     row.querySelector('.swal-multi-btn-add').addEventListener('click', () => {
                         utentiSelezionati.set(String(u.codice), {
                             nickname: u.nickname,
@@ -537,7 +596,6 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
                         <button type="button" class="swal-multi-btn-del">-</button>
                     `;
 
-                    // Idem per la rimozione, evento agganciato direttamente
                     row.querySelector('.swal-multi-btn-del').addEventListener('click', () => {
                         utentiSelezionati.delete(id);
                         aggiornaColonnaSelezionati();
@@ -569,6 +627,14 @@ async function aggiungiUtentiMultipli(nomeBacheca, owner) {
     }
 }
 
+/**
+ * Richiama l'interfaccia standard di ricerca e selezione utente per poi concedere 
+ * immediatamente l'autorizzazione di accesso sulla bacheca specificata.
+ * * @async
+ * @param {string} nomeBacheca - Il nome della bacheca in esame.
+ * @param {number|string} owner - L'ID del proprietario della bacheca.
+ * @returns {Promise<void>}
+ */
 async function aggiungiAutorizzato(nomeBacheca, owner) {
     const utenteScelto = await cercaESelezionaUtente('Cerca Utente da Autorizzare', true, nomeBacheca, owner);
 
@@ -582,6 +648,14 @@ async function aggiungiAutorizzato(nomeBacheca, owner) {
     }
 }
 
+/**
+ * Revoca esplicitamente il diritto di accesso a una determinata bacheca per l'utente selezionato,
+ * scatenando anche la cancellazione (o lo sgancio) dei file che quest'ultimo vi aveva associato.
+ * * @param {string} nomeBacheca - Il nome della bacheca.
+ * @param {number|string} owner - L'ID del proprietario della bacheca.
+ * @param {number|string} utenteDaRimuovere - L'ID dell'utente a cui inibire l'accesso.
+ * @param {string} nickname - Il nickname per completare il testo di avviso lato UI.
+ */
 function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
     Swal.fire({
         title: 'Rimuovi Autorizzazione',
@@ -605,12 +679,17 @@ function rimuoviAutorizzato(nomeBacheca, owner, utenteDaRimuovere, nickname) {
     });
 }
 
-
-// ====================================================================
-// GESTIONE FILE MULTIPLI
-// ====================================================================
+/**
+ * Apre un modale specializzato a 3 colonne per la consultazione massiva, la selezione multipla 
+ * e la successiva associazione di molteplici file esistenti verso la bacheca in questione.
+ * Usa l'API backend per popolare la colonna centrale escludendo i file già inseriti.
+ * * @async
+ * @param {string} nomeBacheca - Il nome della bacheca di destinazione.
+ * @param {number|string} owner - L'ID del proprietario.
+ * @returns {Promise<void>}
+ */
 async function aggiungiFileMultipli(nomeBacheca, owner) {
-    let fileSelezionati = new Map(); // key: idFile, value: { nomeFile, nickname }
+    let fileSelezionati = new Map(); 
 
     const { value: arrayIdFiles } = await Swal.fire({
         title: `Seleziona file da pubblicare`,
@@ -741,7 +820,6 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                         <button type="button" class="swal-multi-btn-add">+</button>
                     `;
 
-                    // Aggiungiamo l'evento in modo sicuro e diretto
                     row.querySelector('.swal-multi-btn-add').addEventListener('click', () => {
                         fileSelezionati.set(String(f.numero), {
                             nomeFile: f.nome_file,
@@ -774,7 +852,6 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
                         <button type="button" class="swal-multi-btn-del">-</button>
                     `;
 
-                    // Aggiungiamo l'evento di rimozione in modo sicuro
                     row.querySelector('.swal-multi-btn-del').addEventListener('click', () => {
                         fileSelezionati.delete(id);
                         aggiornaColonnaSelezionati();
@@ -813,6 +890,15 @@ async function aggiungiFileMultipli(nomeBacheca, owner) {
     }
 }
 
+/**
+ * Dissocia e rimuove un file precedentemente pubblicato all'interno di una bacheca.
+ * Richiede una doppia conferma visiva per evitare eliminazioni accidentali.
+ * * @param {string} nomeBacheca - Il nome della bacheca interessata.
+ * @param {number|string} owner - L'ID del proprietario della bacheca.
+ * @param {number|string} fileDaRimuovere - L'identificativo univoco del file associato da rimuovere.
+ * @param {string} nomeFile - Il nome del file visualizzato all'interno del popup di allerta.
+ * @param {string} caricatoDa - Riferimento all'autore o a chi ha caricato originariamente il file (per finalità informative).
+ */
 function rimuoviFile(nomeBacheca, owner, fileDaRimuovere, nomeFile, caricatoDa) {
     Swal.fire({
         title: 'Rimuovi File',

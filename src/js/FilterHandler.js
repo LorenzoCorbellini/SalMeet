@@ -1,3 +1,15 @@
+/**
+ * @file FilterHandler.js
+ * @description Gestisce la logica lato client per i filtri di ricerca, includendo slider 
+ * logaritmici doppi, validazione delle date e aggiornamento asincrono dei risultati via AJAX.
+ */
+
+/**
+ * Converte un valore numerico in una stringa leggibile rappresentante la dimensione di un file.
+ * Formatta il valore scalandolo progressivamente nelle unità di misura appropriate.
+ * * @param {number|string} value - Il valore numerico (in byte) da formattare.
+ * @returns {string} La stringa formattata con la relativa unità di misura (es. "1.5 MB") o il valore originale se non valido.
+ */
 function formatFileSize(value) {
     let size = parseFloat(value);
     if (Number.isNaN(size)) return value;
@@ -13,6 +25,12 @@ function formatFileSize(value) {
     return `${Math.round(size * 100) / 100} ${units[index]}`;
 }
  
+/**
+ * Estrae e analizza gli attributi 'data-*' di un elemento HTML (slider) per ricavarne 
+ * la configurazione su scala, passi, e limiti minimo e massimo.
+ * * @param {HTMLElement} element - L'elemento DOM da cui estrarre i dati.
+ * @returns {Object} Oggetto contenente le proprietà della scala: {scale, steps, min, max}.
+ */
 function parseSliderScale(element) {
     const scale = element.dataset.scale || 'linear';
     const steps = parseInt(element.dataset.steps, 10) || 1000;
@@ -26,6 +44,15 @@ function parseSliderScale(element) {
     return { scale, steps, min, max };
 }
 
+/**
+ * Calcola il valore reale corrispondente a una determinata posizione dello slider
+ * interpretato su una scala logaritmica.
+ * * @param {number} position - La posizione attuale della maniglia dello slider.
+ * @param {number} min - Il limite minimo reale consentito.
+ * @param {number} max - Il limite massimo reale consentito.
+ * @param {number} steps - Il numero totale di passi (risoluzione) dello slider.
+ * @returns {number} Il valore reale convertito.
+ */
 function logPositionToValue(position, min, max, steps) {
     const effectiveMin = Math.max(1, min);
     if (position <= 0) return min;
@@ -36,6 +63,15 @@ function logPositionToValue(position, min, max, steps) {
     return Math.round(Math.exp(logMin + (logMax - logMin) * ratio));
 }
 
+/**
+ * Esegue l'inverso di logPositionToValue: calcola la posizione sulla barra dello slider 
+ * partendo da un valore reale, utilizzando una scala logaritmica.
+ * * @param {number} value - Il valore reale da posizionare.
+ * @param {number} min - Il limite minimo reale.
+ * @param {number} max - Il limite massimo reale.
+ * @param {number} steps - Il numero totale di passi dello slider.
+ * @returns {number} L'indice o posizione calcolata per la maniglia dello slider.
+ */
 function valueToLogPosition(value, min, max, steps) {
     const effectiveMin = Math.max(1, min);
     if (value <= min) return 0;
@@ -47,6 +83,12 @@ function valueToLogPosition(value, min, max, steps) {
     return Math.round(Math.max(0, Math.min(steps, ratio * steps)));
 }
 
+/**
+ * Gestisce l'interazione visiva e logica di uno slider a doppio cursore (min/max).
+ * Previene la sovrapposizione delle maniglie, calcola i valori in tempo reale 
+ * e aggiorna sia i campi di testo per l'utente, sia la traccia colorata di background, 
+ * sia gli input hidden necessari per la sottomissione del form.
+ */
 function aggiornaDoppioSlider() {
     const inputMin = document.getElementById('dimensione_min_slider');
     const inputMax = document.getElementById('dimensione_max_slider');
@@ -62,7 +104,6 @@ function aggiornaDoppioSlider() {
     const minConfig = parseSliderScale(inputMin);
     const maxConfig = parseSliderScale(inputMax);
 
-    // Se non ci sono risultati (max reale = 0), blocchiamo le maniglie a 0
     if (maxConfig.max === 0) {
         inputMin.value = 0;
         inputMax.value = 0;
@@ -72,25 +113,22 @@ function aggiornaDoppioSlider() {
         let posMin = parseInt(inputMin.value, 10);
         let posMax = parseInt(inputMax.value, 10);
 
-        // Controllo incrociato: impediamo che si sovrappongano
         if (this === inputMin) {
             if (posMin > posMax - minGap) {
                 inputMin.value = posMax - minGap;
-                posMin = inputMin.value; // Aggiorniamo la variabile locale
+                posMin = inputMin.value; 
             }
         } else if (this === inputMax) {
             if (posMax < posMin + minGap) {
                 inputMax.value = parseInt(posMin) + minGap;
-                posMax = inputMax.value; // Aggiorniamo la variabile locale
+                posMax = inputMax.value; 
             }
         }
 
-        // Assicuriamoci che non superino i limiti estremi se spinti dal gap
         if (inputMin.value > minConfig.steps - minGap) inputMin.value = minConfig.steps - minGap;
         if (inputMax.value < minGap) inputMax.value = minGap;
     }
 
-    // Ora che le posizioni fisiche sono definitive e separate, calcoliamo i byte reali
     const minVal = minConfig.scale === 'log'
         ? logPositionToValue(parseFloat(inputMin.value), minConfig.min, minConfig.max, minConfig.steps)
         : parseFloat(inputMin.value);
@@ -98,14 +136,12 @@ function aggiornaDoppioSlider() {
         ? logPositionToValue(parseFloat(inputMax.value), maxConfig.min, maxConfig.max, maxConfig.steps)
         : parseFloat(inputMax.value);
 
-    // Aggiorniamo i testi a schermo e i campi hidden inviati al PHP
     if (txtMin) txtMin.innerText = formatFileSize(minVal);
     if (txtMax) txtMax.innerText = formatFileSize(maxVal);
 
     if (hiddenMin) hiddenMin.value = minVal;
     if (hiddenMax) hiddenMax.value = maxVal;
 
-    // Recupera la fine del range puramente per i CSS steps
     const rawMinAttr = parseFloat(inputMin.min);
     const rawMaxAttr = parseFloat(inputMax.max);
     const minAttr = isNaN(rawMinAttr) ? 0 : rawMinAttr;
@@ -127,7 +163,6 @@ function aggiornaDoppioSlider() {
         inputMax.style.zIndex = "4";
     }
 
-    // Coloriamo il segmento centrale della barra
     container.style.background = `linear-gradient(
         to right, 
         #e5e7eb ${pctMin}%, 
@@ -137,9 +172,12 @@ function aggiornaDoppioSlider() {
     )`;
 }
 
-// =========================================================
-// LOGICA DEI FILTRI ISTANTANEI E GESTIONE DOM UNIFICATA
-// =========================================================
+/**
+ * Inizializzazione globale degli eventi al caricamento del DOM.
+ * Si occupa di agganciare tutti gli event listener necessari ai controlli di filtro, 
+ * implementando pattern di debounce per limitare le richieste AJAX, gestendo la pulizia 
+ * dei campi testuali, l'aggiustamento dinamico dei range e la validazione dei campi data.
+ */
 document.addEventListener('DOMContentLoaded', () => {
 
     const inputMin = document.getElementById('dimensione_min_slider');
@@ -157,7 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let debounceTimer;
     let rangeDebounceTimer; 
 
-    // Funzione per aggiornare min e max dinamicamente via AJAX
+    /**
+     * Interpella in via asincrona il server per ricalcolare e aggiornare 
+     * i limiti operativi dello slider doppio sulla base dei restanti filtri attivi.
+     */
     function aggiornaDimensioneRange() {
         if (!inputMin || !inputMax) return;
 
@@ -203,6 +244,14 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(() => {});
     }
 
+    /**
+     * Valida ed eventualizza il clamping di un campo input di tipo 'date', 
+     * assicurandosi che il valore fornito ricada in un intervallo logico 
+     * compreso tra il 1900 e la data odierna.
+     * * @param {HTMLInputElement} input - L'elemento input di tipo data.
+     * @param {boolean} [forza=false] - Se true, applica la correzione anche se l'utente sta ancora digitando.
+     * @returns {boolean} Ritorna true se il dato è valido o è stato corretto, false altrimenti.
+     */
     function validaEAvvicinaData(input, forza = false) {
         if (input && input.type === 'date' && input.value) {
             const dataInserita = input.value;
@@ -238,6 +287,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    /**
+     * Raccoglie i dati attualmente immessi nel form e innesca la funzione di caricamento
+     * AJAX esterna (se definita) per rinfrescare l'interfaccia utente.
+     */
     function applicaFiltriAJAX() {
         const formData = new FormData(filterForm);
         const params = new URLSearchParams(formData);
@@ -304,11 +357,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // =========================================================
-    // GESTIONE SLIDER SINGOLO E TASTO REIMPOSTA
-    // =========================================================
-    
-    // 1. Aggiorna il testo dei range singoli (es. MB)
     const singleRanges = document.querySelectorAll('.js-sync-range');
     singleRanges.forEach(range => {
         range.addEventListener('input', function() {
@@ -320,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 2. Reindirizzamento del tasto "Reimposta"
     const resetBtn = document.querySelector('.js-reset-btn');
     if (resetBtn) {
         resetBtn.addEventListener('click', function() {
