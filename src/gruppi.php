@@ -102,7 +102,7 @@ if (!$isAjax):
                     $infoGruppo = $stmtGruppo->fetch(PDO::FETCH_ASSOC);
 
                     if ($infoGruppo) {
-                        echo "<a href='gruppi.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
+                        echo "<a href='gruppi.php' id='btn-torna-indietro' class='btn-indietro'>Torna alla pagina precedente</a>";
                         echo "<h2>" . htmlspecialchars($infoGruppo['nome']) . "</h2>";
 
                         $urlInfo   = "?gruppo=" . urlencode($idGruppo) . "&tab=info";
@@ -275,20 +275,20 @@ if (!$isAjax):
 
                                 foreach ($filesRaw as $file) {
                                     $tipo_file   = strtolower($file['tipo']);
-                                    $url_file    = $file['URL'];      
-                                    $id_file     = $file['numero'];   
+                                    $url_file    = $file['URL'];
+                                    $id_file     = $file['numero'];
                                     $titolo_file = $file['titolo'];
-                                    
+
                                     $icon_path = $icon_types[$tipo_file] ?? $icon_types['default'];
                                     $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipo_file) . "'>";
                                     $detail_link = "media.php?vista=dettaglio&file_id=" . urlencode((int)$id_file);
-                                    
+
                                     $follow_link_html = "<a class='media-download-link' href='" . htmlspecialchars($url_file) . "' target='_blank'>"
                                         . "<img class='media-external-icon' src='images/external-link.png'>"
                                         . "</a>";
-                                    
-                                    $html_colonna_file = "<div class='media-item'>" 
-                                        . $file_icon 
+
+                                    $html_colonna_file = "<div class='media-item'>"
+                                        . $file_icon
                                         . "<a href='" . htmlspecialchars($detail_link) . "'>" . htmlspecialchars($titolo_file) . "</a>"
                                         . "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
                                         . "</div>";

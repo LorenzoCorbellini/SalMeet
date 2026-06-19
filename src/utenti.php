@@ -76,7 +76,7 @@ function renderDettaglioUtente($pdo, $idUtente, $tab_corrente, $isAjax)
 
     if (!$isAjax) echo '<div id="ajax-results">';
 
-    echo "<a href='utenti.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
+    echo "<a href='utenti.php' id='btn-torna-indietro' class='btn-indietro'>Torna alla pagina precedente</a>";
 
     echo "<h2>" . htmlspecialchars($infoUtente['nickname']) . "</h2>";
 

@@ -207,8 +207,7 @@ function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickn
     foreach ($utenti as $u) {
         $nicknameJS = htmlspecialchars(addslashes($u['nickname']), ENT_QUOTES);
 
-        $azioni = "<div class='actions-cell-nowrap' style='display:flex; gap:10px; justify-content:center;'>
-            <span title='Accetta richiesta' class='btn-azione' onclick=\"accettaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
+        $azioni = "<div class='actions-cell-nowrap actions-richieste'>            <span title='Accetta richiesta' class='btn-azione' onclick=\"accettaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
                 <img src='images/accept.png' alt='Accetta'>
             </span>
             <span title='Rifiuta richiesta' class='btn-azione' onclick=\"rifiutaRichiesta('{$bEnc}', {$owner}, {$u['codice']}, '{$nicknameJS}')\">
@@ -469,8 +468,8 @@ function renderDettaglioBacheca($pdo, $bacheca, $owner, $bEnc, $isAjax = false)
         echo '<div id="ajax-results">';
     }
 
-    echo "<a href='bacheche.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
-
+    echo "<a href='bacheche.php' id='btn-torna-indietro' class='btn-indietro'>Torna alla pagina precedente</a>";
+    
     echo "<h2>" . htmlspecialchars($bacheca) . "</h2>";
 
     echo "

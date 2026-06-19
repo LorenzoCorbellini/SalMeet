@@ -8753,3 +8753,13 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 }
 
 })( window );
+
+document.addEventListener('DOMContentLoaded', function() {
+    const btnIndietro = document.getElementById('btn-torna-indietro');
+    if (btnIndietro) {
+        btnIndietro.addEventListener('click', function(e) {
+            e.preventDefault(); // Blocca il link a bacheche.php
+            window.history.back(); // Torna indietro
+        });
+    }
+});

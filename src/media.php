@@ -21,7 +21,8 @@ require_once __DIR__ . '/filterAPI.php';
  * * @throws \RuntimeException Se la modalità $view_mode passata non esiste nella mappatura delle colonne.
  * @return array Lista di righe (array associativi) restituite dalla query.
  */
-function fetchMediaRecords(PDO $pdo,
+function fetchMediaRecords(
+	PDO $pdo,
 	array $where,
 	array $params,
 	int $start_from,
@@ -29,17 +30,17 @@ function fetchMediaRecords(PDO $pdo,
 	string $sql_sort,
 	string $sort_dir,
 	string $view_mode
-	): array {
+): array {
 
 	/* 'visual' per selezionare i dati nel formato pronto da stampare
 	 * 'full' per selezionare i dati richiesti dalla business logic
 	 */
 	$columns_map = [
-        'visual' => "fmm.titolo AS 'File', u.nickname AS 'Proprietario', fmm.dimensione AS 'Dimensione'",
-        
-        'full'   => "fmm.caricatoDa AS 'owner', fmm.numero AS 'file_id', fmm.titolo AS 'title', 
+		'visual' => "fmm.titolo AS 'File', u.nickname AS 'Proprietario', fmm.dimensione AS 'Dimensione'",
+
+		'full'   => "fmm.caricatoDa AS 'owner', fmm.numero AS 'file_id', fmm.titolo AS 'title', 
                      fmm.dimensione AS 'size', fmm.URL AS 'url', fmm.tipo AS 'type', u.nickname AS 'nickname', u.nome AS owner_name, u.cognome AS owner_surname"
-    ];
+	];
 
 	$fields = $columns_map[$view_mode];
 	$sql = "SELECT $fields
@@ -56,14 +57,16 @@ function fetchMediaRecords(PDO $pdo,
 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function fetchGruppiConFile(PDO $pdo,
+function fetchGruppiConFile(
+	PDO $pdo,
 	string $file_id,
 	array $where,
 	array $params,
 	int $start_from,
 	int $limit,
 	string $sql_sort,
-	string $sort_dir): array {
+	string $sort_dir
+): array {
 
 	$sql = "SELECT *
 				FROM Gruppo g
@@ -80,14 +83,16 @@ function fetchGruppiConFile(PDO $pdo,
 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function fetchBachecheConFile(PDO $pdo,
+function fetchBachecheConFile(
+	PDO $pdo,
 	string $file_id,
 	array $where,
 	array $params,
 	int $start_from,
 	int $limit,
 	string $sql_sort,
-	string $sort_dir): array {
+	string $sort_dir
+): array {
 
 	$sql = "SELECT *
 				FROM Bacheca b
@@ -116,11 +121,12 @@ function fetchBachecheConFile(PDO $pdo,
  * * @throws \Exception Se l'array dei metadati ($fullRows) è vuoto.
  * @return array Array di righe formattate, dove ogni riga contiene le chiavi 'File' e 'Proprietario' convertite in HTML.
  */
-function prepareMediaTableRows(array $righe, array $dati): array {
+function prepareMediaTableRows(array $righe, array $dati): array
+{
 	if (empty($righe)) {
-        return [];
-    }
-	
+		return [];
+	}
+
 	$icon_types = [
 		'immagine' => 'images/image.png',
 		'video' => 'images/video.png',
@@ -132,21 +138,21 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 	foreach ($righe as $key => $riga) {
 		$dati_riga = $dati[$key];
 		$icon_path = $icon_types[$dati_riga['type']] ?? $icon_types['default'];
-		
+
 		$file_link = $dati_riga['url'];
 		$file_icon  = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($dati_riga['type']) . "'>";
 		$file_name   = htmlspecialchars($riga['File']);
 		$detail_link = "media.php?vista=dettaglio&file_id=" . urlencode((int)$dati_riga['file_id']);
 		$follow_link_html = "<a class='media-download-link' href='" . htmlspecialchars($file_link) . "' target='_blank'>"
-				. "<img class='media-external-icon' src='images/external-link.png'>"
-				. "</a>";
+			. "<img class='media-external-icon' src='images/external-link.png'>"
+			. "</a>";
 		$media_item_html = "<div class='media-item'>" . $file_icon . "<a href='" . htmlspecialchars($detail_link) . "'>" . $file_name . "</a>"
-				. "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
-				. "</div>";
+			. "<div class='media-action-wrapper'>" . $follow_link_html . "</div>"
+			. "</div>";
 		$owner_link = "utenti.php?utente=" . (int)$dati_riga['owner'];
 		$owner_display = formatOwnerDisplay($dati_riga['owner_name'] ?? null, $dati_riga['owner_surname'] ?? null, $dati_riga['nickname']);
 		$owner_html = "<a href='" . htmlspecialchars($owner_link) . "'>" . $owner_display . "</a>";
-		
+
 		$size_html = formatFileSizeHtml((int)$dati_riga['size']);
 
 		$result[] = [
@@ -158,12 +164,14 @@ function prepareMediaTableRows(array $righe, array $dati): array {
 	return $result;
 }
 
-function isAjaxRequest(): bool {
+function isAjaxRequest(): bool
+{
 	return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
 		strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 }
 
-function getParametriRichiestaMedia(): array {
+function getParametriRichiestaMedia(): array
+{
 	return [
 		'vista'   => $_GET['vista'] ?? '',
 		'tab'     => $_GET['tab'] ?? 'info',
@@ -171,7 +179,8 @@ function getParametriRichiestaMedia(): array {
 	];
 }
 
-function getMediaFileDettaglio(PDO $pdo, string $file_id): ?array {
+function getMediaFileDettaglio(PDO $pdo, string $file_id): ?array
+{
 	$stmt = $pdo->prepare(
 		"SELECT fmm.numero AS file_id, fmm.titolo AS title, fmm.dimensione AS size, fmm.URL AS url,
 				fmm.tipo AS type, u.codice AS owner_id, u.nickname AS owner_nickname,
@@ -185,112 +194,117 @@ function getMediaFileDettaglio(PDO $pdo, string $file_id): ?array {
 	return $result ?: null;
 }
 
-function getGruppiDelFile(PDO $pdo,
-    string $file_id,
-    string $sql_sort,
-    string $sort_dir = 'ASC',
-    array $where = [],
-    array $params = [],
-    int $start_from = 0,
-    int $limit = 0
+function getGruppiDelFile(
+	PDO $pdo,
+	string $file_id,
+	string $sql_sort,
+	string $sort_dir = 'ASC',
+	array $where = [],
+	array $params = [],
+	int $start_from = 0,
+	int $limit = 0
 ): array {
 
-    $sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId, g.dataCreazione AS dataCreazione, u.nome AS unome, u.cognome as ucognome
+	$sql = "SELECT g.codice AS gruppoId, g.nome AS 'Nome Gruppo', u.nickname AS 'Proprietario', u.codice AS ownerId, g.dataCreazione AS dataCreazione, u.nome AS unome, u.cognome as ucognome
              FROM Gruppo g
              JOIN Utente u ON g.creatoDa = u.codice
              JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
              WHERE ag.file = :file_id";
 
-    if ($where) {
-        $sql .= " AND " . implode(" AND ", $where);
-    }
+	if ($where) {
+		$sql .= " AND " . implode(" AND ", $where);
+	}
 
-    $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
 
-    if ($limit > 0) {
-        $sql .= " LIMIT " . (int)$start_from . ", " . (int)$limit;
-    }
+	if ($limit > 0) {
+		$sql .= " LIMIT " . (int)$start_from . ", " . (int)$limit;
+	}
 
-    $params[':file_id'] = $file_id;
+	$params[':file_id'] = $file_id;
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
+	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getNumberOfGruppiDelFile(PDO $pdo, string $file_id, array $where = [], array $params = []): int {
-    $sql = "SELECT COUNT(*) AS totale
+function getNumberOfGruppiDelFile(PDO $pdo, string $file_id, array $where = [], array $params = []): int
+{
+	$sql = "SELECT COUNT(*) AS totale
              FROM Gruppo g
              JOIN FileAssociatoGruppo ag ON g.codice = ag.codGruppo
 			 JOIN Utente u ON u.codice = g.creatoDa
              WHERE ag.file = :file_id";
 
-    if ($where) {
-        $sql .= " AND " . implode(" AND ", $where);
-    }
+	if ($where) {
+		$sql .= " AND " . implode(" AND ", $where);
+	}
 
-    $params[':file_id'] = $file_id;
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    return (int)$stmt->fetchColumn();
+	$params[':file_id'] = $file_id;
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
+	return (int)$stmt->fetchColumn();
 }
 
-function getBachecheDelFile(PDO $pdo,
-    string $file_id,
-    string $sql_sort,
-    string $sort_dir = 'ASC',
-    array $where = [],
-    array $params = [],
-    int $start_from = 0,
-    int $limit = 0
+function getBachecheDelFile(
+	PDO $pdo,
+	string $file_id,
+	string $sql_sort,
+	string $sort_dir = 'ASC',
+	array $where = [],
+	array $params = [],
+	int $start_from = 0,
+	int $limit = 0
 ): array {
 
-    $sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId, b.dataCreazione AS dataCreazione, u.nome AS unome, u.cognome as ucognome
+	$sql = "SELECT pb.nomeBacheca AS 'Nome Bacheca', u.nickname AS 'Proprietario', u.codice AS ownerId, b.dataCreazione AS dataCreazione, u.nome AS unome, u.cognome as ucognome
              FROM FilePubblicatoBacheca pb
              JOIN Utente u ON pb.codUtente = u.codice
              JOIN Bacheca b ON pb.nomeBacheca = b.nome
              WHERE pb.file = :file_id";
 
-    if ($where) {
-        $sql .= " AND " . implode(" AND ", $where);
-    }
+	if ($where) {
+		$sql .= " AND " . implode(" AND ", $where);
+	}
 
-    $sql .= " ORDER BY {$sql_sort} {$sort_dir}";
+	$sql .= " ORDER BY {$sql_sort} {$sort_dir}";
 
-    if ($limit > 0) {
-        $sql .= " LIMIT " . (int)$start_from . ", " . (int)$limit;
-    }
+	if ($limit > 0) {
+		$sql .= " LIMIT " . (int)$start_from . ", " . (int)$limit;
+	}
 
-    $params[':file_id'] = $file_id;
+	$params[':file_id'] = $file_id;
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
+	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getNumberOfBachecheDelFile(PDO $pdo, string $file_id, array $where = [], array $params = []): int {
-    $sql = "SELECT COUNT(*) AS totale
+function getNumberOfBachecheDelFile(PDO $pdo, string $file_id, array $where = [], array $params = []): int
+{
+	$sql = "SELECT COUNT(*) AS totale
              FROM FilePubblicatoBacheca pb
              JOIN Bacheca b ON pb.nomeBacheca = b.nome
 			 JOIN Utente u ON u.codice = pb.codUtente
              WHERE pb.file = :file_id";
 
-    if ($where) {
-        $sql .= " AND " . implode(" AND ", $where);
-    }
+	if ($where) {
+		$sql .= " AND " . implode(" AND ", $where);
+	}
 
-    $params[':file_id'] = $file_id;
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    return (int)$stmt->fetchColumn();
+	$params[':file_id'] = $file_id;
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
+	return (int)$stmt->fetchColumn();
 }
 
 function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool $isAjax)
 {
 	$file = getMediaFileDettaglio($pdo, $file_id);
-	$contentHtml  = "<a href='media.php' onclick='history.back(); return false;' class='btn-indietro'>Torna alla pagina precedente</a>";
+
+	$contentHtml  = "<a href='media.php' id='btn-torna-indietro' class='btn-indietro'>Torna alla pagina precedente</a>";
 	$contentHtml .= "<h2>" . htmlspecialchars($file['title']) . "</h2>";
-	
+
 	if (!$file) {
 		$contentHtml .= "<div class='info-risultati'>File non trovato.</div>";
 		if ($isAjax) {
@@ -309,7 +323,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 		$urlGruppi = '?' . http_build_query(array_merge($baseParams, ['tab' => 'gruppi']));
 		$urlBacheche = '?' . http_build_query(array_merge($baseParams, ['tab' => 'bacheche']));
 
-		
+
 		$tabsHtml = "<div class='detail-tabs-header'>
 			<div class='bacheca-tabs tabs-reset'>
 				<a href='" . htmlspecialchars($urlInfo) . "' class='" . ($activeTab === 'info' ? 'active' : '') . "'>Informazioni</a>
@@ -335,7 +349,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 
 			$allowed_sorts_f = ['nomeGruppo' => 'g.nome', 'proprietario' => 'u.nickname', 'dataCreazione' => 'g.dataCreazione'];
 			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeGruppo', 'ASC');
-			
+
 			// Applica i filtri se presenti
 			$filtri_result = applicaFiltriDinamici($_GET, 'gruppi');
 			$where_f = [];
@@ -379,7 +393,7 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 
 			$allowed_sorts_f = ['nomeBacheca' => 'pb.nomeBacheca', 'proprietario' => 'u.nickname', 'dataCreazione' => 'b.dataCreazione'];
 			list($sort_col_f, $sort_dir_f, $sql_sort_f) = getParametriOrdinamento($allowed_sorts_f, 'nomeBacheca', 'ASC');
-			
+
 			// Applica i filtri se presenti
 			$filtri_result = applicaFiltriDinamici($_GET, 'file_bacheche');
 			$where_f = [];
@@ -449,7 +463,7 @@ function renderDettaglioMediaPage(PDO $pdo, string $contentHtml)
 
 function setupFiltroConfig(PDO $pdo, string $activeTab)
 {
-	if(!isset($activeTab)) $entita = 'file';
+	if (!isset($activeTab)) $entita = 'file';
 
 	// Recupera i parametri di routing per mantenere il contesto di dettaglio
 	$mediaParams = getParametriRichiestaMedia();
@@ -458,8 +472,7 @@ function setupFiltroConfig(PDO $pdo, string $activeTab)
 	if ($activeTab === 'file') {
 		$entita = 'file';
 		$parametriExtra = [];
-	}
-	else if ($activeTab === 'info') {
+	} else if ($activeTab === 'info') {
 		$entita = 'vuoto';
 		$parametriExtra = [];
 	} else if ($activeTab === 'bacheche') {
@@ -597,9 +610,9 @@ $output_html .= getTabella($righe, ['File', 'Proprietario', 'Dimensione'], $cust
 $output_html .= "</div>";
 $output_html .= "<div class='pagination-spacer'>" . getPagesNav($np, $numero_pagine, 1) . "</div>";
 if (isAjaxRequest()) {
-    echo $output_html;
-    $pdo = null;
-    exit;
+	echo $output_html;
+	$pdo = null;
+	exit;
 }
 ?>
 
@@ -615,18 +628,18 @@ if (isAjaxRequest()) {
 	<header>
 		<h1 id="hcod1">File Multimediali</h1>
 	</header>
-	
-	
+
+
 	<div class="main-container">
-	<aside class="sidebar">
-		<?php include 'nav.html'; ?>
-		<?php setupFiltroConfig($pdo, 'file') ?>
-	</aside>
+		<aside class="sidebar">
+			<?php include 'nav.html'; ?>
+			<?php setupFiltroConfig($pdo, 'file') ?>
+		</aside>
 		<div id="content">
-			<?php 
-				echo '<div id="ajax-results">';
-				echo $output_html;
-				echo '</div>';
+			<?php
+			echo '<div id="ajax-results">';
+			echo $output_html;
+			echo '</div>';
 			?>
 		</div>
 	</div>

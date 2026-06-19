@@ -1509,6 +1509,12 @@ div.swal2-container .swal-wide-split .swal2-input {
     white-space: nowrap;
 }
 
+.actions-richieste {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
 /* =========================================================
    DASHBOARD AMMINISTRATORE (Home)
    ========================================================= */
