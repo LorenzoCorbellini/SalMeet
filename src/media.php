@@ -311,7 +311,6 @@ function renderDettaglioMedia(PDO $pdo, string $file_id, string $activeTab, bool
 			echo $contentHtml;
 			exit;
 		}
-		// continue to render page skeleton with message
 	} else {
 		$validTabs = ['info', 'gruppi', 'bacheche'];
 		if (!in_array($activeTab, $validTabs, true)) {
