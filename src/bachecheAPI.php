@@ -1,10 +1,15 @@
 <?php
+
+/**
+ * @file bachecheAPI.php
+ * @description Endpoint API per la gestione asincrona (AJAX) delle operazioni CRUD 
+ * e delle ricerche dinamiche relative all'entità "Bacheca".
+ * Riceve richieste POST contenenti un payload JSON e restituisce risposte nel medesimo formato.
+ */
+
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
 
-// =========================================================
-// CRUD
-// =========================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     header('Content-Type: application/json');
@@ -18,9 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $azione = $input['azione'];
 
-    // ---------------------------------------------------------
-    // CERCA UTENTE (Filtri puntuali Separati)
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: cerca_utente
+     * Esegue una ricerca dinamica degli utenti a sistema basata su criteri multipli 
+     * (nickname, nome, cognome, data di nascita). Esclude automaticamente gli utenti 
+     * che sono già autorizzati alla bacheca in esame e quelli già selezionati temporaneamente nel frontend.
+     */
     if ($azione === 'cerca_utente') {
         $nickname     = !empty($input['nickname']) ? trim($input['nickname']) : '';
         $filtro_nome  = !empty($input['filtro_nome']) ? trim($input['filtro_nome']) : '';
@@ -59,7 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
-            // Esclude chi è già autorizzato alla bacheca
             if ($nomeBachecaEsclusione !== '' && $ownerEsclusione > 0) {
                 $sql .= " AND codice NOT IN (
                     SELECT utenteAutorizzato 
@@ -71,7 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $params[':ownerEx']       = $ownerEsclusione;
             }
 
-            // ESCLUSIONE DINAMICA DEGLI UTENTI GIÀ NEL CARRELLO DEL POPUP
             $utenti_esclusi = !empty($input['utenti_esclusi']) && is_array($input['utenti_esclusi']) ? $input['utenti_esclusi'] : [];
             if (!empty($utenti_esclusi)) {
                 $inParams = [];
@@ -106,9 +112,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // ABILITAZIONE MULTIPLA UTENTI NELLA BACHECA
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: inserisci_utenti_multipli
+     * Associa massivamente un elenco di utenti (forniti via array di ID) a una specifica bacheca.
+     * Sfrutta una transazione SQL e la clausola ON DUPLICATE KEY UPDATE per gestire 
+     * eventuali conflitti o ri-autorizzazioni.
+     */
     if ($azione === 'inserisci_utenti_multipli') {
         $nBachecaUtenti = isset($input['nomeBacheca']) ? trim($input['nomeBacheca']) : (isset($input['nome']) ? trim($input['nome']) : '');
         $idOwnerUtenti  = isset($input['owner']) ? (int)$input['owner'] : 0;
@@ -143,9 +152,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // PUBBLICAZIONE MULTIPLA FILE NELLA BACHECA
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: inserisci_file_multipli
+     * Pubblica massivamente un elenco di file multimediali in una bacheca.
+     * Implementa una transazione SQL sicura e ignora i duplicati già esistenti per prevenire errori.
+     */
     if ($azione === 'inserisci_file_multipli') {
         $nBachecaFiles = isset($input['nomeBacheca']) ? trim($input['nomeBacheca']) : (isset($input['nome']) ? trim($input['nome']) : '');
         $idOwnerFiles  = isset($input['owner']) ? $input['owner'] : null;
@@ -161,7 +172,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            // Usiamo ON DUPLICATE KEY UPDATE per evitare crash
             $stmt = $pdo->prepare("INSERT INTO FilePubblicatoBacheca (nomeBacheca, codUtente, file) 
                                    VALUES (:nb, :ow, :fi)
                                    ON DUPLICATE KEY UPDATE file = file");
@@ -183,9 +193,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // =========================================================
-    // CONTROLLO PARAMETRI PER LE AZIONI SINGOLE STANDARD
-    // =========================================================
+    /**
+     * VALIDAZIONE GLOBALE PARAMETRI STANDARD
+     * Verifica la presenza delle chiavi minime 'nome' (bacheca) e 'owner' (proprietario)
+     * richieste per l'esecuzione di tutte le successive azioni CRUD singole.
+     */
     if (empty($input['nome']) || !isset($input['owner'])) {
         echo json_encode(['successo' => false, 'messaggio' => 'Parametri mancanti per azione standard.']);
         exit;
@@ -194,9 +206,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nome  = trim($input['nome']);
     $owner = (int) $input['owner'];
 
-    // ---------------------------------------------------------
-    // CERCA FILE DEGLI UTENTI AUTORIZZATI 
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: cerca_file_bacheca
+     * Estrae i file appartenenti agli utenti che sono già autorizzati in una determinata bacheca,
+     * consentendone la ricerca puntuale e ignorando quelli che vi sono già stati pubblicati.
+     */
     if ($azione === 'cerca_file_bacheca') {
         $termine_file = isset($input['termine_file']) ? trim($input['termine_file']) : '';
         $nickname     = isset($input['nickname']) ? trim($input['nickname']) : '';
@@ -218,7 +232,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':ownerBacheca' => $owner
             ];
 
-            // Esclude i file già pubblicati in bacheca
             $sql .= " AND f.numero NOT IN (
                 SELECT file 
                 FROM FilePubblicatoBacheca 
@@ -242,7 +255,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $params[':cognome'] = '%' . $cognome . '%';
             }
 
-            // ESCLUSIONE DINAMICA DEI FILE GIÀ NEL CARRELLO DEL POPUP
             $file_esclusi = !empty($input['file_esclusi']) && is_array($input['file_esclusi']) ? $input['file_esclusi'] : [];
             if (!empty($file_esclusi)) {
                 $inParams = [];
@@ -267,11 +279,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // AGGIUNGI BACHECA
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: aggiungi
+     * Crea una nuova bacheca. Effettua controlli sulla lunghezza del nome, sull'esistenza
+     * del proprietario e previene la duplicazione della bacheca.
+     */
     if ($azione === 'aggiungi') {
-        // Controllo di sicurezza "a prova di crash" sulla lunghezza del nome
         $lunghezzaNome = function_exists('mb_strlen') ? mb_strlen($nome, 'UTF-8') : strlen($nome);
         if ($lunghezzaNome > 45) {
             echo json_encode(['successo' => false, 'messaggio' => 'Il nome della bacheca non può superare i 45 caratteri.']);
@@ -311,9 +324,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // AGGIUNGI UTENTE AUTORIZZATO (Dal Proprietario)
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: aggiungi_autorizzato
+     * Concede l'autorizzazione diretta a un singolo utente per l'accesso a una bacheca.
+     */
     if ($azione === 'aggiungi_autorizzato') {
         $nuovoUtente = (int) ($input['nuovoUtente'] ?? 0);
 
@@ -346,9 +360,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // ACCETTA RICHIESTA PENDENTE 
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: accetta_richiesta
+     * Aggiorna lo stato di una richiesta pendente, concedendo l'autorizzazione di accesso.
+     */
     if ($azione === 'accetta_richiesta') {
         $target = (int) ($input['utenteTarget'] ?? 0);
         try {
@@ -361,9 +376,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // RIFIUTA RICHIESTA PENDENTE 
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: rifiuta_richiesta
+     * Elimina definitivamente una richiesta di accesso pendente (non autorizzata).
+     */
     if ($azione === 'rifiuta_richiesta') {
         $target = (int) ($input['utenteTarget'] ?? 0);
         try {
@@ -376,9 +392,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // RIMUOVI UTENTE AUTORIZZATO
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: rimuovi_autorizzato
+     * Revoca l'accesso alla bacheca per un determinato utente e, contestualmente, rimuove 
+     * tutti i file che quest'ultimo vi aveva precedentemente pubblicato.
+     */
     if ($azione === 'rimuovi_autorizzato') {
         $target = (int) ($input['utenteDaRimuovere'] ?? 0);
 
@@ -415,9 +433,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // RIMUOVI FILE
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: rimuovi_file
+     * Dissocia e rimuove un singolo file pubblicato dalla bacheca specificata.
+     */
     if ($azione === 'rimuovi_file') {
         $targetFile = (int) ($input['fileDaRimuovere'] ?? 0);
         try {
@@ -430,9 +449,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // MODIFICA & ELIMINA
-    // ---------------------------------------------------------
+    /**
+     * VERIFICA PRELIMINARE MODIFICA/ELIMINAZIONE
+     * Controlla l'effettiva esistenza della bacheca prima di consentire 
+     * le operazioni distruttive o di ridenominazione.
+     */
     $check = $pdo->prepare("SELECT COUNT(*) FROM Bacheca WHERE nome = :nome AND codiceUtente = :owner");
     $check->execute([':nome' => $nome, ':owner' => $owner]);
 
@@ -441,9 +462,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ---------------------------------------------------------
-    // RINOMINA BACHECA
-    // ---------------------------------------------------------
+    /**
+     * AZIONE: rinomina
+     * Modifica il nome di una bacheca esistente. Implementa un aggiornamento esplicito delle 
+     * tabelle relazionali e disattiva temporaneamente il controllo delle chiavi esterne per 
+     * forzare l'aggiornamento a cascata senza blocchi.
+     */
     if ($azione === 'rinomina') {
         $nuovoNome = trim($input['nuovoNome'] ?? '');
         if ($nuovoNome === '') {
@@ -451,7 +475,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Controllo di sicurezza "a prova di crash" sulla lunghezza del nuovo nome
         $lunghezzaNuovoNome = function_exists('mb_strlen') ? mb_strlen($nuovoNome, 'UTF-8') : strlen($nuovoNome);
         if ($lunghezzaNuovoNome > 45) {
             echo json_encode(['successo' => false, 'messaggio' => 'Il nuovo nome della bacheca non può superare i 45 caratteri.']);
@@ -495,7 +518,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             echo json_encode(['successo' => false, 'messaggio' => 'Errore durante la ridenominazione: ' . $e->getMessage()]);
         }
-    } elseif ($azione === 'elimina') {
+    }
+
+    /**
+     * AZIONE: elimina
+     * Cancella in via definitiva una bacheca e tutte le sue associazioni dal database.
+     */
+    elseif ($azione === 'elimina') {
         try {
             $pdo->beginTransaction();
             $pdo->prepare("DELETE FROM Bacheca WHERE nome = :nome AND codiceUtente = :owner")
@@ -509,6 +538,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         echo json_encode(['successo' => false, 'messaggio' => 'Azione non riconosciuta.']);
     }
+
     $pdo = null;
     exit;
 } else {
