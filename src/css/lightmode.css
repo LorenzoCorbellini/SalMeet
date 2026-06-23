@@ -1485,6 +1485,14 @@ div.swal2-container .swal-wide-split .swal2-input {
     font-size: 0.85rem;
 }
 
+/* Icona corona per il proprietario del gruppo/file con spaziatura a sinistra */
+.group-owner-crown {
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
 .owner-crown-icon {
     width: 16px;
     height: 16px;

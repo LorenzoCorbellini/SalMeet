@@ -1,9 +1,17 @@
 <?php
+/**
+ * @file gruppi.php
+ * @brief Gestione della pagina dei Gruppi di SalMeet.
+ * * Questo file gestisce sia la visualizzazione dell'elenco globale dei gruppi 
+ * sia la visualizzazione dettagliata di un singolo gruppo suddivisa in tab 
+ * (Informazioni, Membri, File Condivisi), supportando il caricamento asincrono via AJAX.
+ */
+
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/filterAPI.php';
 
-// Verifica se la richiesta arriva tramite AJAX
+// Verifica se la richiesta arriva tramite AJAX (XMLHttpRequest)
 $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
 
 if (!$isAjax):
@@ -31,23 +39,29 @@ if (!$isAjax):
                 // =========================================================
                 // CONFIGURAZIONE DINAMICA DEI FILTRI NELLA SIDEBAR
                 // =========================================================
+                /**
+                 * Sezione per il rendering dinamico dei filtri laterali.
+                 * I filtri cambiano in base alla vista corrente (globale o dettaglio gruppo/tab).
+                 */
                 if (empty($_GET['gruppo'])) {
-                    // Usa il filtro centralizzato nativo per i gruppi
+                    // Vista Globale: Usa il filtro centralizzato nativo per i gruppi
                     $filtro_config = getFiltroConfig('gruppi');
                     include 'filter.php';
                 } else {
+                    // Vista Dettaglio: Configurazione dei filtri in base al tab selezionato
                     $tab_corrente = $_GET['tab'] ?? 'info';
                     $idGruppo = (int)$_GET['gruppo'];
 
                     if ($tab_corrente === 'info') {
+                        // Tab Info: Nessun filtro applicabile, mostra box vuoto
                         $filtro_config = getFiltroConfig('vuoto');
                         echo '<div id="filtro" class="filter-empty"><p>' . htmlspecialchars($filtro_config['messaggio'] ?? 'Non sono presenti filtri per questa sezione.') . '</p></div>';
                     } elseif ($tab_corrente === 'membri') {
-                        // Usa il filtro centralizzato 'utenti' passandogli i parametri della vista corrente
+                        // Tab Membri: Usa il filtro centralizzato 'utenti' per filtrare i membri del gruppo
                         $filtro_config = getFiltroConfig('utenti', ['gruppo' => $idGruppo, 'tab' => 'membri']);
                         include 'filter.php';
                     } elseif ($tab_corrente === 'file') {
-                        // Estraiamo dinamicamente il range di dimensioni dei file specifici di questo gruppo
+                        // Tab File: Estrazione dinamica del range di dimensioni per configurare il filtro 'file'
                         $stmtRange = $pdo->prepare("
                             SELECT MIN(f.dimensione) as min_dim, MAX(f.dimensione) as max_dim 
                             FROM FileAssociatoGruppo fag 
@@ -60,7 +74,7 @@ if (!$isAjax):
                         $minSize = isset($range['min_dim']) ? floor($range['min_dim']) : 0;
                         $maxSize = isset($range['max_dim']) ? ceil($range['max_dim']) : 100;
 
-                        // Usa il filtro centralizzato 'file', passandogli min e max calcolati
+                        // Configura il filtro centralizzato 'file' con i limiti calcolati per la dimensione
                         $filtro_config = getFiltroConfig('file', [
                             'gruppo' => $idGruppo,
                             'tab' => 'file',
@@ -89,9 +103,15 @@ if (!$isAjax):
                 $current_url = $_SERVER['REQUEST_URI'];
 
                 if (!empty($_GET['gruppo'])) {
+                    /**
+                     * -----------------------------------------------------
+                     * GESTIONE VISTA DETTAGLIO SINGOLO GRUPPO
+                     * -----------------------------------------------------
+                     */
                     $idGruppo = (int)$_GET['gruppo'];
                     $tab_corrente = $_GET['tab'] ?? 'info';
 
+                    // Recupero dei dati principali del gruppo e del suo proprietario dal database
                     $stmtGruppo = $pdo->prepare("
                         SELECT g.nome, g.dataCreazione, u.nickname, u.codice as ownerId
                         FROM Gruppo g
@@ -102,9 +122,11 @@ if (!$isAjax):
                     $infoGruppo = $stmtGruppo->fetch(PDO::FETCH_ASSOC);
 
                     if ($infoGruppo) {
+                        // Rendering del pulsante di ritorno e dell'intestazione del dettaglio
                         echo "<a href='gruppi.php' id='btn-torna-indietro' class='btn-indietro'>Torna alla pagina precedente</a>";
                         echo "<h2>" . htmlspecialchars($infoGruppo['nome']) . "</h2>";
 
+                        // Generazione degli URL per la navigazione interna ai tab di dettaglio
                         $urlInfo   = "?gruppo=" . urlencode($idGruppo) . "&tab=info";
                         $urlMembri = "?gruppo=" . urlencode($idGruppo) . "&tab=membri";
                         $urlFile   = "?gruppo=" . urlencode($idGruppo) . "&tab=file";
@@ -120,16 +142,22 @@ if (!$isAjax):
                         $ownerId = (int)$infoGruppo['ownerId'];
 
                         if ($tab_corrente === 'info') {
+                            /**
+                             * Sotto-vista: INFORMAZIONI GENERALI DEL GRUPPO
+                             */
+                            // Conteggio totale dei file associati al gruppo specifico
                             $stmtFile = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo WHERE codGruppo = :id");
                             $stmtFile->execute([':id' => $idGruppo]);
                             $numFile = $stmtFile->fetchColumn();
 
+                            // Conteggio totale dei membri appartenenti al gruppo specifico
                             $stmtMembri = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoGruppo WHERE codGruppo = :id");
                             $stmtMembri->execute([':id' => $idGruppo]);
                             $numMembri = $stmtMembri->fetchColumn();
 
                             $linkOwner = "utenti.php?utente=" . urlencode($ownerId) . "&return_to=" . urlencode($current_url);
 
+                            // Stampa della scheda informativa di riepilogo del gruppo
                             echo "<div class='tab-info-card'>
                                     <p class='info-card-text'><strong>Proprietario:</strong> <a href='{$linkOwner}'>" . htmlspecialchars($infoGruppo['nickname']) . "</a></p>
                                     <p class='info-card-text'><strong>Data Creazione:</strong> " . formattaData($infoGruppo['dataCreazione']) . "</p>
@@ -142,23 +170,29 @@ if (!$isAjax):
                                     </p>
                                 </div>";
                         } elseif ($tab_corrente === 'membri') {
+                            /**
+                             * Sotto-vista: ELENCO MEMBRI DEL GRUPPO
+                             */
                             $recordsPerPage = 20;
                             list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
+                            // Configurazione dei parametri di ordinamento consentiti per i membri
                             $allowed_sorts = ['nickname' => 'u.nickname', 'nome' => 'u.nome', 'cognome' => 'u.cognome', 'data' => 'u.dataNascita'];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nickname', 'ASC');
 
-                            // Utilizzo del filtro dinamico centralizzato
+                            // Estrazione ed applicazione dei filtri di ricerca centralizzati degli utenti
                             $filtri = applicaFiltriDinamici($_GET, 'utenti');
                             $params = array_merge([':id' => $idGruppo], $filtri['parametri']);
                             $whereSql = $filtri['sql'];
 
+                            // Conteggio del totale dei record risultanti dai filtri applicati (per la paginazione)
                             $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM UtenteAutorizzatoGruppo uag JOIN Utente u ON uag.codUtente = u.codice WHERE uag.codGruppo = :id" . $whereSql);
                             $stmtCount->execute($params);
                             $totale = $stmtCount->fetchColumn();
 
                             $numero_pagine = getNumberOfPages($totale, $limit);
 
+                            // Query per il recupero dei membri appartenenti al gruppo corrente
                             $stmtMembri = $pdo->prepare("
                                 SELECT u.codice, u.nickname, u.nome, u.cognome, u.dataNascita
                                 FROM UtenteAutorizzatoGruppo uag
@@ -178,7 +212,8 @@ if (!$isAjax):
                                 foreach ($membriRaw as $membro) {
                                     $linkMembro = "utenti.php?utente=" . urlencode($membro['codice']) . "&return_to=" . urlencode($current_url);
 
-                                    $iconaCorona = ((int)$membro['codice'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+                                    // Mostra un'icona speciale (corona) se l'utente corrente è anche il creatore del gruppo
+                                    $iconaCorona = ((int)$membro['codice'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' class='group-owner-crown'>" : "";
 
                                     $htmlMembroNickname = "<a href='{$linkMembro}'>" . $iconaCorona . htmlspecialchars($membro['nickname']) . "</a>";
 
@@ -198,6 +233,7 @@ if (!$isAjax):
                                     'Data di Nascita' => 'data'
                                 ], $sort_col, $sort_dir);
 
+                                // Renderizzazione finale della tabella membri e della pulsantiera delle pagine
                                 echo '<div class="table-container tabella-utenti">';
                                 stampaTabella($datiMembri, ['Nickname'], $customHeaders);
                                 echo '</div>';
@@ -211,9 +247,13 @@ if (!$isAjax):
                                 echo "<div class='pagination-spacer'></div>";
                             }
                         } elseif ($tab_corrente === 'file') {
+                            /**
+                             * Sotto-vista: ELENCO FILE CONDIVISI NEL GRUPPO
+                             */
                             $recordsPerPage = 20;
                             list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
+                            // Mappatura delle colonne abilitate per l'ordinamento interattivo della tabella dei file
                             $allowed_sorts = [
                                 'file' => 'fm.titolo',
                                 'proprietario' => getOwnerSortExpression(),
@@ -221,7 +261,7 @@ if (!$isAjax):
                             ];
                             list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'file', 'ASC');
 
-                            // Utilizzo del filtro dinamico centralizzato
+                            // Estrazione ed applicazione dei filtri di ricerca centralizzati per i file multimediali
                             $filtri = applicaFiltriDinamici($_GET, 'file');
                             // Riassegnazione fm.nome -> fm.titolo per compatibilità DB / Interfaccia filtro
                             $filtri['sql'] = str_replace('fm.nome', 'fm.titolo', $filtri['sql']);
@@ -229,6 +269,7 @@ if (!$isAjax):
                             $params = array_merge([':codice' => $idGruppo], $filtri['parametri']);
                             $whereSql = $filtri['sql'];
 
+                            // Controllo e filtraggio custom basato sulla tipologia del file selezionata (checkboxes)
                             $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
                             if (!empty($_GET['filetype']) && is_array($_GET['filetype'])) {
                                 $selectedTypes = array_filter((array)$_GET['filetype'], fn($t) => isset($filetypes[$t]));
@@ -242,13 +283,14 @@ if (!$isAjax):
                                 }
                             }
 
-                            // Gli alias devono allinearsi a fm e u come in filterAPI
+                            // Conteggio complessivo dei file filtrati associati al gruppo
                             $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM FileAssociatoGruppo fag JOIN FileMultimediale fm ON fag.file = fm.numero JOIN Utente u ON u.codice = fm.caricatoDa WHERE fag.codGruppo = :codice" . $whereSql);
                             $stmtCount->execute($params);
                             $totale = $stmtCount->fetchColumn();
 
                             $numero_pagine = getNumberOfPages($totale, $limit);
 
+                            // Estrazione dei file multimediali associati con relative informazioni di caricamento
                             $stmtFile = $pdo->prepare("
                                 SELECT fm.numero, fm.titolo, fm.tipo, u.codice as caricatoDa, u.nickname, u.nome AS owner_nome, u.cognome AS owner_cognome, fm.dimensione, fm.URL 
                                 FROM FileAssociatoGruppo fag 
@@ -279,6 +321,7 @@ if (!$isAjax):
                                     $id_file     = $file['numero'];
                                     $titolo_file = $file['titolo'];
 
+                                    // Associazione dell'icona grafica appropriata basandoci sul tipo di file multimediale
                                     $icon_path = $icon_types[$tipo_file] ?? $icon_types['default'];
                                     $file_icon = "<img class='icona icona-filetype' src='" . htmlspecialchars($icon_path) . "' alt='" . htmlspecialchars($tipo_file) . "'>";
                                     $detail_link = "media.php?vista=dettaglio&file_id=" . urlencode((int)$id_file);
@@ -297,7 +340,8 @@ if (!$isAjax):
 
                                     $ownerDisplay = formatOwnerDisplay($file['owner_nome'] ?? null, $file['owner_cognome'] ?? null, $file['nickname']);
 
-                                    $iconaCorona = ((int)$file['caricatoDa'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' style='width:16px; height:16px; margin-left:6px; vertical-align:middle;'>" : "";
+                                    // Visualizza la corona distintiva se il file è stato caricato dal proprietario del gruppo
+                                    $iconaCorona = ((int)$file['caricatoDa'] === $ownerId) ? " <img src='images/crown.png' alt='Owner' title='Proprietario' class='group-owner-crown'>" : "";
 
                                     $htmlOwner = "<a href='" . htmlspecialchars($owner_link) . "'>" . $ownerDisplay . "</a>" . $iconaCorona;
 
@@ -314,6 +358,7 @@ if (!$isAjax):
                                     'Dimensione' => 'dimensione'
                                 ], $sort_col, $sort_dir);
 
+                                // Rendering finale della tabella file e dei link di navigazione tra le pagine
                                 echo '<div class="table-container tabella-media">';
                                 stampaTabella($datiFiles, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
                                 echo '</div>';
@@ -331,12 +376,15 @@ if (!$isAjax):
                         echo "<p class='info-risultati'>Gruppo non trovato.</p>";
                     }
                 } else {
-                    // =========================================================
-                    // ELENCO GLOBALE GRUPPI
-                    // =========================================================
+                    /**
+                     * -----------------------------------------------------
+                     * ELENCO GLOBALE GRUPPI
+                     * -----------------------------------------------------
+                     */
                     $recordsPerPage = 20;
                     list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
+                    // Configurazione dei parametri di ordinamento consentiti per l'elenco globale dei gruppi
                     $allowed_sorts = [
                         'nome' => 'g.nome',
                         'data' => 'g.dataCreazione',
@@ -344,7 +392,7 @@ if (!$isAjax):
                     ];
                     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento($allowed_sorts, 'nome', 'ASC');
 
-                    // Utilizzo del filtro dinamico centralizzato per l'elenco dei Gruppi
+                    // Utilizzo del filtro dinamico centralizzato per l'elenco principale dei gruppi
                     $filtri = applicaFiltriDinamici($_GET, 'gruppi');
                     $where = [];
                     $params = $filtri['parametri'];
@@ -353,11 +401,12 @@ if (!$isAjax):
                         $where[] = preg_replace('/^\s*AND\s*/', '', $filtri['sql']);
                     }
 
-                    // Alias aggiunti per le tabelle conformi con filterAPI (g, u)
+                    // Conteggio dei record complessivi dei gruppi per definire il numero di pagine
                     $tabella_count = "Gruppo g JOIN Utente u ON g.creatoDa = u.codice";
                     $totaleRisultati = getNumberOfRecords($pdo, $tabella_count, $where, $params);
                     $numero_pagine = getNumberOfPages($totaleRisultati, $limit);
 
+                    // Composizione della query SQL principale con filtri, ordinamento e paginazione (LIMIT/OFFSET)
                     $sql = "
                         SELECT g.codice as 'gruppoId', g.nome as 'Nome Gruppo', g.dataCreazione as 'Data Creazione', u.nome AS owner_nome, u.cognome AS owner_cognome, u.nickname as 'Proprietario', u.codice as 'ownerId'
                         FROM Gruppo g
@@ -403,6 +452,7 @@ if (!$isAjax):
                             'Data Creazione' => 'data'
                         ], $sort_col, $sort_dir);
 
+                        // Output della tabella strutturata dei gruppi e del navigatore delle pagine
                         echo '<div class="table-container tabella-gruppi">';
                         stampaTabella($datiGruppi, ['Nome Gruppo', 'Proprietario'], $customHeaders);
                         echo '</div>';
