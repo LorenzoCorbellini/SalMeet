@@ -1,27 +1,26 @@
 <?php
-/*
- * Modulo universale per l'inizializzazione dei filtri grafici e la compilazione SQL dinamica.
+/**
+ * @file filterAPI.php
+ * @description Modulo universale per l'inizializzazione dei filtri grafici e la compilazione SQL dinamica.
  */
 
 /**
- * 1. CONFIGURAZIONE DEI FILTRI (Interfaccia Grafica)
- * Genera la configurazione dei campi input da passare al componente filter.php.
+ * Genera la configurazione dei campi di input da passare al componente filter.php per il rendering dell'interfaccia grafica.
  *
- * @param string $entita L'entità da filtrare ('bacheche', 'utenti', 'file', 'gruppi', 'vuoto')
- * @param array $parametriExtra Chiave-valore di campi hidden (es. ['vista' => 'dettaglio', 'tab' => 'utenti'])
+ * @param string $entita L'entità da filtrare ('bacheche', 'utenti', 'file', 'gruppi', 'file_bacheche', 'vuoto').
+ * @param array $parametriExtra Array associativo per i campi hidden strutturali (es. ['vista' => 'dettaglio', 'tab' => 'utenti']).
+ * @return array Configurazione strutturata dei campi del filtro.
  */
 function getFiltroConfig(string $entita, array $parametriExtra = []): array
 {
     $campiBase = [];
 
-    // Genera automaticamente i campi hidden strutturali passati dalla pagina corrente
     foreach ($parametriExtra as $name => $value) {
         $campiBase[] = ['tipo' => 'hidden', 'name' => $name, 'value' => $value, 'label' => ''];
     }
     echo "";
 
     switch ($entita) {
-        //filtro bacheche
         case 'bacheche':
             return [
                 'campi' => array_merge($campiBase, [
@@ -31,7 +30,6 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 ])
             ];
 
-            //filtro utenti
         case 'utenti':
             return [
                 'campi' => array_merge($campiBase, [
@@ -40,7 +38,6 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 ])
             ];
 
-            //filtro gruppi
         case 'gruppi':
             return [
                 'campi' => array_merge($campiBase, [
@@ -50,10 +47,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 ])
             ];
 
-            //filtro file multimediali
         case 'file':
-            // Usa la dimensione minima e massima passate dal contesto.
-            // Se non passate esplicitamente (es. contesto globale di media.php), usa il database globale.
             $minSize = isset($parametriExtra['min_size']) ? (int)$parametriExtra['min_size'] : getMinFileSizeFromDb();
             $maxSize = isset($parametriExtra['max_size']) ? (int)$parametriExtra['max_size'] : getMaxFileSizeFromDb();
             
@@ -94,7 +88,6 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 ])
             ];
 
-            //filtro vuoto
         default:
             return [
                 'vuoto' => true,
@@ -105,8 +98,10 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
 }
 
 /**
- * 2. DIZIONARIO DELLE REGOLE SQL
- * Mappa le chiavi ricevute dal form HTML con le colonne reali del database e i relativi operatori.
+ * Mappa le chiavi ricevute dal form HTML con le colonne reali del database e i relativi operatori per la costruzione della query.
+ *
+ * @param string $entita L'entità di riferimento per caricare il dizionario regole.
+ * @return array Array multidimensionale contenente le direttive SQL associate agli input.
  */
 function getRegoleFiltroSQL(string $entita): array
 {
@@ -124,7 +119,7 @@ function getRegoleFiltroSQL(string $entita): array
                 'tipo'    => 'ricerca_multipla',
                 'colonne' => ['u.nickname', 'u.nome', 'u.cognome']
             ],
-            'data_nascita' => ['colonna' => 'u.dataNascita', 'operatore' => '=', 'formato' => 'val'],
+            'data_nascita' => ['colonna' => 'u.dataNascita', 'operatore' => '>=', 'formato' => 'val'],
         ],
         'gruppi' => [
             'nome'         => ['colonna' => 'g.nome', 'operatore' => 'LIKE', 'formato' => '%val%'],
@@ -156,8 +151,12 @@ function getRegoleFiltroSQL(string $entita): array
 }
 
 /**
- * 3. COMPILATORE DI QUERY UNIVERSALE
- * Analizza i dati in ingresso (es. $_GET) in base alle regole dell'entità e restituisce la clausola SQL e i parametri PDO sanificati.
+ * Analizza i dati in ingresso e restituisce la stringa di condizioni e l'array di parametri PDO sanificati.
+ * Gestisce automaticamente la logica standard (singola colonna) e la logica di ricerca globale (multi-colonna/multi-parola).
+ *
+ * @param array $inputs Array dei dati di input attivi (es. $_GET).
+ * @param string $entita L'entità di riferimento per l'applicazione delle regole SQL.
+ * @return array Ritorna un array associativo con 'sql' (clausola WHERE) e 'parametri' (array per PDO).
  */
 function applicaFiltriDinamici(array $inputs, string $entita): array
 {
@@ -169,9 +168,6 @@ function applicaFiltriDinamici(array $inputs, string $entita): array
         if (isset($inputs[$chiaveInput]) && $inputs[$chiaveInput] !== '') {
             $valore = trim($inputs[$chiaveInput]);
 
-            // =========================================================
-            // RICERCA GLOBALE (Multi-colonna e Multi-parola)
-            // =========================================================
             if (isset($regola['tipo']) && $regola['tipo'] === 'ricerca_multipla') {
                 $parole = preg_split('/\s+/', $valore);
                 $subCondizioniAND = [];
@@ -179,28 +175,20 @@ function applicaFiltriDinamici(array $inputs, string $entita): array
                 foreach ($parole as $indexParola => $parola) {
                     $subCondizioniOR = [];
 
-                    // Cicliamo le colonne e creiamo un parametro al 100% univoco
                     foreach ($regola['colonne'] as $indexColonna => $colonna) {
-                        // Creiamo un nome parametro che include sia l'indice della parola che quello della colonna
                         $paramName = ":rg_{$chiaveInput}_{$indexParola}_{$indexColonna}";
 
                         $subCondizioniOR[] = "$colonna LIKE $paramName";
-                        // Assegniamo il valore al suo parametro univoco
                         $parametri[$paramName] = "%" . $parola . "%";
                     }
 
-                    // Ogni singola parola deve trovarsi in ALMENO UNA delle colonne (OR)
                     $subCondizioniAND[] = "(" . implode(' OR ', $subCondizioniOR) . ")";
                 }
 
-                // Tutte le parole digitate devono trovare un riscontro contemporaneamente (AND)
                 $condizioni[] = "(" . implode(' AND ', $subCondizioniAND) . ")";
-                continue; // Passa al prossimo campo saltando la logica standard
+                continue; 
             }
 
-            // =========================================================
-            // LOGICA STANDARD (Singola colonna)
-            // =========================================================
             $colonna = $regola['colonna'] ?? '';
             $operatore = $regola['operatore'] ?? '=';
 

@@ -1,14 +1,21 @@
 <?php
-// filter.php
-// Includere DOPO aver definito $filtro_config nella pagina chiamante.
+/**
+ * @file filter.php
+ * @description Template (View) per il rendering dinamico del modulo di ricerca e filtraggio laterale.
+ * Deve essere incluso esclusivamente dopo aver definito e popolato l'array associativo `$filtro_config`
+ * all'interno del controller chiamante. Supporta svariati tipi di input: text, date, select, 
+ * checkbox-group, range lineare e multi-range logaritmico.
+ */
 
 if (empty($filtro_config['campi'])) return;
 
 $action = htmlspecialchars($filtro_config['action'] ?? $_SERVER['PHP_SELF']);
 
-// =========================================================
-// 1. Costruzione dinamica dell'URL per il tasto "Reimposta"
-// =========================================================
+/**
+ * Costruzione dinamica dell'URL per il reset dei filtri (tasto "Reimposta").
+ * Itera la configurazione per preservare i parametri essenziali di routing passati come campi 'hidden'
+ * (es. vista, tab, id bacheca), eliminando invece tutti i parametri di ricerca attivi.
+ */
 $reset_params = [];
 
 if (isset($filtro_config['campi'])) {
@@ -59,6 +66,7 @@ if (!empty($reset_params)) {
 
                 $val_min = isset($_GET[$campo['name_min']]) && $_GET[$campo['name_min']] !== '' ? (int)$_GET[$campo['name_min']] : (int)($campo['value_min'] ?? $min);
                 $val_max = isset($_GET[$campo['name_max']]) && $_GET[$campo['name_max']] !== '' ? (int)$_GET[$campo['name_max']] : (int)($campo['value_max'] ?? $max);
+                
                 if ($scale === 'log') {
                     $slider_min = getLogSliderPosition($val_min, $min, $max, $steps);
                     $slider_max = getLogSliderPosition($val_max, $min, $max, $steps);

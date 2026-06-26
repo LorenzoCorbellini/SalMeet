@@ -1,12 +1,19 @@
 <?php
+/**
+ * @file functions.php
+ * @description Raccoglie funzioni di utilità generale condivise all'interno dell'applicazione.
+ * Fornisce strumenti per l'interazione col database, calcolo dimensioni file, formattazione di date 
+ * e stringhe, generazione di tabelle HTML, ordinamento dati, paginazione e dashboard.
+ */
+
 // =========================================================
-// UTILITIES DI BASE
+// UTILITIES DI BASE E GESTIONE FILE
 // =========================================================
 
 /**
- * Calcola la dimensione massima di file presenti nel database
- * @param int|null $fallback Valore di fallback se la query fallisce
- * @return int Dimensione massima in MB oppure il fallback
+ * Calcola la dimensione massima dei file presenti nel database.
+ * * @param int|null $fallback Valore da restituire in caso di errore o tabella vuota.
+ * @return int La dimensione massima rilevata, oppure il valore di fallback.
  */
 function getMaxFileSizeFromDb(?int $fallback = 0): int
 {
@@ -16,24 +23,21 @@ function getMaxFileSizeFromDb(?int $fallback = 0): int
         $stmt = $pdo->query("SELECT MAX(dimensione) as max_size FROM FileMultimediale");
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        // Se il risultato è NULL (tabella vuota), restituiamo 0
         if ($result && $result['max_size'] !== null) {
             return (int)$result['max_size'];
         }
         return 0; 
     } catch (PDOException $e) {
-        // Se c'è un errore, usa il fallback
         error_log("Errore nel calcolo dimensione massima file: " . $e->getMessage());
     }
     
-    // Fallback in caso di eccezione
     return $fallback ?? 0;
 }
 
 /**
- * Calcola la dimensione minima dei file presenti nel database
- * @param int|null $fallback Valore di fallback se la query fallisce
- * @return int Dimensione minima in MB oppure il fallback
+ * Calcola la dimensione minima dei file presenti nel database.
+ * * @param int|null $fallback Valore da restituire in caso di errore o tabella vuota.
+ * @return int La dimensione minima rilevata, oppure il valore di fallback.
  */
 function getMinFileSizeFromDb(?int $fallback = 0): int
 {
@@ -54,28 +58,50 @@ function getMinFileSizeFromDb(?int $fallback = 0): int
     return $fallback ?? 0;
 }
 
+// =========================================================
+// FORMATTAZIONE E VALIDAZIONE DATI
+// =========================================================
+
+/**
+ * Verifica se una stringa inizia con un formato data compatibile (YYYY-MM-DD).
+ * * @param string $val La stringa da analizzare.
+ * @return bool True se la stringa inizia con una data valida, False altrimenti.
+ */
 function isData(string $val): bool
 {
     return (bool) preg_match('/^\d{4}-\d{2}-\d{2}/', $val);
 }
 
+/**
+ * Formatta una data dal formato standard del database (YYYY-MM-DD) 
+ * al formato di lettura europeo (DD/MM/YYYY).
+ * * @param string $val La data in formato YYYY-MM-DD.
+ * @return string La data formattata o la stringa originale sanificata in caso di errore.
+ */
 function formattaData(string $val): string
 {
     $d = DateTime::createFromFormat('Y-m-d', substr($val, 0, 10));
     return $d ? $d->format('d/m/Y') : htmlspecialchars($val);
 }
 
+/**
+ * Genera l'espressione SQL per l'ordinamento basato sul nominativo completo 
+ * o sul nickname del proprietario, rimuovendo caratteri speciali.
+ * * @param string $tableAlias L'alias della tabella Utente usato nella query.
+ * @return string L'espressione SQL pronta per la clausola ORDER BY.
+ */
 function getOwnerSortExpression(string $tableAlias = 'u'): string
 {
     return "TRIM(REPLACE(REPLACE(REPLACE(CONCAT_WS(' ', {$tableAlias}.nome, {$tableAlias}.cognome, {$tableAlias}.nickname), '@', ''), '(', ''), ')', ''))";
 }
 
 /**
- * Restituisce la stringa formatta "Nome Cognome (@nickname)" per la colonna Proprietario
- * @param mixed $nome
- * @param mixed $cognome
- * @param string $nickname
- * @return string
+ * Restituisce una stringa HTML formattata "Nome Cognome (@nickname)" 
+ * applicando l'escaping per la sicurezza XSS.
+ * * @param string|null $nome Il nome dell'utente.
+ * @param string|null $cognome Il cognome dell'utente.
+ * @param string $nickname Il nickname dell'utente.
+ * @return string Il markup HTML formattato.
  */
 function formatOwnerDisplay(?string $nome, ?string $cognome, string $nickname): string
 {
@@ -87,44 +113,55 @@ function formatOwnerDisplay(?string $nome, ?string $cognome, string $nickname): 
 }
 
 /**
- * Verifica che una data sia nel formato corretto e compresa 
- * tra il 1 Gennaio 1900 e il giorno corrente (incluso).
+ * Verifica che una data sia nel formato YYYY-MM-DD e sia temporalmente 
+ * compresa tra il 1 Gennaio 1900 e il termine della giornata odierna.
  *
- * @param string $val La data in formato YYYY-MM-DD
- * @return bool True se valida e nel range, False altrimenti.
+ * @param string $val La data da validare.
+ * @return bool True se la data è valida e nel range, False altrimenti.
  */
 function isDataValidaRange(string $val): bool
 {
-    // 1. Controllo base sul formato (usa la tua Regex per assicurarsi che sia YYYY-MM-DD)
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $val)) {
         return false;
     }
 
     try {
-        // 2. Crea gli oggetti DateTime per i confronti
         $dataInserita = new DateTime($val);
         $limiteMinimo = new DateTime('1900-01-01');
-        $limiteMassimo = new DateTime(); // Prende in automatico data e ora di oggi
+        $limiteMassimo = new DateTime(); 
 
-        // Imposta l'orario del limite massimo alle 23:59:59 di oggi
-        // per permettere inserimenti relativi alla giornata odierna
         $limiteMassimo->setTime(23, 59, 59);
 
-        // 3. Verifica i range (>= 1 Gennaio 1900 E <= Oggi)
         return ($dataInserita >= $limiteMinimo && $dataInserita <= $limiteMassimo);
-
     } catch (Exception $e) {
-        // Se la data è un calendario impossibile (es: 2023-13-45), DateTime lancia eccezione
         return false;
     }
 }
 
-// Risultato query, titoli, titoli custom
+// =========================================================
+// GENERAZIONE TABELLE HTML
+// =========================================================
+
+/**
+ * Esegue direttamente l'output (echo) di una tabella HTML generata dinamicamente.
+ * * @param array $righe I dati estratti dal database.
+ * @param array $htmlColumns Chiavi di colonne contenenti HTML da non sottoporre a escaping.
+ * @param array $customHeaders Mapping opzionale per i titoli delle colonne.
+ * @return void
+ */
 function stampaTabella(array $righe, array $htmlColumns = [], array $customHeaders = []): void
 {
     echo getTabella($righe, $htmlColumns, $customHeaders);
 }
 
+/**
+ * Genera la struttura HTML di una tabella analizzando un set di dati, 
+ * applicando la formattazione adeguata in base al tipo di dato.
+ * * @param array $righe I dati estratti dal database.
+ * @param array $htmlColumns Chiavi di colonne contenenti HTML da non sottoporre a escaping.
+ * @param array $customHeaders Mapping opzionale per i titoli delle colonne.
+ * @return string Il markup HTML completo della tabella o un avviso di assenza dati.
+ */
 function getTabella(array $righe, array $htmlColumns = [], array $customHeaders = []): string {
     if (empty($righe)) {
         return "<p class='info-risultati'>Nessun risultato trovato con i criteri di ricerca selezionati.</p>";
@@ -136,6 +173,7 @@ function getTabella(array $righe, array $htmlColumns = [], array $customHeaders 
         $html .= "<th>" . $titolo . "</th>";
     }
     $html .= "</tr>";
+    
     foreach ($righe as $riga) {
         $html .= "<tr>";
         foreach ($riga as $colonna => $valore) {
@@ -153,6 +191,7 @@ function getTabella(array $righe, array $htmlColumns = [], array $customHeaders 
         }
         $html .= "</tr>";
     }
+    
     $html .= "</table>";
     return $html;
 }
@@ -162,11 +201,11 @@ function getTabella(array $righe, array $htmlColumns = [], array $customHeaders 
 // =========================================================
 
 /**
- * Valida i parametri di ordinamento passati in GET
- * @param array $allowed_sorts Dizionario con chiave url => colonna DB
- * @param string $default_col Colonna di default
- * @param string $default_dir Direzione di default
- * @return array [Chiave attuale, Direzione attuale, Stringa per ORDER BY]
+ * Valida i parametri di ordinamento provenienti dalla stringa di query (GET).
+ * * @param array $allowed_sorts Dizionario che mappa le chiavi URL alle colonne reali del DB.
+ * @param string $default_col Colonna predefinita in assenza di parametri.
+ * @param string $default_dir Direzione predefinita ('ASC' o 'DESC').
+ * @return array Tuple contenente [chiave_corrente, direzione_corrente, clausola_SQL_sicura].
  */
 function getParametriOrdinamento(array $allowed_sorts, string $default_col = 'data', string $default_dir = 'DESC'): array
 {
@@ -183,11 +222,11 @@ function getParametriOrdinamento(array $allowed_sorts, string $default_col = 'da
 }
 
 /**
- * Genera l'array per $customHeaders di stampaTabella, con le icone per l'ordinamento
- * @param array $colonneOrdinabili ['Intestazione Visibile' => 'chiave_url']
- * @param string $sort_col La chiave di ordinamento attuale
- * @param string $sort_dir La direzione di ordinamento attuale
- * @return array Array formattato di intestazioni HTML
+ * Genera l'array di intestazioni HTML personalizzate con i link e le icone per l'ordinamento.
+ * * @param array $colonneOrdinabili Mappa associativa ['Intestazione Visibile' => 'chiave_url'].
+ * @param string $sort_col La chiave di ordinamento attualmente attiva.
+ * @param string $sort_dir La direzione di ordinamento attualmente attiva.
+ * @return array Mappa delle intestazioni pronte per l'inserimento in tabella.
  */
 function generaIntestazioniOrdinabili(array $colonneOrdinabili, string $sort_col, string $sort_dir): array
 {
@@ -197,19 +236,12 @@ function generaIntestazioniOrdinabili(array $colonneOrdinabili, string $sort_col
         $params = $_GET;
         $params['sort'] = $chiaveSort;
 
-        // Controlliamo se questa è la colonna per cui stiamo ordinando ORA
         if ($sort_col === $chiaveSort) {
-            // Se clicco di nuovo, inverto l'ordinamento
             $params['dir'] = ($sort_dir === 'ASC') ? 'DESC' : 'ASC';
-            
-            // Icona con freccia SINGOLA (su o giù) e classe 'attiva' per tenerla sempre visibile
             $classeIcona = ($sort_dir === 'ASC') ? 'fa-sort-up' : 'fa-sort-down';
             $iconaHTML = "<i class='fa-solid {$classeIcona} icona-ordinamento attiva'></i>";
         } else {
-            // Se non è ordinata, il prossimo clic ordinerà per ASC
             $params['dir'] = 'ASC';
-            
-            // Icona DOPPIA freccia e nessuna classe 'attiva' (nascosta di default)
             $iconaHTML = "<i class='fa-solid fa-sort icona-ordinamento'></i>";
         }
 
@@ -225,10 +257,11 @@ function generaIntestazioniOrdinabili(array $colonneOrdinabili, string $sort_col
     return $customHeaders;
 }
 
-
 /**
- * Costruisce una query string da un array di parametri preservando i parametri array
- * come `key[]=` (ripetuti) invece di `key[0]=` con indici numerici.
+ * Costruisce una query string gestendo correttamente gli array passati via URL,
+ * preservando la sintassi `chiave[]=` anziché forzare gli indici numerici.
+ * * @param array $params L'array dei parametri GET.
+ * @return string La stringa URL formattata ed encoded.
  */
 function build_query_preserve_brackets(array $params): string {
     $parts = [];
@@ -244,24 +277,25 @@ function build_query_preserve_brackets(array $params): string {
     return implode('&', $parts);
 }
 
+// =========================================================
+// PAGINAZIONE
+// =========================================================
+
 /**
- * Genera la struttura HTML per la navigazione delle pagine (paginazione) a larghezza fissa.
- * * Mantiene lo stesso numero di elementi sullo schermo sostituendo i link non disponibili
- * con punti di sospensione o frecce disabilitate, garantendo la stabilità visiva.
+ * Genera la struttura HTML per la navigazione delle pagine (paginazione).
+ * Mantiene la stabilità visiva calcolando dinamicamente il range di visualizzazione.
  *
- * @param int    $np             Il numero della pagina corrente (1-based).
- * @param int    $pagine_totali  Il numero complessivo di pagine disponibili.
- * @param int    $range          Il numero di pagine da mostrare a sinistra e a destra di quella corrente. Default: 1.
- * @param string $justify        L'allineamento CSS per la proprietà `justify-self`. Default: "auto".
- * * @return string La stringa HTML contenente i link di paginazione, oppure una stringa vuota
- * se il numero totale di pagine è inferiore o uguale a 1.
+ * @param int $np Il numero della pagina corrente (1-based).
+ * @param int $pagine_totali Il numero complessivo di pagine.
+ * @param int $range Finestra di pagine da mostrare a sinistra e a destra di quella corrente.
+ * @param string $justify Allineamento CSS per il contenitore.
+ * @return string Il markup HTML della paginazione.
  */
 function getPagesNav(int $np, int $pagine_totali, int $range = 1, string $justify = "auto"): string {
     if ($pagine_totali <= 1) {
         return "";
     }
 
-    //Stile dinamico inline
     $html = "<div class='pagination-container' style='justify-self: $justify;'>";
     
     $prev = $np - 1;
@@ -273,15 +307,12 @@ function getPagesNav(int $np, int $pagine_totali, int $range = 1, string $justif
     $query = http_build_query($queryParams);
     $queryString = !empty($query) ? "&$query" : "";
 
-    // --- FRECCIA SINISTRA ---
     if ($np > 1) {
         $html .= "<a href='?pagina=$prev$queryString' class='page-item arrow'>$leftArrowHTML</a>";
     } else {
         $html .= "<span class='page-item arrow disabled'>$leftArrowHTML</span>";
     }
 
-    // --- PRIMA PAGINA (1) ---
-    // Se la finestra centrale include già la pagina 1, mostriamo un segnaposto per non duplicarla
     $start = max(1, $np - $range);
     if ($start > 1) {
         $class = 'page-item text-muted';
@@ -290,14 +321,12 @@ function getPagesNav(int $np, int $pagine_totali, int $range = 1, string $justif
         $html .= "<span class='page-item dots'>.</span>";
     }
 
-    // --- PUNTI DI SOSPENSIONE A SINISTRA ---
     if ($np - $range > 2) {
         $html .= "<span class='page-item dots'>...</span>";
     } else {
         $html .= "<span class='page-item dots'>.</span>";
     }
 
-    // --- FINESTRA CENTRALE (RANGE) ---
     $centro_start = $np - $range;
     $centro_end = $np + $range;
 
@@ -306,19 +335,16 @@ function getPagesNav(int $np, int $pagine_totali, int $range = 1, string $justif
             $active = ($i == $np) ? "active" : "";
             $html .= "<a href='?pagina=$i$queryString' class='page-item $active'>$i</a>";
         } else {
-            // Se usciamo dai bordi (es. pagina -1 o oltre il totale), stampiamo un punto vuoto strutturale
             $html .= "<span class='page-item dots'>.</span>";
         }
     }
 
-    // --- PUNTI DI SOSPENSIONE A DESTRA ---
     if ($pagine_totali - $np - $range > 1) {
         $html .= "<span class='page-item dots'>...</span>";
     } else {
         $html .= "<span class='page-item dots'>.</span>";
     }
 
-    // --- ULTIMA PAGINA ---
     $end = min($np + $range, $pagine_totali);
     if ($end < $pagine_totali) {
         $class = 'page-item text-muted';
@@ -327,7 +353,6 @@ function getPagesNav(int $np, int $pagine_totali, int $range = 1, string $justif
         $html .= "<span class='page-item dots'>.</span>";
     }
 
-    // --- FRECCIA DESTRA ---
     if ($np < $pagine_totali) {
         $html .= "<a href='?pagina=$next$queryString' class='page-item arrow'>$rightArrowHTML</a>";
     } else {
@@ -338,12 +363,10 @@ function getPagesNav(int $np, int $pagine_totali, int $range = 1, string $justif
     return $html;
 }
 
-// =========================================================
-// ASSISTENTI DI CALCOLO PER LA PAGINAZIONE
-// =========================================================
-
 /**
- * Estrae e calcola i parametri numerici per la paginazione da $_GET.
+ * Estrae e calcola da GET i parametri limit e offset necessari per la paginazione SQL.
+ * * @param int $default_limit Il numero predefinito di record per pagina.
+ * @return array Tuple contenente [limite, pagina_corrente, offset_partenza].
  */
 function getPaginationParams(int $default_limit = 50): array {
     $limit = $default_limit;
@@ -354,7 +377,12 @@ function getPaginationParams(int $default_limit = 50): array {
 }
 
 /**
- * Conta i record totali in modo agnostico rispetto alla tabella.
+ * Conta il numero totale di record per una specifica tabella applicando condizioni opzionali.
+ * * @param PDO $pdo L'istanza di connessione al database.
+ * @param string $table Il nome della tabella da interrogare.
+ * @param array $where Array di clausole WHERE (es. "campo = ?").
+ * @param array $params I parametri da bindare in fase di esecuzione.
+ * @return int Il numero totale dei record calcolati.
  */
 function getNumberOfRecords(PDO $pdo, string $table, array $where = [], array $params = []): int {
     $sql_count = "SELECT COUNT(*) FROM " . $table;
@@ -366,40 +394,46 @@ function getNumberOfRecords(PDO $pdo, string $table, array $where = [], array $p
 }
 
 /**
- * Calcola il numero totale di pagine.
+ * Calcola il numero totale di pagine necessarie per mostrare un dato set di record.
+ * * @param int $records_num Totale record estratti.
+ * @param int $limit Numero di elementi visualizzati per pagina.
+ * @return int Il numero totale delle pagine.
  */
 function getNumberOfPages(int $records_num, int $limit): int {
     return (int)ceil($records_num / $limit);
 }
 
+/**
+ * Restituisce il markup SVG per l'icona direzionale di destra.
+ * * @return string HTML dell'SVG.
+ */
 function getRightArrow(): string {
-   $html = '
+   return '
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="m9 18 6-6-6-6"></path>
     </svg>
     ';
-
-    return $html;
-}
-
-function getLeftArrow(): string {
-    $html = '
-    <svg data-v-b31b885d-s="" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-        <path d="m15 18-6-6 6-6"></path>
-    </svg>';
-
-    return $html;
 }
 
 /**
- * Formatta una dimensione in byte/kilobyte in un formato leggibile (MB, GB, TB).
- *
- * La funzione converte iterativamente la dimensione passata dividendo per 1000
- * (notazione commerciale/SI) fino a raggiungere l'unità di misura corretta, 
- * arrotondando il risultato a due cifre decimali.
- *
- * @param int $filesize La dimensione del file espressa nell'unità base (KB/Byte a seconda del DB).
- * @return string La stringa formattata contenente il valore numerico e l'unità di misura (es. "4.25 MB").
+ * Restituisce il markup SVG per l'icona direzionale di sinistra.
+ * * @return string HTML dell'SVG.
+ */
+function getLeftArrow(): string {
+    return '
+    <svg data-v-b31b885d-s="" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+        <path d="m15 18-6-6 6-6"></path>
+    </svg>';
+}
+
+// =========================================================
+// ASSISTENTI FORMATTAZIONE E CONVERSIONE FILE SIZE
+// =========================================================
+
+/**
+ * Converte la dimensione numerica di un file in un formato leggibile (B, KB, MB, GB).
+ * * @param int $filesize La dimensione grezza del file.
+ * @return string La dimensione arrotondata accoppiata con la relativa unità di misura.
  */
 function formatFileSize(int $filesize): string {
     $units = array('B', 'KB', 'MB', 'GB', 'TB');
@@ -415,14 +449,9 @@ function formatFileSize(int $filesize): string {
 }
 
 /**
- * Converte una dimensione numerica in una struttura leggibile composta da valore e unità.
- *
- * @param int $filesize Dimensione del file in unità base (ad esempio byte o kilobyte
- * a seconda del contesto del database).
- * @return array{size: float|int, unit: string} Restituisce un array associativo contenente:
- * - 'size': il valore numerico convertito e arrotondato a 2 decimali,
- * oppure l'intero originale se non è necessaria la conversione.
- * - 'unit': l'unità di misura corrispondente ('B', 'KB', 'MB', 'GB', 'TB').
+ * Converte una dimensione numerica restituendola come array separato per valore e unità.
+ * * @param int $filesize La dimensione grezza del file.
+ * @return array{size: float|int, unit: string} Array associativo con 'size' e 'unit'.
  */
 function formatFileSize2(int $filesize): array {
     $units = array('B', 'KB', 'MB', 'GB', 'TB');
@@ -438,13 +467,27 @@ function formatFileSize2(int $filesize): array {
 }
 
 /**
+ * Genera il contenitore HTML che mostra la dimensione del file includendo il dato grezzo nel tooltip.
+ * * @param int $size La dimensione originale da formattare.
+ * @return string L'elemento HTML formattato.
+ */
+function formatFileSizeHtml(int $size): string {
+    $size_formatted = formatFileSize($size);
+    return "<div id='file_size' title='$size B'>$size_formatted</div>";
+}
+
+// =========================================================
+// SLIDER LOGARITMICI E CONVERSIONI
+// =========================================================
+
+/**
  * Converte un valore reale in una posizione su una scala logaritmica.
  *
- * @param int $value Valore reale della dimensione (MB).
+ * @param int $value Valore reale della dimensione.
  * @param int $min Valore minimo reale.
  * @param int $max Valore massimo reale.
- * @param int $steps Numero di passi della scala.
- * @return int Posizione dello slider.
+ * @param int $steps Numero di frazionamenti della scala.
+ * @return int La posizione calcolata per lo slider.
  */
 function getLogSliderPosition(int $value, int $min, int $max, int $steps = 1000): int {
     if ($steps <= 0 || $max <= $min) {
@@ -463,13 +506,13 @@ function getLogSliderPosition(int $value, int $min, int $max, int $steps = 1000)
 }
 
 /**
- * Converte una posizione dello slider logaritmico in un valore reale.
+ * Converte una posizione di uno slider logaritmico al suo valore reale stimato.
  *
- * @param int $position Posizione dello slider.
+ * @param int $position Posizione attuale dello slider.
  * @param int $min Valore minimo reale.
  * @param int $max Valore massimo reale.
- * @param int $steps Numero di passi della scala.
- * @return int Valore reale corrispondente.
+ * @param int $steps Numero di frazionamenti della scala.
+ * @return int Valore reale riconvertito.
  */
 function getLogSliderValue(int $position, int $min, int $max, int $steps = 1000): int {
     if ($steps <= 0 || $max <= $min) {
@@ -489,37 +532,28 @@ function getLogSliderValue(int $position, int $min, int $max, int $steps = 1000)
     return (int) round($value);
 }
 
-/**
- * Genera il wrapper HTML per la visualizzazione della dimensione del file nelle tabelle.
- *
- * Restituisce un elemento `<div>` stilizzato con l'identificativo `file_size`. 
- * Include un attributo `title` nativo che mostra il valore grezzo in MB al passaggio 
- * del mouse (tooltip), utile per mantenere l'accessibilità del dato originale.
- * * @param int $size La dimensione grezza del file da passare a {@see formatFileSize()}.
- * @return string Il blocco HTML (`<div>`) pronto per essere renderizzato a schermo.
- */
-function formatFileSizeHtml(int $size): string {
-    $size_formatted = formatFileSize($size);
-    return "<div id='file_size' title='$size B'>$size_formatted</div>";
-}
-
 // =========================================================
 // FUNZIONI PER LA DASHBOARD (index.php)
 // =========================================================
 
 /**
- * Calcola la somma totale dello spazio occupato da tutti i file.
+ * Calcola la somma totale in byte dello spazio occupato da tutti i file a sistema.
+ * * @param PDO $pdo L'istanza di connessione al database.
+ * @return int Il totale cumulativo in byte.
  */
-function getSpazioTotaleOccupato($pdo) {
+function getSpazioTotaleOccupato(PDO $pdo): int {
     $stmt = $pdo->query("SELECT SUM(dimensione) FROM FileMultimediale");
     return (int)$stmt->fetchColumn();
 }
 
 /**
- * Recupera gli ultimi N file caricati nel sistema.
+ * Recupera i dati relativi agli ultimi file caricati per popolare la dashboard.
+ * * @param PDO $pdo L'istanza di connessione al database.
+ * @param int $limite Limite massimo di record da restituire.
+ * @return array I record formattati degli ultimi caricamenti.
  */
-function getUltimiFileCaricati($pdo, $limite = 5) {
-        $sql = "SELECT f.titolo AS nome_file, f.tipo AS tipo_file, f.dimensione, f.URL AS url, 
+function getUltimiFileCaricati(PDO $pdo, int $limite = 5): array {
+    $sql = "SELECT f.titolo AS nome_file, f.tipo AS tipo_file, f.dimensione, f.URL AS url, 
                    u.codice AS owner_id, u.nickname, u.nome AS owner_name, u.cognome AS owner_surname 
             FROM FileMultimediale f 
             LEFT JOIN Utente u ON f.caricatoDa = u.codice 
@@ -533,10 +567,12 @@ function getUltimiFileCaricati($pdo, $limite = 5) {
 }
 
 /**
- * Recupera gli ultimi N gruppi creati, ordinati per data di creazione.
+ * Estrae le informazioni degli ultimi gruppi formatisi all'interno del sistema.
+ * * @param PDO $pdo L'istanza di connessione al database.
+ * @param int $limite Limite massimo di record da restituire.
+ * @return array I record dei gruppi recenti.
  */
 function getUltimiGruppiCreati(PDO $pdo, int $limite = 5): array {
-    // CORREZIONE: Sostituito g.nome con g.codice per catturare l'ID reale del gruppo
     $sql = "SELECT g.codice AS gruppoId, g.nome AS nome_gruppo, g.dataCreazione, 
                    u.codice AS owner_id, u.nickname, u.nome AS owner_name, u.cognome AS owner_surname 
             FROM Gruppo g 
@@ -550,10 +586,12 @@ function getUltimiGruppiCreati(PDO $pdo, int $limite = 5): array {
 }
 
 /**
- * Recupera le ultime N bacheche create, ordinate per data di creazione.
+ * Estrae i record relativi alle bacheche più recenti registrate.
+ * * @param PDO $pdo L'istanza di connessione al database.
+ * @param int $limite Limite massimo di record da restituire.
+ * @return array L'elenco delle ultime bacheche create.
  */
 function getUltimeBachecheCreate(PDO $pdo, int $limite = 5): array {
-    // Aggiunto b.dataCreazione alla SELECT
     $sql = "SELECT b.nome AS nome_bacheca, b.dataCreazione, 
                    u.codice AS owner_id, u.nickname, u.nome AS owner_name, u.cognome AS owner_surname 
             FROM Bacheca b 

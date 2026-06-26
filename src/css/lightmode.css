@@ -195,7 +195,7 @@ li.navbar a:hover:not(.active) {
 
 .filter-section-title {
     font-size: large; 
-    color: var(--primary-dark); /* Usa il rosso scuro della palette per dare gerarchia */
+    color: var(--primary-dark); 
     margin: 0 0 20px 0;
     font-weight: 700; 
     text-transform: uppercase;
@@ -210,24 +210,20 @@ li.navbar a:hover:not(.active) {
     font-size: 1.1em;
 }
 
-/* Etichetta principale del range (es. "Dimensione:") */
 .filter-range-label {
     margin-bottom: 5px;
     display: block;
 }
 
-/* I numerini dei valori (es. "0 B - 100 MB" in grassetto e colorati) */
 .filter-range-value {
     font-weight: bold;
     color: var(--primary-dark);
 }
 
-/* Aggiungiamo lo spazio sotto il contenitore del doppio slider */
 #filtro .multi-range-container {
     margin-bottom: 25px;
 }
 
-/* Stile per lo slider singolo (quello classico) */
 input[type="range"].filter-range-single {
     width: 100%;
     accent-color: var(--primary);
@@ -244,22 +240,17 @@ input[type="range"].filter-range-single {
     margin: 20px 0 15px 0;
 }
 
-/* Sovrapposizione perfetta degli input e azzeramento dello sfondo nativo */
 .multi-range-container input[type="range"] {
     position: absolute;
     width: 100%;
     background: none !important;
-    /* Rimuove lo sfondo del browser */
     pointer-events: none;
-    /* Impedisce che un input blocchi l'altro */
     appearance: none;
     -webkit-appearance: none;
     margin: 0;
     top: -6px;
-    /* Centra i pallini verticalmente sulla traccia */
 }
 
-/* Riattiva il drag solo sui pallini (thumb) */
 .multi-range-container input[type="range"]::-webkit-slider-thumb {
     pointer-events: auto;
     appearance: none;
@@ -281,7 +272,6 @@ input[type="range"].filter-range-single {
     border: none;
 }
 
-/* Rimuove le tracce predefinite del browser per non rompere il gradiente */
 .multi-range-container input[type="range"]::-webkit-slider-runnable-track {
     background: transparent !important;
     border: none;
@@ -313,6 +303,8 @@ input[type="range"].filter-range-single {
     color: var(--text-light);
 }
 
+
+
 /* --- NAVIGAZIONE PAGINE --- */
 .pagination-container {
     display: flex;
@@ -322,7 +314,6 @@ input[type="range"].filter-range-single {
     margin-top: auto;
 }
 
-/* Numeri per navigare tra le pagine */
 .page-item {
     display: inline-flex;
     justify-content: center;
@@ -343,7 +334,6 @@ input[type="range"].filter-range-single {
     color: var(--text-muted);
 }
 
-/* Stile per la pagina attiva corrente*/
 .page-item.active {
     background-color: var(--primary);
     color: #fff;
@@ -351,24 +341,20 @@ input[type="range"].filter-range-single {
     border-left: 0px;
 }
 
-/* Effetto hover per i bottoni cliccabili */
 a.page-item:hover {
     background-color: #bda9a9;
     border-color: #999;
 }
 
-/* Effetto hover per i bottoni cliccabili */
 a.page-item.active:hover {
     background-color: #d25d5d;
 }
 
-/* CSS specifico per le frecce SVG per rimuovere spazi fantasma */
 .page-item.arrow svg {
     display: block;
     color: inherit;
 }
 
-/* Stile per i puntini di sospensione (...) */
 .page-dots {
     display: inline-block;
     padding: 0 4px;
@@ -381,7 +367,7 @@ a.page-item.active:hover {
     width: 15px;
     height: 15px;
     margin-right: 8px;
-    cursor: pointer; /* Ora solo il box ha la manina */
+    cursor: pointer; 
 }
 
 .checkbox-group {
@@ -401,8 +387,8 @@ a.page-item.active:hover {
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: default; /* Il cursore resta normale sul testo */
-    user-select: none; /* Impedisce comunque la selezione del testo */
+    cursor: default;
+    user-select: none; 
 }
 
 /* --- BOTTONI FILTRO --- */
@@ -546,18 +532,15 @@ th a.filter__link {
     gap: 6px;
 }
 
-/* 1. Nascondiamo l'icona di base */
 th a.filter__link .icona-ordinamento {
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* 2. Mostriamo la doppia freccia semitrasparente quando si passa sopra col mouse */
 th a.filter__link:hover .icona-ordinamento {
-    opacity: 0.6; /* Un po' trasparente per far capire che è un'azione possibile */
+    opacity: 0.6; 
 }
 
-/* 3. Se la colonna è attualmente ordinata (ha la classe .attiva), l'icona è sempre ben visibile */
 th a.filter__link .icona-ordinamento.attiva {
     opacity: 1;
 }
@@ -622,7 +605,7 @@ table .btn-azione {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background-color: transparent; /* Disattiviamo lo sfondo base che era ovale */
+    background-color: transparent; 
 }
 
 table .btn-azione::before {
@@ -632,7 +615,7 @@ table .btn-azione::before {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 28px;  
-    height: 28px; /* Tondo perfetto che occupa lo spazio vuoto (padding) della cella */
+    height: 28px; 
     border-radius: 50%;
     background-color: transparent;
     transition: background-color 0.2s ease, transform 0.1s ease;
@@ -641,13 +624,12 @@ table .btn-azione::before {
 
 table .btn-azione:hover::before {
     background-color: rgba(233, 123, 109, 0.35);
-    transform: translate(-50%, -50%) scale(1.05); /* Effetto pop */
+    transform: translate(-50%, -50%) scale(1.05); 
 }
 
-/* 3. L'immagine PNG rimane in primo piano e si ingrandisce insieme al cerchio */
 table .btn-azione img {
     position: relative;
-    z-index: 1; /* Assicura che la PNG sia sopra lo sfondo colorato */
+    z-index: 1; 
     width: 16px;
     height: 16px;
     margin: 0;
@@ -726,7 +708,6 @@ tr:hover .media-action-wrapper {
     transition: background-color 0.2s ease;
 }
 
-/* Crea una pellicola invisibile generata dal link che riempie tutta la cella */
 td a::after {
     content: '';
     position: absolute;
@@ -744,20 +725,17 @@ td span[onclick] {
     z-index: 2;
 }
 
-/* Effetto hover singola cella */
 tbody tr:hover td:hover {
     background-color: var(--primary-dark);
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.15);
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* anchor per aprire il link di un file */
 .media-download-link {
     display: flex;
     align-items: center;
 }
 
-/* icona del pulsante per aprire il link di un file */
 .media-external-icon {
     width: 16px;
     height: 16px;
@@ -772,7 +750,6 @@ tbody tr:hover td:hover {
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.2));
 }
 
-/* riga con icona filetype, nome file e pulsante per aprire il link */
 .media-item {
     display: flex;
     align-items: center;
@@ -804,47 +781,30 @@ tbody tr:hover td:hover {
     gap: 10px;
     color: var(--accent);
     font-size: 1.1rem;
-    /* Ridotto leggermente per bilanciare le proporzioni del box */
-
-    /* --- AGGIUNTI PER IL BORDO E IL LOOK DA PULSANTE --- */
     border: 2px solid var(--accent);
-    /* Crea il bordo con il colore accento */
     padding: 8px 18px;
-    /* Spazio interno per dare volume al pulsante */
     border-radius: 30px;
-    /* Angoli arrotondati a pillola (molto moderno) */
     background-color: transparent;
-    /* Sfondo iniziale trasparente */
     box-sizing: border-box;
     transition: all 0.25s ease;
-    /* Transizione fluida estesa a tutte le proprietà */
 }
 
 .btn-aggiungi:hover {
     color: var(--text-light);
-    /* Il testo diventa bianco al passaggio del mouse */
     background-color: var(--accent);
-    /* Lo sfondo si riempie con il colore accento */
     border-color: var(--accent);
-    /* Il bordo rimane coordinato */
     transform: translateY(-2px);
-    /* Effetto leggero sollevamento (era -1px) */
     box-shadow: 0 5px 15px rgba(230, 104, 90, 0.3);
-    /* Bagliore colorato sotto il tasto */
     text-decoration: none;
 }
 
 .btn-aggiungi img {
     width: 20px;
-    /* Adattata la larghezza */
     height: 20px;
-    /* Adattata l'altezza */
     vertical-align: middle;
     transition: filter 0.25s ease;
-    /* Transizione fluida per il cambio colore dell'icona */
 }
 
-/* Rende l'icona "+" bianca quando si passa sopra con il mouse (se l'immagine di partenza è scura) */
 .btn-aggiungi:hover img {
     filter: brightness(0) invert(1);
 }
@@ -876,7 +836,6 @@ tbody tr:hover td:hover {
     font-family: inherit !important;
 }
 
-/* Pulsante di Conferma (Invia, Salva, Crea) */
 .swal2-styled.swal2-confirm {
     background-color: var(--accent) !important;
     color: var(--text-light) !important;
@@ -892,7 +851,6 @@ tbody tr:hover td:hover {
     background-color: var(--accent-hover) !important;
 }
 
-/* Pulsante di Annullamento (Chiudi, Cancella) */
 .swal2-styled.swal2-cancel {
     background-color: var(--border-soft) !important;
     color: var(--text-light) !important;
@@ -924,7 +882,6 @@ tbody tr:hover td:hover {
     height: 46px !important;
 }
 
-/* Stato di focus dell'input con bagliore coerente */
 .swal2-input:focus,
 .swal2-textarea:focus {
     border-color: var(--accent) !important;
@@ -932,7 +889,6 @@ tbody tr:hover td:hover {
     outline: none !important;
 }
 
-/* Errore di validazione interno al popup */
 .swal2-validation-message {
     background: rgba(230, 104, 90, 0.1) !important;
     color: var(--accent-hover) !important;
@@ -947,14 +903,12 @@ tbody tr:hover td:hover {
     max-width: 95vw !important;
 }
 
-/* Annulla i margini esagerati di default di swal sugli input */
 div.swal2-container .swal-wide-split .swal2-input {
     margin: 0 !important;
     height: 38px !important;
     font-size: 0.9rem !important;
 }
 
-/* Stile per le etichette dei campi nei filtri */
 .swal-filter-label {
     display: block;
     font-size: 0.85rem;
@@ -985,11 +939,8 @@ div.swal2-container .swal-wide-split .swal2-input {
     color: var(--accent) !important;
 }
 
-/* =========================================================
-   MODALE SELEZIONE MULTIPLA UTENTI E FILE (SweetAlert2)
-   ========================================================= */
+/* MODALE SELEZIONE MULTIPLA UTENTI E FILE (SweetAlert2) */
 
-/* Layout Griglia a 3 Colonne (Rimane bloccata all'altezza impostata) */
 .swal-multi-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -999,7 +950,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     overflow: hidden;
 }
 
-/* Layout Griglia a 2 Colonne (Uniformata all'altezza della griglia a 3) */
 .swal-dual-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1009,7 +959,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     overflow: hidden;
 }
 
-/* Stili delle Colonne (Trasformate in flex container verticali) */
 .swal-multi-col-left,
 .swal-multi-col-center,
 .swal-multi-col-right {
@@ -1020,7 +969,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     overflow: hidden;
 }
 
-/* Bordi di separazione e padding mantenendo la flessibilità */
 .swal-multi-col-left {
     border-right: 1px solid #ddd;
     padding-right: 10px;
@@ -1035,7 +983,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     padding-right: 2px;
 }
 
-/* Intestazioni delle colonne (Fisse in alto) */
 .swal-multi-header {
     margin: 0 0 12px 0;
     padding-bottom: 5px;
@@ -1057,7 +1004,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     border-bottom: 2px solid #e67e22;
 }
 
-/* Campi e contenitori di ricerca della Colonna Left (Fissi in alto) */
 .swal-multi-input-group {
     margin-bottom: 8px;
     flex-shrink: 0;
@@ -1093,9 +1039,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     flex-shrink: 0;
 }
 
-/* Le Liste Interne: sono le UNICHE aree autorizzate a scorrere verticalmente.
-   Prendono tutto lo spazio verticale residuo sotto i rispettivi titoli.
-*/
 .swal-multi-list {
     overflow-y: auto;
     flex-grow: 1;
@@ -1104,7 +1047,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     margin-top: 5px;
 }
 
-/* Scrollbar personalizzata per le liste interne (Sottile e discreta) */
 .swal-multi-list::-webkit-scrollbar {
     width: 6px;
 }
@@ -1118,7 +1060,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     border-radius: 4px;
 }
 
-/* Contenuti statici all'interno delle liste scrollabili */
 .swal-multi-msg-empty,
 .swal-multi-msg-loading,
 .swal-multi-msg-error {
@@ -1142,7 +1083,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     font-weight: bold;
 }
 
-/* Righe degli utenti (Risultati e Selezionati) */
 .swal-multi-row {
     display: flex;
     justify-content: space-between;
@@ -1183,7 +1123,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     margin: 0;
 }
 
-/* Bottoni Più (+) e Meno (-) */
 .swal-multi-btn-add,
 .swal-multi-btn-del {
     color: white;
@@ -1235,8 +1174,7 @@ div.swal2-container .swal-wide-split .swal2-input {
     text-align: right;
 }
 
-/* --- PERSONALIZZAZIONE BARRA DI SCORRIMENTO (SCROLLBAR) --- */
-
+/* --- PERSONALIZZAZIONE BARRA DI SCORRIMENTO --- */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -1485,7 +1423,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     font-size: 0.85rem;
 }
 
-/* Icona corona per il proprietario del gruppo/file con spaziatura a sinistra */
 .group-owner-crown {
     width: 16px;
     height: 16px;
@@ -1561,7 +1498,6 @@ div.swal2-container .swal-wide-split .swal2-input {
    DASHBOARD AMMINISTRATORE (Home)
    ========================================================= */
 
-/* Gestione layout e scroll della dashboard */
 .dashboard-wrapper {
     flex: 1;
     overflow-y: auto;
@@ -1570,7 +1506,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     flex-direction: column;
 }
 
-/* Griglia per i box delle statistiche */
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1642,10 +1577,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     text-align: right;
 }
 
-/* =========================================================
-     STATI VUOTI E SPAZIATORI
-   ========================================================= */
-
 .table-container-empty {
     display: flex;
     justify-content: flex-start;
@@ -1661,16 +1592,12 @@ div.swal2-container .swal-wide-split .swal2-input {
     text-align: left;
 }
 
-/* --- SEGNAPOSTO PAGINAZIONE --- */
 .pagination-spacer {
     min-height: 45px;
     width: 100%;
     margin-top: auto;
 }
 
-/* =========================================================
-   PULSANTE "INDIETRO" (Navigazione)
-   ========================================================= */
 .btn-indietro {
     display: inline-flex;
     align-items: center;
@@ -1695,16 +1622,12 @@ div.swal2-container .swal-wide-split .swal2-input {
     color: var(--text-dark);
 }
 
-/* Freccia CSS pura per evitare immagini esterne */
 .btn-indietro::before {
     content: "←";
     font-size: 1.2rem;
     line-height: 1;
 }
 
-/* =========================================================
-     BOTTONE "X" PER CANCELLARE IL SINGOLO INPUT
-   ========================================================= */
 .input-clearable-wrapper {
     position: relative;
     display: flex;
@@ -1712,7 +1635,6 @@ div.swal2-container .swal-wide-split .swal2-input {
     width: 100%;
 }
 
-/* Evita che il testo digitato finisca sotto la X */
 .input-clearable-wrapper input {
     width: 100%;
     padding-right: 28px !important; 
@@ -1731,15 +1653,13 @@ div.swal2-container .swal-wide-split .swal2-input {
 }
 
 .clear-input-btn:hover {
-    color: var(--accent); /* Diventa rossa (o colore d'accento) al passaggio del mouse */
+    color: var(--accent); 
 }
 
-/* Se il placeholder è visibile (quindi l'input è vuoto), nascondi la X */
 .input-clearable-wrapper input:placeholder-shown ~ .clear-input-btn {
     display: none;
 }
 
-/* Applica opacità alla stringa (@nickname) nella colonna Proprietario "Nome Cognome (@nickname)" */
 .owner-nickname {
     opacity: 0.65;
 }
