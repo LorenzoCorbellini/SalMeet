@@ -303,7 +303,13 @@ input[type="range"].filter-range-single {
     color: var(--text-light);
 }
 
+#filtro input[type="date"] {
+    cursor: text;
+}
 
+#filtro input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+}
 
 /* --- NAVIGAZIONE PAGINE --- */
 .pagination-container {
