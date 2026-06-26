@@ -515,44 +515,25 @@ if ($mediaParams['vista'] === 'dettaglio' && !empty($mediaParams['file_id'])) {
 	exit;
 }
 
-/* FILTRI */
+/* =========================================================
+   INIZIALIZZAZIONE FILTRI DINAMICI
+   ========================================================= */
+$filtri = applicaFiltriDinamici($_GET, 'file');
 $where  = [];
-$params = [];
+$params = $filtri['parametri'];
 
-// Filtro per nome del file
-if (!empty($_GET['file'])) {
-	$where[]             = "fmm.titolo LIKE :file";
-	$params[':file'] = '%' . $_GET['file'] . '%';
+if (!empty($filtri['sql'])) {
+	$condizioniSql = ltrim($filtri['sql'], " AND ");
+	
+	$condizioniSql = str_replace(['fm.nome', 'fm.dimensione'], ['fmm.titolo', 'fmm.dimensione'], $condizioniSql);
+	
+	$where[] = $condizioniSql;
 }
 
-// Filtro per proprietario
-if (!empty($_GET['proprietario_file'])) {
-	$where[] = "(
-		u.nickname LIKE :proprietario_file OR
-		u.nome LIKE :proprietario_file OR
-		u.cognome LIKE :proprietario_file OR
-		CONCAT(u.nome, ' ', u.cognome) LIKE :proprietario_fullname OR
-		CONCAT(u.cognome, ' ', u.nome) LIKE :proprietario_fullname
-	)";
-	$params[':proprietario_file'] = '%' . $_GET['proprietario_file'] . '%';
-	$params[':proprietario_fullname'] = '%' . $_GET['proprietario_file'] . '%';
-}
-
-if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
-	$where[] = "fmm.dimensione >= :dimensione_min";
-	$params[':dimensione_min'] = (float) $_GET['dimensione_min'];
-}
-
-if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
-	$where[] = "fmm.dimensione <= :dimensione_max";
-	$params[':dimensione_max'] = (float) $_GET['dimensione_max'];
-}
-
-// Filtro per tipo di file
 $filetypes = [
 	'immagine' => 'Immagini',
-	'audio' => 'Audio',
-	'video' => 'Video'
+	'audio'    => 'Audio',
+	'video'    => 'Video'
 ];
 
 if (!empty($_GET['filetype'])) {
@@ -590,11 +571,9 @@ $righe = prepareMediaTableRows(
 	fetchMediaRecords($pdo, $where, $params, $start_from, $limit, $sql_sort, $sort_dir, 'full'),
 );
 
-$table = "FileMultimediale as fmm";
-if (!empty($_GET['proprietario_file'])) {
-	$table .= " LEFT JOIN Utente AS u ON fmm.caricatoDa = u.codice ";
-}
-$numero_records = getNumberOfRecords($pdo, $table, $where, $params);
+$table_count = "FileMultimediale as fmm LEFT JOIN Utente AS u ON fmm.caricatoDa = u.codice";
+
+$numero_records = getNumberOfRecords($pdo, $table_count, $where, $params);
 $numero_pagine = getNumberOfPages($numero_records, $limit);
 
 /* PREPARAZIONE HTML DA STAMPARE */
@@ -608,6 +587,7 @@ $output_html .= "<div class='table-container tabella-media'>";
 $output_html .= getTabella($righe, ['File', 'Proprietario', 'Dimensione'], $customHeaders);
 $output_html .= "</div>";
 $output_html .= "<div class='pagination-spacer'>" . getPagesNav($np, $numero_pagine, 1) . "</div>";
+
 if (isAjaxRequest()) {
 	echo $output_html;
 	$pdo = null;
