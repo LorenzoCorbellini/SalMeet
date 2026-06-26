@@ -26,14 +26,14 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca', 'placeholder' => 'es. Botanica di notte'],
                     ['tipo' => 'date', 'name' => 'data',                 'label' => 'Creata dopo'],
-                    ['tipo' => 'text', 'name' => 'ricerca_proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome Cognome / Nickname'],
+                    ['tipo' => 'text', 'name' => 'ricerca_proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome, Cognome, Nickname'],
                 ])
             ];
 
         case 'utenti':
             return [
                 'campi' => array_merge($campiBase, [
-                    ['tipo' => 'text', 'name' => 'ricerca_globale', 'label' => 'Utente', 'placeholder' => 'Nome Cognome / Nickname'],
+                    ['tipo' => 'text', 'name' => 'ricerca_globale', 'label' => 'Utente', 'placeholder' => 'Nome, Cognome, Nickname'],
                     ['tipo' => 'date', 'name' => 'data_nascita', 'label' => 'Nato dopo'],
                 ])
             ];
@@ -43,7 +43,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'nome',         'label' => 'Nome Gruppo', 'placeholder' => 'es. Campeggio'],
                     ['tipo' => 'date', 'name' => 'data',         'label' => 'Creato dopo'],
-                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome Cognome / Nickname'],
+                    ['tipo' => 'text', 'name' => 'proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome, Cognome, Nickname'],
                 ])
             ];
 
@@ -76,7 +76,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
                         'value_min' => (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') ? (int)$_GET['dimensione_min'] : $minSize,
                         'value_max' => (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') ? (int)$_GET['dimensione_max'] : $maxSize
                     ],
-                    ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome Cognome / Nickname'],
+                    ['tipo' => 'text', 'name' => 'proprietario_file', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome, Cognome, Nickname'],
                 ])
             ];
 
@@ -84,7 +84,7 @@ function getFiltroConfig(string $entita, array $parametriExtra = []): array
             return [
                 'campi' => array_merge($campiBase, [
                     ['tipo' => 'text', 'name' => 'titolo',               'label' => 'Nome Bacheca', 'placeholder' => 'es. Botanica di notte'],
-                    ['tipo' => 'text', 'name' => 'ricerca_proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome Cognome / Nickname'],
+                    ['tipo' => 'text', 'name' => 'ricerca_proprietario', 'label' => 'Utente Proprietario', 'placeholder' => 'Nome, Cognome, Nickname'],
                 ])
             ];
 

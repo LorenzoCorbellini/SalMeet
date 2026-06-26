@@ -207,23 +207,10 @@ function getRichiesteBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickn
     ";
 
     $params = [':bacheca' => $bacheca, ':owner' => $owner];
-    $whereSql = "";
-
-    $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
-    if ($ricercaGlobale !== '') {
-        $whereSql .= " AND (
-            u.nickname LIKE :rg 
-            OR CONCAT(u.nome, ' ', u.cognome) LIKE :rg 
-            OR CONCAT(u.cognome, ' ', u.nome) LIKE :rg
-        )";
-        $params[':rg'] = '%' . $ricercaGlobale . '%';
-    }
-    if (!empty($_GET['data_nascita'])) {
-        if (isDataValidaRange($_GET['data_nascita'])) {
-            $whereSql .= " AND u.dataNascita >= :data_nascita";
-            $params[':data_nascita'] = $_GET['data_nascita'];
-        }
-    }
+    
+    $filtri = applicaFiltriDinamici($_GET, 'utenti');
+    $whereSql = $filtri['sql'];
+    $params = array_merge($params, $filtri['parametri']);
 
     $stmtCount = $pdo->prepare("SELECT COUNT(*) " . $baseSql . $whereSql);
     $stmtCount->execute($params);
@@ -276,23 +263,10 @@ function getUtentiBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'u.nickname
     ";
 
     $params = [':bacheca' => $bacheca, ':owner' => $owner];
-    $whereSql = "";
-
-    $ricercaGlobale = isset($_GET['ricerca_globale']) ? trim($_GET['ricerca_globale']) : '';
-    if ($ricercaGlobale !== '') {
-        $whereSql .= " AND (
-            u.nickname LIKE :rg 
-            OR CONCAT(u.nome, ' ', u.cognome) LIKE :rg 
-            OR CONCAT(u.cognome, ' ', u.nome) LIKE :rg
-        )";
-        $params[':rg'] = '%' . $ricercaGlobale . '%';
-    }
-    if (!empty($_GET['data_nascita'])) {
-        if (isDataValidaRange($_GET['data_nascita'])) {
-            $whereSql .= " AND u.dataNascita >= :data_nascita";
-            $params[':data_nascita'] = $_GET['data_nascita'];
-        }
-    }
+    
+    $filtri = applicaFiltriDinamici($_GET, 'utenti');
+    $whereSql = $filtri['sql'];
+    $params = array_merge($params, $filtri['parametri']);
 
     $stmtCount = $pdo->prepare("SELECT COUNT(*) " . $baseSql . $whereSql);
     $stmtCount->execute($params);
@@ -351,29 +325,11 @@ function getFileBacheca($pdo, $bacheca, $owner, $bEnc, $sql_sort = 'fm.titolo', 
     ";
 
     $params = [':bacheca' => $bacheca, ':owner' => $owner];
-    $whereSql = "";
+    
+    $filtri = applicaFiltriDinamici($_GET, 'file');
+    $whereSql = $filtri['sql'];
+    $params = array_merge($params, $filtri['parametri']);
 
-    if (!empty($_GET['file'])) {
-        $whereSql .= " AND fm.titolo LIKE :file";
-        $params[':file'] = '%' . $_GET['file'] . '%';
-    }
-    if (!empty($_GET['proprietario_file'])) {
-        $proprietario = trim($_GET['proprietario_file']);
-        $whereSql .= " AND (
-            u.nickname LIKE :proprietario_file 
-            OR CONCAT(u.nome, ' ', u.cognome) LIKE :proprietario_file 
-            OR CONCAT(u.cognome, ' ', u.nome) LIKE :proprietario_file
-        )";
-        $params[':proprietario_file'] = '%' . $proprietario . '%';
-    }
-    if (isset($_GET['dimensione_min']) && $_GET['dimensione_min'] !== '') {
-        $whereSql .= " AND fm.dimensione >= :dimensione_min";
-        $params[':dimensione_min'] = (float)$_GET['dimensione_min'];
-    }
-    if (isset($_GET['dimensione_max']) && $_GET['dimensione_max'] !== '') {
-        $whereSql .= " AND fm.dimensione <= :dimensione_max";
-        $params[':dimensione_max'] = (float)$_GET['dimensione_max'];
-    }
     if (!empty($_GET['filetype']) && is_array($_GET['filetype'])) {
         $filetypes = ['immagine' => 'Immagini', 'audio' => 'Audio', 'video' => 'Video'];
         $selectedTypes = array_filter((array)$_GET['filetype'], function ($t) use ($filetypes) {
@@ -606,26 +562,9 @@ function renderElencoBacheche($pdo, $isAjax)
     $recordsPerPage = 20;
     list($limit, $np, $start_from) = getPaginationParams($recordsPerPage);
 
-    $where  = [];
-    $params = [];
-
-    if (!empty($_GET['titolo'])) {
-        $where[] = "b.nome LIKE :titolo";
-        $params[':titolo'] = '%' . $_GET['titolo'] . '%';
-    }
-
-    $ricercaProprietario = isset($_GET['ricerca_proprietario']) ? trim($_GET['ricerca_proprietario']) : '';
-    if ($ricercaProprietario !== '') {
-        $where[] = "(u.nickname LIKE :rp OR CONCAT(u.nome, ' ', u.cognome) LIKE :rp OR CONCAT(u.cognome, ' ', u.nome) LIKE :rp)";
-        $params[':rp'] = '%' . $ricercaProprietario . '%';
-    }
-
-    if (!empty($_GET['data'])) {
-        if (isDataValidaRange($_GET['data'])) {
-            $where[] = "DATE(b.dataCreazione) >= :data";
-            $params[':data'] = $_GET['data'];
-        }
-    }
+    $filtri = applicaFiltriDinamici($_GET, 'bacheche');
+    $whereSql = $filtri['sql'];
+    $params = $filtri['parametri'];
 
     list($sort_col, $sort_dir, $sql_sort) = getParametriOrdinamento([
         'nome'         => 'b.nome',
@@ -634,7 +573,12 @@ function renderElencoBacheche($pdo, $isAjax)
     ], 'nome', 'ASC');
 
     $tabella_count = "Bacheca b LEFT JOIN Utente u ON u.codice = b.codiceUtente";
-    $totaleRisultati = getNumberOfRecords($pdo, $tabella_count, $where, $params);
+    
+    $sqlCount = "SELECT COUNT(*) FROM " . $tabella_count . ($whereSql ? " WHERE 1=1 " . $whereSql : "");
+    $stmtCount = $pdo->prepare($sqlCount);
+    $stmtCount->execute($params);
+    $totaleRisultati = $stmtCount->fetchColumn();
+    
     $numero_pagine = getNumberOfPages($totaleRisultati, $limit);
 
     $sql = "
@@ -651,15 +595,13 @@ function renderElencoBacheche($pdo, $isAjax)
         LEFT JOIN Utente u ON u.codice = b.codiceUtente
     ";
 
-    if ($where) $sql .= " WHERE " . implode(" AND ", $where);
+    if ($whereSql) $sql .= " WHERE 1=1 " . $whereSql;
+    
     $sql .= " GROUP BY b.codiceUtente, u.nickname, u.nome, u.cognome, b.nome, b.dataCreazione ORDER BY {$sql_sort} {$sort_dir}";
     $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$start_from;
 
     $stmt = $pdo->prepare($sql);
-    foreach ($params as $chiave => $valore) {
-        $stmt->bindValue($chiave, $valore);
-    }
-    $stmt->execute();
+    $stmt->execute($params); // Passiamo direttamente l'array di parametri all'execute
     $righe = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (!$isAjax) echo '<div id="ajax-results">';
